@@ -1,0 +1,91 @@
+#Entrypoints Porgram
+
+comment "//"
+comment "#"
+comment "/*" "*/"
+
+Prog.				Program ::= [Decl];
+
+StmDecl.			Decl ::= Stm;
+FunDecl. 			Decl ::= Funcion;
+
+#Statement
+
+ExpressStm.			Stm ::= RExp ";" ;
+SingleVar.			Stm ::= Type Id ";";
+MulVar.				Stm ::= Type Id "," [Id] ";";
+VarInit.			Stm ::= Type Id "=" RExp ";";
+Const.				Stm ::= "const" Type Id "=" RExp ";";
+Assign.				Stm ::= LExp "=" RExp ";";
+Block.				Stm ::= "{" [Stm] "}";
+IfThen.				Stm ::= "if" "(" RExp ")" "{" [Stm] "}";
+IfThenElse.			Stm ::= "if" "(" RExp ")" "{" [Stm] "}" "else" "{" [Stm] "}";
+Switch.				Stm ::= "switch" "(" RExp ")" "{" [Stm] "}";
+While.				Stm ::= "while" "(" RExp ")" "{" [WhileStm] "}";
+DoWhile.			Stm ::= "do" "{" [WhileStm]  "}" "while" "(" RExp ")" ";";
+For.				Stm ::= "for" "(" RExp ";" RExp ";" Rexp ")" "{" [Stm] "}";
+Return.				Stm ::= "return" Rexp ";" ;
+ReturnOnly.			Stm ::= "return" ";";
+
+Break.				WhileStm ::= "break" ";" ;
+Continue.			WhileStm ::= "continue" ";";
+WhileStatement.		WhileStm ::= Stm;
+
+FunCall.			Stm ::= Id "(" [Rexp] ")" ";";
+FuncDef.			Function ::= Typefun Id "(" [Arg] ")" "{" [Stm] "}";
+Separetor.			Arg ";";
+Terminator.			Stm "";
+ArgDec.				Arg ::= Type Id ";";
+
+#Espressioni
+
+EOr.				RExp  ::= RExp "||" RExp1;
+EAnd.				RExp1 ::= RExp1 "&&" RExp2;
+ENot.				RExp2 ::= "!" RExp3;
+NEq.				RExp3 ::= RExp3 "==" RExp4;
+ENEq.				RExp3 ::= RExp3 "!=" RExp4;
+ELt.				RExp3 ::= RExp3 "<" RExp4;
+EGt.				RExp3 ::= RExp3 ">" RExp4;
+ELtEq.				RExp3 ::= RExp3 "<=" RExp4;
+EGtEq.				RExp3 ::= RExp3 ">=" RExp4 ;
+Eplus.				RExp4 ::= RExp4 "+" RExp5;
+EMinus.				RExp4 ::= RExp4 "-" RExp5;
+EDiv.				RExp5 ::= RExp5 "/" RExp6;
+ETimes.				RExp5 ::= RExp5 "*" RExp6;
+EMod.				RExp5 ::= RExp5 "%" RExp5;
+EIncr.				RExp6 ::= "++" RExp7;
+EDecr.				RExp6 ::= "--" RExp7;
+EPIncr.				RExp7 ::= RExp8 "++";
+EPDecr.				RExp7 ::= RExp8 "--";
+EPar.				RExp8 ::= "(" RExp9 ")"
+ELExp.				RExp9 ::= LExp;
+EArr.				RExp11 ::= "{" [RExp12] "}";
+EFunCall.			RExp12 ::= Id "(" [RExp13] ")";
+ERef.				Rexp13 ::=  "TODO";
+EFalse.				RExp14 ::= "False";
+ETrue.				RExp14 ::= "True";
+EInt.				RExp14 ::= Integer;
+EDouble.			RExp14 ::= Double;
+
+coercions RExp
+
+#LEexp
+
+EVex. 				LExp ::= Id;
+EElat.				LExp1 ::= "[" RExp "]";
+EDeref.				LExp2 ::= "TODO1";
+
+coersions Lexp2
+
+#Tipi
+
+TArray.				Type ::= Type "[" "]";
+TarrayLength.		Type ::= Type "[" RExp "]";
+TBool.				Type ::= "bool";
+TDouble.			Type ::= "double";
+TChar.				Type ::= "char";
+TString.			Type ::= "String";
+TInt.				Type ::= "int";
+TPointer.			Type ::= FunType "*";
+TVoid.				FunType ::= "void";
+TFunType.			FunType ::= Type;
