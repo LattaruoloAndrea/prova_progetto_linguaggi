@@ -1,4 +1,4 @@
-#Entrypoints Porgram
+entrypoints Program
 
 comment "//"
 comment "#"
@@ -67,7 +67,7 @@ ETrue.				RExp14 ::= "True";
 EInt.				RExp14 ::= Integer;
 EDouble.			RExp14 ::= Double;
 
-coercions RExp
+coercions RExp14
 
 #LEexp
 
