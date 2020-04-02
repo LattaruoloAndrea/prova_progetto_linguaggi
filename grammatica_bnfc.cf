@@ -7,7 +7,7 @@ comment "/*" "*/"
 Prog.				Program ::= [Decl];
 
 StmDecl.			Decl ::= Stm;
-FunDecl. 			Decl ::= Funcion;
+FunDecl. 			Decl ::= Function;
 
 #Statement
 
