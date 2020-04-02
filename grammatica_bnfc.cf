@@ -78,7 +78,7 @@ EReadFloat.   Rexp13 ::= "readFloat" "(" ")" ;
 EReadChar.    Rexp13 ::= "readChar" "(" ")" ;
 EReadString.  Rexp13 ::= "readString" "(" ")" ;
 separator RExp "," ;
-ERef.				  Rexp14 ::=  "TODO" ;
+ERef.				  Rexp14 ::=  "&" RExp15 ;
 EFalse.				RExp15 ::= "false" ;
 ETrue.				RExp15 ::= "true" ;
 EInt.			  	RExp15 ::= Integer ;
@@ -88,7 +88,7 @@ coercions RExp 14 ;
 
 #LEexp
 
-EVex. 				LExp ::= "TODO" ;
+EVex. 				LExp ::= "*" LExp1 ;
 EElat.				LExp1 ::= "[" RExp "]" ;
 EDeref.				LExp2 ::= Id ;
 
