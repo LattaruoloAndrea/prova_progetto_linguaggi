@@ -27,18 +27,23 @@ IfThenElse.			Stm ::= "if" "(" RExp ")" "{" [Stm] "}" "else" "{" [Stm] "}" ;
 Switch.			  	Stm ::= "switch" "(" RExp ")" "{" [Stm] "}" ;
 While.			  	Stm ::= "while" "(" RExp ")" "{" [WhileStm] "}" ;
 DoWhile.		  	Stm ::= "do" "{" [WhileStm]  "}" "while" "(" RExp ")" ";" ;
-For.			    	Stm ::= "for" "(" RExp ";" RExp ";" Rexp ")" "{" [Stm] "}" ;
+For.			    	Stm ::= "for" "(" LExp "=" RExp ";" RExp ";" Rexp ")" "{" [Stm] "}" ;
 Return.			  	Stm ::= "return" Rexp ";" ;
 ReturnOnly.			Stm ::= "return" ";" ;
 separator Stm "" ;
+
+FunCall.			  Stm ::= Id "(" [RExp] ")" ";" ;
+WriteInt.       Stm ::= "writeInt" "(" [RExp] ")" ";" ;
+WriteFloat.     Stm ::= "writeFloat" "(" [RExp] ")" ";" ;
+WriteChar.      Stm ::= "writeChar" "(" [RExp] ")" ";" ;
+WriteString.    Stm ::= "writeString" "(" [RExp] ")" ";" ;
+separator RExp ","
 
 Break.				    WhileStm ::= "break" ";" ;
 Continue.			    WhileStm ::= "continue" ";" ;
 WhileStatement.		WhileStm ::= Stm ;
 separator WhileStm "" ;
 
-FunCall.			Stm ::= Id "(" [RExp] ")" ";" ;
-separator RExp "," ;
 FuncDef.			Function ::= Typefun Id "(" [Arg] ")" "{" [Stm] "}";
 separator Arg ";" ;
 terminator Stm "" ;
@@ -67,13 +72,17 @@ EPDecr.				RExp7 ::= RExp8 "--" ;
 EPar.			  	RExp8 ::= "(" RExp9 ")" ;
 ELExp.				RExp9 ::= LExp ;
 EArr.			  	RExp11 ::= "{" [RExp12] "}" ;
-separator RExp "," ;
 EFunCall.			RExp12 ::= Id "(" [RExp13] ")" ;
-ERef.				  Rexp13 ::=  "TODO" ;
-EFalse.				RExp14 ::= "false" ;
-ETrue.				RExp14 ::= "true" ;
-EInt.			  	RExp14 ::= Integer ;
-EDouble.			RExp14 ::= Double ;
+EReadInt.     Rexp13 ::= "readInt" "(" ")" ;
+EReadFloat.   Rexp13 ::= "readFloat" "(" ")" ;
+EReadChar.    Rexp13 ::= "readChar" "(" ")" ;
+EReadString.  Rexp13 ::= "readString" "(" ")" ;
+separator RExp "," ;
+ERef.				  Rexp14 ::=  "TODO" ;
+EFalse.				RExp15 ::= "false" ;
+ETrue.				RExp15 ::= "true" ;
+EInt.			  	RExp15 ::= Integer ;
+EFloat.			RExp15 ::= Double ;
 
 coercions RExp 14 ;
 
@@ -90,7 +99,7 @@ coercions Lexp 2 ;
 TArray.				  Type ::= Type "[" "]" ;
 TarrayLength.		Type ::= Type "[" RExp "]" ;
 TBool.			  	Type ::= "bool" ;
-TDouble.		  	Type ::= "double" ;
+TFloat.		     	Type ::= "float" ;
 TChar.		  		Type ::= "char" ;
 TString.		  	Type ::= "String" ;
 TInt.				    Type ::= "int" ;
