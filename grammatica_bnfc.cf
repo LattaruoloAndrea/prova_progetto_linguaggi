@@ -9,7 +9,7 @@ Prog.				Program ::= [Decl] ;
 StmDecl.			Decl ::= Stm ;
 FunDecl. 			Decl ::= Function ;
 
-#Statement
+; Statement
 
 ExpressStm.			Stm ::= RExp ";" ;
 
@@ -49,7 +49,7 @@ separator Arg ";" ;
 terminator Stm "" ;
 ArgDec.				Arg ::= Type Id ";";
 
-#Espressioni
+; Espressioni
 
 EOr.				  RExp  ::= RExp "||" RExp1 ;
 EAnd.			  	RExp1 ::= RExp1 "&&" RExp2 ;
@@ -79,14 +79,15 @@ EReadChar.    Rexp13 ::= "readChar" "(" ")" ;
 EReadString.  Rexp13 ::= "readString" "(" ")" ;
 separator RExp "," ;
 ERef.				  Rexp14 ::=  "&" RExp15 ;
-EFalse.				RExp15 ::= "false" ;
-ETrue.				RExp15 ::= "true" ;
-EInt.			  	RExp15 ::= Integer ;
-EFloat.				RExp15 ::= Double ;
+EBool.				RExp15 ::= VBool ;
+EInt.			  	RExp15 ::= VInteger ;
+EFloat.				RExp15 ::= VDouble ;
+EString       RExp15 ::= VString ;
+EChar         RExp15 ::= VChar ;
 
-coercions RExp 14 ;
+coercions RExp 15 ;
 
-#LEexp
+; LEexp
 
 EVex. 				LExp ::= "*" LExp1 ;
 EElat.				LExp1 ::= "[" RExp "]" ;
@@ -94,7 +95,7 @@ EDeref.				LExp2 ::= Id ;
 
 coercions Lexp 2 ;
 
-#Tipi
+; Tipi
 
 TArray.				  Type ::= Type "[" "]" ;
 TarrayLength.		Type ::= Type "[" RExp "]" ;
@@ -106,3 +107,14 @@ TInt.				    Type ::= "int" ;
 TPointer.			  Type ::= FunType "*" ;
 TVoid.		  		FunType ::= "void" ;
 TFunType.		  	FunType ::= Type ;
+
+; Token
+
+position token Id ( letter+ ) ;
+position token VInteger ( digit+ ) ;
+position token VDouble ( digit+ '.' digit+ ) ;
+position token VString ( '"' (char)* '"' ) ;
+position token VChar ( ''' (char) ''' ) ;
+position token VBool ( "true" | "false" ) ;
+
+
