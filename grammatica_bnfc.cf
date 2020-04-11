@@ -9,7 +9,7 @@ Prog.				Program ::= [Decl] ;
 StmDecl.			Decl ::= Stm ;
 FunDecl. 			Decl ::= Function ;
 
-; Statement
+# Statement
 
 ExpressStm.			Stm ::= RExp ";" ;
 
@@ -49,7 +49,7 @@ separator Arg ";" ;
 terminator Stm "" ;
 ArgDec.				Arg ::= Type Id ";";
 
-; Espressioni
+# Espressioni
 
 EOr.				  RExp  ::= RExp "||" RExp1 ;
 EAnd.			  	RExp1 ::= RExp1 "&&" RExp2 ;
@@ -87,7 +87,7 @@ EChar         RExp15 ::= VChar ;
 
 coercions RExp 15 ;
 
-; LEexp
+# LEexp
 
 EVex. 				LExp ::= "*" LExp1 ;
 EElat.				LExp1 ::= "[" RExp "]" ;
@@ -95,7 +95,7 @@ EDeref.				LExp2 ::= Id ;
 
 coercions Lexp 2 ;
 
-; Tipi
+# Tipi
 
 TArray.				  Type ::= Type "[" "]" ;
 TarrayLength.		Type ::= Type "[" RExp "]" ;
@@ -108,7 +108,7 @@ TPointer.			  Type ::= FunType "*" ;
 TVoid.		  		FunType ::= "void" ;
 TFunType.		  	FunType ::= Type ;
 
-; Token
+# Token
 
 position token Id ( letter+ ) ;
 position token VInteger ( digit+ ) ;
