@@ -82,8 +82,8 @@ ERef.				  Rexp14 ::=  "&" RExp15 ;
 EBool.				RExp15 ::= VBool ;
 EInt.			  	RExp15 ::= VInteger ;
 EFloat.				RExp15 ::= VDouble ;
-EString       RExp15 ::= VString ;
-EChar         RExp15 ::= VChar ;
+EString.       RExp15 ::= VString ;
+EChar.         RExp15 ::= VChar ;
 
 coercions RExp 15 ;
 
