@@ -113,8 +113,8 @@ TFunType.		  	FunType ::= Type ;
 position token Id ( letter+ ) ;
 position token VInteger ( digit+ ) ;
 position token VDouble ( digit+ '.' digit+ ) ;
-position token VString ( '"' (char)* '"' ) ;
-position token VChar ( ''' (char) ''' ) ;
+position token VString ( '"' char* '"' ) ;
+position token VChar ( ''' char ''' ) ;
 position token VBool ( "true" | "false" ) ;
 
 
