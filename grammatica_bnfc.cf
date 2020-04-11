@@ -4,7 +4,8 @@ comment "//" ;
 comment "#" ;
 comment "/*" "*/" ;
 
-Prog.				Program ::= [Decl] ;
+Prog.				Program ::= Decl ;
+ListProg.			Program ::= Decl Program;
 
 StmDecl.			Decl ::= Stm ;
 FunDecl. 			Decl ::= Function ;
@@ -27,8 +28,8 @@ IfThenElse.			Stm ::= "if" "(" RExp ")" "{" [Stm] "}" "else" "{" [Stm] "}" ;
 Switch.			  	Stm ::= "switch" "(" RExp ")" "{" [Stm] "}" ;
 While.			  	Stm ::= "while" "(" RExp ")" "{" [WhileStm] "}" ;
 DoWhile.		  	Stm ::= "do" "{" [WhileStm]  "}" "while" "(" RExp ")" ";" ;
-For.			    	Stm ::= "for" "(" LExp "=" RExp ";" RExp ";" Rexp ")" "{" [Stm] "}" ;
-Return.			  	Stm ::= "return" Rexp ";" ;
+For.			    	Stm ::= "for" "(" LExp "=" RExp ";" RExp ";" RExp ")" "{" [Stm] "}" ;
+Return.			  	Stm ::= "return" RExp ";" ;
 ReturnOnly.			Stm ::= "return" ";" ;
 separator Stm "" ;
 
@@ -44,7 +45,7 @@ Continue.			    WhileStm ::= "continue" ";" ;
 WhileStatement.		WhileStm ::= Stm ;
 separator WhileStm "" ;
 
-FuncDef.			Function ::= Typefun Id "(" [Arg] ")" "{" [Stm] "}";
+FuncDef.			Function ::= FunType Id "(" [Arg] ")" "{" [Stm] "}";
 separator Arg ";" ;
 terminator Stm "" ;
 ArgDec.				Arg ::= Type Id ";";
@@ -71,8 +72,8 @@ EPIncr.				RExp7 ::= RExp8 "++" ;
 EPDecr.				RExp7 ::= RExp8 "--" ;
 EPar.			  	RExp8 ::= "(" RExp9 ")" ;
 ELExp.				RExp9 ::= LExp ;
-EArr.			  	RExp11 ::= "{" [RExp12] "}" ;
-EFunCall.			RExp12 ::= Id "(" [RExp13] ")" ;
+EArr.			  	RExp11 ::= "{" [RExp] "}" ;
+EFunCall.			RExp12 ::= Id "(" [RExp] ")" ;
 EReadInt.     Rexp13 ::= "readInt" "(" ")" ;
 EReadFloat.   Rexp13 ::= "readFloat" "(" ")" ;
 EReadChar.    Rexp13 ::= "readChar" "(" ")" ;
@@ -90,10 +91,10 @@ coercions RExp 15 ;
 -- LEexp
 
 EVex. 				LExp ::= "*" LExp1 ;
-EElat.				LExp1 ::= "[" RExp "]" ;
+EElat.				LExp1 ::= LExp1 "[" RExp "]" ;
 EDeref.				LExp2 ::= Id ;
 
-coercions Lexp 2 ;
+coercions LExp 2 ;
 
 -- Tipi
 
@@ -116,5 +117,3 @@ position token VDouble ( digit+ '.' digit+ ) ;
 position token VString ( '"' char* '"' ) ;
 position token VChar ( '\'' char '\'' ) ;
 position token VBool {"true"} | {"false"} ;
-
-
