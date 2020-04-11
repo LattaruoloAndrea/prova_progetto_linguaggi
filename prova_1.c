@@ -25,3 +25,35 @@ void main(){
 	}
 	return 0;
 }
+
+int a;
+a = 5;
+
+int cc(){
+	int t = 0;
+	return 0;
+}
+
+
+bool cl(){
+	int t = 0;
+	return 0;
+}
+
+
+char cs(){
+	int t = 0;
+	return 0;
+}
+
+
+float ct(){
+	int t = 0;
+	return 0;
+}
+
+String cs(){
+	int t = 0;
+	String a;
+	return 0;
+}

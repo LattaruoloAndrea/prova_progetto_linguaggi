@@ -45,7 +45,8 @@ Continue.			    WhileStm ::= "continue" ";" ;
 WhileStatement.		WhileStm ::= Stm ;
 separator WhileStm "" ;
 
-FuncDef.			Function ::= FunType Id "(" [Arg] ")" "{" [Stm] "}";
+FuncDef.			Function ::= "void" Id "(" [Arg] ")" "{" [Stm] "}";
+FuncDef1.			Function ::= Type Id "(" [Arg] ")" "{" [Stm] "}";
 separator Arg ";" ;
 terminator Stm "" ;
 ArgDec.				Arg ::= Type Id ";";
