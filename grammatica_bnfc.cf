@@ -1,5 +1,8 @@
+--bnfc -m grammatica_bnfc.cf
+--make
+--./TestGrammaticaBnfc prova_1.c
 entrypoints Program ;
-
+ 
 comment "//" ;
 comment "#" ;
 comment "/*" "*/" ;
@@ -28,7 +31,13 @@ IfThenElse.			Stm ::= "if" "(" RExp ")" "{" [Stm] "}" "else" "{" [Stm] "}" ;
 Switch.			  	Stm ::= "switch" "(" RExp ")" "{" [Stm] "}" ;
 While.			  	Stm ::= "while" "(" RExp ")" "{" [WhileStm] "}" ;
 DoWhile.		  	Stm ::= "do" "{" [WhileStm]  "}" "while" "(" RExp ")" ";" ;
-For.			    	Stm ::= "for" "(" LExp "=" RExp ";" RExp ";" RExp ")" "{" [Stm] "}" ;
+For.			    Stm ::= "for" "(" Init ";" RExp ";" Iter ")" "{" [Stm] "}" ;
+InitType.			Init ::= Type Id "=" RExp;
+InitAssign.			Init ::= LExp "=" RExp;
+IterAss.			Iter ::= LExp "=" RExp;
+IterRExp.			Iter ::= RExp;
+
+
 Return.			  	Stm ::= "return" RExp ";" ;
 ReturnOnly.			Stm ::= "return" ";" ;
 separator Stm "" ;
