@@ -1,3 +1,7 @@
+# Filetypes
 *.o
 *.exe
 *.sh
+
+# Folders Brian
+bin/*
