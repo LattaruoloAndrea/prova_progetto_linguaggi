@@ -2,6 +2,7 @@
 *.o
 *.exe
 *.sh
+*.pdf
 
 # Folders Brian
 bin/*
