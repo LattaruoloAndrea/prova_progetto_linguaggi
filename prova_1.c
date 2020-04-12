@@ -71,3 +71,7 @@ String cs(){
 	String a;
 	return 0;
 }
+
+// (Not-)Escaped String test
+String not_escaped = "This string is not escaped";
+String escaped = "This string is \"escaped\"! \\/";
