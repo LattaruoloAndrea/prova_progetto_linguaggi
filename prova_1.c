@@ -28,7 +28,17 @@ void main(){
 		}
 	}
 	return 0;
+
+	// Bool in function
+	bool anon_bool;
+	bool true_bool = true;
+	bool false_bool = false;
 }
+
+// Bool global
+bool g_anon_bool;
+bool g_true_bool = true;
+bool g_false_bool = false;
 
 int a;
 a = 5;
