@@ -124,6 +124,6 @@ TFunType.		  	FunType ::= Type ;
 position token Id ( letter (letter | digit | '_')* ) ;
 position token VInteger ( digit+ ) ;
 position token VDouble ( digit+ '.' digit+ ) ;
-position token VString ( '"' char* '"' ) ;
-position token VChar ( '\'' char '\'' ) ;
+position token VString ( '"' ((char - ["\"\\"]) | ('\\' ["\"\\nt"]))* '"' ) ;
+position token VChar ( '\'' ((char - ["'\\"]) | ('\\' ["'\\nt"])) '\'' ) ;
 position token VBool {"true"} | {"false"} ;
