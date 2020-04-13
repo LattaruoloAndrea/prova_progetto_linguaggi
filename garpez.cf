@@ -1,0 +1,17 @@
+entrypoints Program ;
+
+comment "//" ;
+comment "/*" "*/" ;
+
+
+Progr.              Program ::= [Decl] ;
+StmDecl.            Decl ::= Stm ;
+DefDecl.            Decl ::= Def ;
+
+
+Const.              ConstDef ::= "const" Id "=" RExp ";" ;
+ConstList.          ConstDef ::= "const" [ConstDecl] ;
+ConstMult.          ConstDecl ::= Id "=" RExp ;
+
+separator ConstDecl "," ;
+terminator ConstDecl ";" ;
