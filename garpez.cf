@@ -3,15 +3,31 @@ entrypoints Program ;
 comment "//" ;
 comment "/*" "*/" ;
 
-
+-- PROGRAM //////////////////////////////////////////
 Progr.              Program ::= [Decl] ;
 StmDecl.            Decl ::= Stm ;
 DefDecl.            Decl ::= Def ;
 
 
+-- CONSTANTS ////////////////////////////////////////
 Const.              ConstDef ::= "const" Id "=" RExp ";" ;
 ConstList.          ConstDef ::= "const" [ConstDecl] ;
 ConstMult.          ConstDecl ::= Id "=" RExp ;
 
 separator ConstDecl "," ;
 terminator ConstDecl ";" ;
+
+
+-- VARIABLES ////////////////////////////////////////
+SingleVar.          VarDef ::= Type Id ";" ;
+MulVar.             VarDef ::= Type Id "," [Id] ;
+
+separator Id "," ;
+terminator Id ";" ;
+
+SingleVarInit.      VarDef ::= Type Id "=" RExp ";" ;
+MulVarInit.         VarDef ::= Type Id "=" RExp "," [VarDecl] ;
+VarList.            VarDecl ::= Id "=" RExp ;
+
+separator VarDecl "," ;
+terminator VarDecl ";" ;
