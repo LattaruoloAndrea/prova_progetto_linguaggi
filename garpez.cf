@@ -89,3 +89,49 @@ AssignDiv.          AssignOp ::= "/=" ;
 AssignBitXor.       AssignOp ::= "^=" ;
 AssignBitAnd.       AssignOp ::= "&=" ;
 AssignBitOr.        AssignOp ::= "|=" ;
+
+-- LEXP //////////////////////////////////////////////
+Id.                 LExp ::= Id ;
+Array.              LExp ::= LExp "[" RExp "]" ;
+Deference.          LExp ::= "*" LExp ;
+Reference.          LExp ::= "&" Lexp ;
+PreIncDec.          LExp ::= IncDecOp LExp ;
+PostIncDec.         LExp ::= LExp IncDecOp ;
+
+IncOp.              IncDecOp ::= "++" ;
+DecOp.              IncDecOp ::= "--" ;
+
+-- REXP //////////////////////////////////////////////
+LExp.               RExp ::= LExp ;
+Literal.            RExp ::= Literal ;
+UnaryOp.            RExp ::= UnOp RExp ;
+BinaryOp.           RExp ::= RExp BinOp RExp ;
+Paren.              RExp ::= "(" RExp ")" ;
+
+LiteralBool.        Literal ::= Boolean ;
+LiteralChar.        Literal ::= Char ;
+LiteralInt.         Literal ::= Integer ;
+LiteralFloat.       Literal ::= Double ;
+LiteralString.      Literal ::= String ;
+
+BoolTrue.           Boolean ::= "true" ;
+BoolFalse.          Boolean ::= "false" ;
+
+UnOpNot.            UnOp ::= "!" ;
+UnOpNeg.            UnOp ::= "-" ;
+
+LogicalEq.          BinOp ::= "==" ;
+LogicalNeq.         BinOp ::= "!=" ;
+LogicalLt.          BinOp ::= "<" ;
+LogicalLe.          BinOp ::= "<=" ;
+LogicalGt.          BinOp ::= ">" ;
+LogicalGe.          BinOp ::= ">=" ;
+LogicalOr.          BinOp ::= "||" ;
+LogicalAnd.         BinOp ::= "&&" ;
+LogicalXor.         BinOp ::= "^" ;
+
+ArithmSum.          BinOp ::= "+" ;
+ArithmDiff.         BinOp ::= "-" ;
+ArithmProd.         BinOp ::= "*" ;
+ArithmDiv.          BinOp ::= "/" ;
+ArithmMod.          BinOp ::= "%" ;
