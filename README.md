@@ -10,3 +10,4 @@
 ## TODO
 - @Latta dammi i permessi di admin sulla repo
 - Modificatori sui passaggi di parametri
+- Refactor della grammatica per renderla più pulita
