@@ -6,8 +6,9 @@
 - Possibilità di poter usare la frase "Fatto?" q.b.
 - *Fate un commit **per ogni piccola modifica** e descrivetela in due parole nel messaggio.*
 - *Ovviamente non serve pushare ogni volta che committate*
+- Per aggiornare la vostra repo locale usate `git pull`
 
 ## TODO
 - ~~@Latta dammi i permessi di admin sulla repo~~
-- Modificatori sui passaggi di parametri
 - Refactor della grammatica per renderla più pulita
+- 
