@@ -54,3 +54,15 @@ PValRes.            PassBy ::= "valres" ;
 RType.              RetType ::= Type ;
 RVoid.              RetType ::= "void" ;
 RRef.               RetType ::= "&" Type ;
+
+-- TYPES ////////////////////////////////////////////
+TArray.				Type ::= Type "[" "]" ;
+TarrayLength.		Type ::= Type "[" RExp "]" ;
+TBool.			  	Type ::= "bool" ;
+TFloat.		     	Type ::= "float" ;
+TChar.		  		Type ::= "char" ;
+TString.		  	Type ::= "String" ;
+TInt.				Type ::= "int" ;
+TPointer.			Type ::= Type "*" ;
+TVoid.		  		FunType ::= "void" ;
+TFunType.		  	FunType ::= Type ;
