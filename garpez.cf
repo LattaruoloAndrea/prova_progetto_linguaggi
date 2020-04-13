@@ -61,8 +61,31 @@ TarrayLength.		Type ::= Type "[" RExp "]" ;
 TBool.			  	Type ::= "bool" ;
 TFloat.		     	Type ::= "float" ;
 TChar.		  		Type ::= "char" ;
-TString.		  	Type ::= "String" ;
+TString.		  	Type ::= "string" ;
 TInt.				Type ::= "int" ;
-TPointer.			Type ::= Type "*" ;
-TVoid.		  		FunType ::= "void" ;
-TFunType.		  	FunType ::= Type ;
+TPointer.			Type ::= Pointer Type ;
+Pointer1.           Pointer ::= "*" ;
+Pointer2.           Pointer ::= Pointer "*" ;
+
+-- STATEMENTS ///////////////////////////////////////
+BlockStm.           Stm ::= Block ;
+Call.               Stm ::= Id "(" [RExp] ")" ";"
+
+separator RExp "," ;
+
+Assignement.        Stm ::= LExp AssignOp RExp ";" ;
+LExpStm.            Stm ::= LExp ";" ;
+IfStm.              Stm ::= "if" "(" RExp ")" Block ;
+IfElseStm.          Stm ::= "if" "(" RExp ")" Block "else" Block ;
+WhileStm.           Stm ::= "while" "(" RExp ")" Block ;
+
+Block.              Block ::= "{" [Def] [Stm] "}" ;
+
+AssignEq.           AssignOp ::= "=" ;
+AssignInc.          AssignOp ::= "+=" ;
+AssignDec.          AssignOp ::= "-=" ;
+AssignProd.         AssignOp ::= "*=" ;
+AssignDiv.          AssignOp ::= "/=" ;
+AssignBitXor.       AssignOp ::= "^=" ;
+AssignBitAnd.       AssignOp ::= "&=" ;
+AssignBitOr.        AssignOp ::= "|=" ;
