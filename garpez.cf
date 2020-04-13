@@ -9,6 +9,12 @@ StmDecl.            Decl ::= Stm ;
 DefDecl.            Decl ::= Def ;
 
 
+-- DEFINITIONS //////////////////////////////////////
+DefConst.           Def ::= ConstDef ;
+DefVar.             Def ::= VarDef ;
+DefFun.             Def ::= FunDef ;
+
+
 -- CONSTANTS ////////////////////////////////////////
 Const.              ConstDef ::= "const" Id "=" RExp ";" ;
 ConstList.          ConstDef ::= "const" [ConstDecl] ;
@@ -31,3 +37,20 @@ VarList.            VarDecl ::= Id "=" RExp ;
 
 separator VarDecl "," ;
 terminator VarDecl ";" ;
+
+-- FUNCTIONS/PROCEDURES /////////////////////////////
+FuncProc.           FunDef ::= RetType Id "(" [Param] ")" Block ;
+Param.              Param ::= PassBy Type ;
+
+separator Param "," ;
+
+PValue.             PassBy ::= "" ;
+PReference.         PassBy ::= "ref" ;
+PConst.             PassBy ::= "const" ;
+PRes.               PassBy ::= "res" ;
+PValRes.            PassBy ::= "valres" ;
+"PName".            PassBy ::= "name" ;
+
+RType.              RetType ::= Type ;
+RVoid.              RetType ::= "void" ;
+RRef.               RetType ::= "&" Type ;
