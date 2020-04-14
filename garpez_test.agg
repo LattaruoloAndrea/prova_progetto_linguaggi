@@ -1,3 +1,20 @@
-void main() {
-	
+int x;
+int y=5;
+const int z=12;
+int a, b=16, c;
+
+int main(const int x, const int y) {
+	return 0;
+}
+
+void main(int x) {
+	return;
+}
+
+const int prova() {
+	return 0;
+}
+
+int main() {
+
 }
