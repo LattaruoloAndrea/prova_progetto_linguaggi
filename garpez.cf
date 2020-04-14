@@ -46,6 +46,7 @@ QualifiedFT2.		Qualified_FType ::= Qualifier "void" ;
 
 Qualified_T1.		Qualified_Type ::= Qualifier Type ;
 
+NoQualifier.		Qualifier ::= "" ;
 Qualifier.			Qualifier ::= "const" ;
 
 SimpleType.			Type ::= SimpleType ;
