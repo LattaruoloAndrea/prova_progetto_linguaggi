@@ -31,10 +31,10 @@ terminator Statement ";" ;
 -- STATEMENTS /////////////////////////////////////////////////
 
 StmDecl.				Statement ::= Declaration ;
-StmLExp.				Statement ::= LExp ;
+StmExp.					Statement ::= Exp AssignementOp Exp ;
 
 StmRet1.				Statement ::= "return" ;
-StmRet2.				Statement ::= "return" RExp ;
+StmRet2.				Statement ::= "return" Exp ;
 
 
 -- TYPES //////////////////////////////////////////////////////
@@ -51,7 +51,7 @@ rules Type ::= "bool" | "char" | "int" | "float" | "string" ;
 Decl.					Declaration ::= Qualified_Type [Init] ;
 
 NameInit.				Init ::= Id ;
-ValueInit.				Init ::= Id "=" RExp ;
+ValueInit.				Init ::= Id "=" Exp ;
 
 separator nonempty Init "," ;
 
@@ -59,15 +59,39 @@ separator nonempty Init "," ;
 
 -- EXPRESSIONS ////////////////////////////////////////////////
 
-LitExp.					RExp ::= Literal ;
+EXor.					Exp  ::= Exp "^" Exp1 ;
+EOr.					Exp1 ::= Exp1 "||" Exp2 ;
+EAnd.					Exp2 ::= Exp2 "&&" Exp3 ;
+NEq.		  			Exp3 ::= Exp3 "==" Exp4 ;
+ENeq.		  			Exp3 ::= Exp3 "!=" Exp4 ;
+ELt.		  			Exp3 ::= Exp3 "<" Exp4 ;
+EGt.		  			Exp3 ::= Exp3 ">" Exp4 ;
+ELeq.					Exp3 ::= Exp3 "<=" Exp4 ;
+EGeq.					Exp3 ::= Exp3 ">=" Exp4 ;
+Eplus.					Exp4 ::= Exp4 "+" Exp5 ;
+EMinus.					Exp4 ::= Exp4 "-" Exp5 ;
+EProd.					Exp5 ::= Exp5 "*" Exp6 ;
+EDiv.			  		Exp5 ::= Exp5 "/" Exp6 ;
+EMod.			  		Exp5 ::= Exp5 "%" Exp6 ;
+EIncr.					Exp6 ::= "++" Exp7 ;
+EDecr.					Exp6 ::= "--" Exp7 ;
+EPIncr.					Exp7 ::= Exp8 "++" ;
+EPDecr.					Exp7 ::= Exp8 "--" ;
+EArray.					Exp8 ::= Exp9 "[" Exp "]" ;
+EFunCall.				Exp9 ::= Id "(" [Exp] ")" ;
+EReadInt.           	Exp9 ::= "readInt" "(" ")" ;
+EReadFloat.         	Exp9 ::= "readFloat" "(" ")" ;
+EReadChar.          	Exp9 ::= "readChar" "(" ")" ;
+EReadString.        	Exp9 ::= "readString" "(" ")" ;
+EUnary.					Exp10 ::=  UnaryOp Exp11 ;
+ELiteral.				Exp11 ::= Literal ;
 
+separator Exp "," ;
+coercions Exp 11 ;
 
+rules UnaryOp ::= "&" | "*" | "+" | "-" | "!";
 
-EVex.					LExp ::= "*" LExp1 ;
-EElat.					LExp1 ::= LExp1 "[" RExp "]" ;
-EDeref.					LExp2 ::= Id ;
-
-coercions LExp 2 ;
+rules AssignementOp ::= "=" | "+=" | "-=" | "*=" | "/=" | "%=" | "&=" | "|=" | "^=";
 
 
 
