@@ -16,6 +16,8 @@ EntityDecl.			Global ::= EntityList ;
 
 FunDef.				FunctionDefinition ::= Qualified_FType Id "(" [FormalParam] ")" Block ;
 
+FormalParam.		FormalParam ::= Qualified_FType Id ;
+
 separator FormalParam "," ;
 terminator FormalParam "" ;
 
@@ -25,6 +27,8 @@ InitEntity.			EntityDecl ::= Id "=" RExp ;
 
 separator nonempty EntityDecl "," ;
 terminator nonempty EntityDecl ";";
+
+Block.				Block ::= "{" "}" ;
 
 -- REXP
 
