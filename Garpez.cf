@@ -124,18 +124,21 @@ Deference.          LExp ::= "*" LExp ;
 Reference.          LExp ::= "&" LExp ;
 PreIncDec.          LExp ::= IncDecOp LExp ;
 PostIncDec.         LExp ::= LExp IncDecOp ;
+LExpPar.            LExp ::= "(" LExp ")" ;
+
+coercions LExp 5 ;
 
 IncOp.              IncDecOp ::= "++" ;
 DecOp.              IncDecOp ::= "--" ;
 
 -- REXP //////////////////////////////////////////////
-RExpLExp.               RExp ::= LExp ;
-LiteralRExp.            RExp ::= Literal ;
-UnaryOp.            RExp ::= UnOp RExp ;
+RExpLExp.           RExp ::= LExp ;
+LiteralRExp.        RExp ::= Literal ;
 BinaryOp.           RExp ::= RExp BinOp RExp ;
-Paren.              RExp ::= "(" RExp ")" ;
+UnaryOp.            RExp ::= UnOp RExp ;
 ReadRExp.           RExp ::= ReadPred ;
 RExpCall.           RExp ::= Id "(" [RExp] ")" ;
+Paren.              RExp ::= "(" RExp ")" ;
 separator RExp "," ;
 terminator RExp "" ;
 
@@ -153,21 +156,21 @@ LiteralString.      Literal ::= VString ;
 UnOpNot.            UnOp ::= "!" ;
 UnOpNeg.            UnOp ::= "-" ;
 
+LogicalOr.          BinOp ::= "||" ;
+LogicalAnd.         BinOp ::= "&&" ;
 LogicalEq.          BinOp ::= "==" ;
 LogicalNeq.         BinOp ::= "!=" ;
 LogicalLt.          BinOp ::= "<" ;
 LogicalLe.          BinOp ::= "<=" ;
 LogicalGt.          BinOp ::= ">" ;
 LogicalGe.          BinOp ::= ">=" ;
-LogicalOr.          BinOp ::= "||" ;
-LogicalAnd.         BinOp ::= "&&" ;
-LogicalXor.         BinOp ::= "^" ;
 
 ArithmSum.          BinOp ::= "+" ;
 ArithmDiff.         BinOp ::= "-" ;
 ArithmProd.         BinOp ::= "*" ;
 ArithmDiv.          BinOp ::= "/" ;
 ArithmMod.          BinOp ::= "%" ;
+LogicalXor.         BinOp ::= "^" ;
 
 -- TOKENS ////////////////////////////////////////////
 position token Id ( letter (letter | digit | '_')* ) ;
