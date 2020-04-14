@@ -11,4 +11,10 @@
 ## TODO
 - ~~@Latta dammi i permessi di admin sulla repo~~
 - Refactor della grammatica per renderla più pulita
-- 
+- Il refactoring è una cosa superflua ma utile da fare
+- - trattini che fanno cose
+- - altri trattini
+- type checker
+- type system
+- riverede haskell ? per i due sopra 
+- continuare a far finta di fare ma non fare comuqnue niente
