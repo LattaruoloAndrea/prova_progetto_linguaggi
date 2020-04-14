@@ -3,7 +3,7 @@ entrypoints Program ;
 comment "//" ;
 comment "/*" "*/" ;
 
--- PROGRAM //////////////////////////////////////////
+-- PROGRAM ///////////////////////////////////////////
 Progr.              Program ::= [Decl] ;
 separator Decl "" ;
 terminator Decl "" ;
