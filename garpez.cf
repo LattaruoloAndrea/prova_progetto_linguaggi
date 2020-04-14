@@ -10,4 +10,37 @@ terminator Global "";
 
 
 FunDecl.			Global ::= FunctionDefinition ;
-EntityDecl.			Global ::= EntityDeclaration ;
+EntityDecl.			Global ::= EntityList ;
+
+-- FUNCTIONS AND PROCEDURES
+
+FunDef.				FunctionDefinition ::= Qualified_FType Id "(" [FormalParam] ")" Block ;
+
+separator FormalParam "," ;
+terminator FormalParam "" ;
+
+EntityList.			EntityList ::= Qualified_Type [EntityDecl] ;
+GenericEntity.		EntityDecl ::= Id ;
+InitEntity.			EntityDecl ::= Id "=" RExp ;
+
+separator nonempty EntityDecl "," ;
+terminator nonempty EntityDecl ";";
+
+
+-- TYPES
+
+QualifiedFT1.		Qualified_FType ::= Qualified_Type ;
+QualifiedFT2.		Qualified_FType ::= Qualifier "void" ;
+
+Qualified_T1.		Qualified_Type ::= Qualifier Type ;
+
+Qualifier.			Qualifier ::= "const" ;
+
+SimpleType.			Type ::= SimpleType ;
+PointerType.		Type ::= SimpleType Pointer ;
+
+Int.				SimpleType ::= PInt ;
+Float.				SimpleType ::= PFloat ;
+
+Pointer.			Pointer ::= "*" ;
+PPointer.			Pointer ::= Pointer "*" ;
