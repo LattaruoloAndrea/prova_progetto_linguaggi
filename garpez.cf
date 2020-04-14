@@ -16,7 +16,7 @@ EntityDeclL.		Global ::= EntityDeclarationList ;
 
 FunDef.				FunctionDefinition ::= Qualified_FType Id "(" [FormalParam] ")" Block ;
 
-FormalParam.		FormalParam ::= Qualified_FType Id ;
+FormParam.			FormalParam ::= Qualified_FType Id ;
 
 separator FormalParam "," ;
 terminator FormalParam "" ;
@@ -34,8 +34,8 @@ Blk.				Block ::= "{" [Statement] "}" ;
 
 StmDecl.			Statement ::= EntityDeclarationList ;
 
-separator nonempty Statement ";" ;
-terminator nonempty Statement "" ;
+separator Statement ";" ;
+terminator Statement "" ;
 
 -- REXP
 
@@ -54,16 +54,16 @@ QualifiedFT2.		Qualified_FType ::= Qualifier "void" ;
 Qualified_T1.		Qualified_Type ::= Qualifier Type ;
 
 NoQualifier.		Qualifier ::= "" ;
-Qualifier.			Qualifier ::= "const" ;
+ConstQualifier.		Qualifier ::= "const" ;
 
-SimpleType.			Type ::= SimpleType ;
-PointerType.		Type ::= SimpleType Pointer ;
+SType.				Type ::= SimpleType ;
+PType.				Type ::= SimpleType Pointer ;
 
 IntType.			SimpleType ::= "int" ;
 FloatType.			SimpleType ::= "float" ;
 
-Pointer.			Pointer ::= "*" ;
-PPointer.			Pointer ::= Pointer "*" ;
+Pointer1.			Pointer ::= "*" ;
+PointerP.			Pointer ::= Pointer "*" ;
 
 
 -- TOKENS
