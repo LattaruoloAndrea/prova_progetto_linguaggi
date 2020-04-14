@@ -26,6 +26,14 @@ InitEntity.			EntityDecl ::= Id "=" RExp ;
 separator nonempty EntityDecl "," ;
 terminator nonempty EntityDecl ";";
 
+-- REXP
+
+RLiteral.			RExp ::= Literal ;
+
+Int.				Literal ::= PInt ;
+Float.				Literal ::= PFloat ;
+
+
 
 -- TYPES
 
@@ -39,8 +47,16 @@ Qualifier.			Qualifier ::= "const" ;
 SimpleType.			Type ::= SimpleType ;
 PointerType.		Type ::= SimpleType Pointer ;
 
-Int.				SimpleType ::= PInt ;
-Float.				SimpleType ::= PFloat ;
+IntType.			SimpleType ::= "int" ;
+FloatType.			SimpleType ::= "float" ;
 
 Pointer.			Pointer ::= "*" ;
 PPointer.			Pointer ::= Pointer "*" ;
+
+
+-- TOKENS
+
+position token Id		( letter (letter | digit | '_')* ) ;
+
+position token PInt		( digit+ ) ;
+position token PFloat	( digit+ '.' digit+)
