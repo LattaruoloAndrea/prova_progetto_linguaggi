@@ -1,0 +1,13 @@
+entrypoints Program ;
+
+
+-- PROGRAM //////////////////////////////////////
+
+Prog.				Program ::= [Global] ;
+
+separator Global "";
+terminator Global "";
+
+
+FunDecl.			Global ::= FunctionDefinition ;
+EntityDecl.			Global ::= EntityDeclaration ;
