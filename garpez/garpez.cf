@@ -4,6 +4,8 @@ comment "//" ;
 comment "/*" "*/" ;
 
 
+-- PROGRAM ///////////////////////////////////////////////////
+
 Prog.					Program ::= [Global] ;
 
 FunDecl.				Global ::= FunctionDefinition ;
@@ -12,7 +14,7 @@ GlobalDecl.				Global ::= Declaration ";";
 terminator Global "" ;
 
 
-
+-- FUNCTIONS AND PROCEDURES //////////////////////////////////
 
 ProcDef.				FunctionDefinition ::= "void" FunRest ;
 FunDef.					FunctionDefinition ::= Qualified_Type FunRest ;
@@ -22,22 +24,27 @@ Rest.					FunRest ::= Id "(" [FormalParam] ")" Block ;
 FormParam.				FormalParam ::= Qualified_Type Id ;
 separator FormalParam "," ;
 
+Blk.					Block ::= "{" [Statement] "}" ;
+terminator Statement ";" ;
+
+
+-- STATEMENTS /////////////////////////////////////////////////
+
+StmDecl.				Statement ::= Declaration ;
+StmLExp.				Statement ::= LExp ;
+
+StmRet1.				Statement ::= "return" ;
+StmRet2.				Statement ::= "return" RExp ;
+
+
+-- TYPES //////////////////////////////////////////////////////
+
 NoQualifier.			Qualified_Type ::= Type ;
 YesQualifier.			Qualified_Type ::= Qualifier Type ;
 
 ConstQualifier.			Qualifier ::= "const" ;
 
-TInt.					Type ::= "int" ;
-TFloat.					Type ::= "float" ;
-
-
-Blk.					Block ::= "{" [Statement] "}" ;
-terminator Statement ";" ;
-
-StmRet1.				Statement ::= "return" ;
-StmRet2.				Statement ::= "return" RExp ;
-StmDecl.				Statement ::= Declaration ;
-
+rules Type ::= "bool" | "char" | "int" | "float" | "string" ;
 
 
 
@@ -48,13 +55,30 @@ ValueInit.				Init ::= Id "=" RExp ;
 
 separator nonempty Init "," ;
 
+
+
+-- EXPRESSIONS ////////////////////////////////////////////////
+
 LitExp.					RExp ::= Literal ;
 
-LitInt.					Literal ::= PInt ;
 
+
+EVex.					LExp ::= "*" LExp1 ;
+EElat.					LExp1 ::= LExp1 "[" RExp "]" ;
+EDeref.					LExp2 ::= Id ;
+
+coercions LExp 2 ;
+
+
+
+rules Literal ::= PBool | PChar | PInt | PFloat | PString ;
 
 
 
 
 position token Id ( letter (letter | digit | '_' )* ) ;
+position token PBool {"true"} | {"false"} ;
+position token PChar ( '\'' ((char - ["'\\"]) | ('\\' ["'\\nt"])) '\'' ) ;
 position token PInt ( digit+ ) ;
+position token PFloat ( digit+ '.' digit+ ('e' '-'? digit+)? ) ;
+position token PString ( '"' ((char - ["\"\\"]) | ('\\' ["\"\\nt"]))* '"' ) ;
