@@ -5,6 +5,8 @@ comment "/*" "*/" ;
 
 -- PROGRAM //////////////////////////////////////////
 Progr.              Program ::= [Decl] ;
+separator Decl "" ;
+
 StmDecl.            Decl ::= Stm ;
 DefDecl.            Decl ::= Def ;
 
@@ -40,7 +42,7 @@ terminator VarDecl ";" ;
 
 -- FUNCTIONS/PROCEDURES /////////////////////////////
 FuncProc.           FunDef ::= RetType Id "(" [Param] ")" Block ;
-Param.              Param ::= PassBy Type Id ;
+ParamDec.              Param ::= PassBy Type Id ;
 
 separator Param "," ;
 
@@ -49,7 +51,7 @@ PReference.         PassBy ::= "ref" ;
 PConst.             PassBy ::= "const" ;
 PRes.               PassBy ::= "res" ;
 PValRes.            PassBy ::= "valres" ;
-PName.            PassBy ::= "name" ;
+PName.              PassBy ::= "name" ;
 
 RType.              RetType ::= SimpleType ;
 RRef.               RetType ::= "&" Type ;
@@ -96,7 +98,9 @@ WriteChar.          WritePred ::= "writeChar" "(" [RExp] ")" ;
 WriteString.        WritePred ::= "writeString" "(" [RExp] ")" ;
 separator RExp "," ;
 
-Block.              Block ::= "{" [Def] [Stm] "}" ;
+BlockDec.           Block ::= "{" [Def] [Stm] "}" ;
+separator Def "" ;
+separator Stm "" ;
 
 AssignEq.           AssignOp ::= "=" ;
 AssignInc.          AssignOp ::= "+=" ;
@@ -119,8 +123,8 @@ IncOp.              IncDecOp ::= "++" ;
 DecOp.              IncDecOp ::= "--" ;
 
 -- REXP //////////////////////////////////////////////
-LExp.               RExp ::= LExp ;
-Literal.            RExp ::= Literal ;
+RExpLExp.               RExp ::= LExp ;
+LiteralRExp.            RExp ::= Literal ;
 UnaryOp.            RExp ::= UnOp RExp ;
 BinaryOp.           RExp ::= RExp BinOp RExp ;
 Paren.              RExp ::= "(" RExp ")" ;
