@@ -18,3 +18,13 @@ const int prova() {
 int main() {
 
 }
+
+int square(int x) {
+	return x * x + 1;
+}
+
+int main(int argc, char** argv) {
+	const float pippo = 1.0+5;
+
+	return square( 6+12-(2*5)*z*square(pippo) );
+}
