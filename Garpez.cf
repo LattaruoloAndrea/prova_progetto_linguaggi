@@ -88,6 +88,13 @@ BreakStm.           Stm ::= Break ";" ;
 ContinueStm.        Stm ::= Continue ";" ;
 ReturnStm.          Stm ::= Return ";" ;
 ReturnRExpStm.      Stm ::= Return RExp ";" ;
+WriteStm.           Stm ::= WritePred ";" ;
+
+WriteInt.           WritePred ::= "writeInt" "(" [RExp] ")" ;
+WriteFloat.         WritePred ::= "writeFloat" "(" [RExp] ")" ;
+WriteChar.          WritePred ::= "writeChar" "(" [RExp] ")" ;
+WriteString.        WritePred ::= "writeString" "(" [RExp] ")" ;
+separator RExp "," ;
 
 Block.              Block ::= "{" [Def] [Stm] "}" ;
 
@@ -117,6 +124,14 @@ Literal.            RExp ::= Literal ;
 UnaryOp.            RExp ::= UnOp RExp ;
 BinaryOp.           RExp ::= RExp BinOp RExp ;
 Paren.              RExp ::= "(" RExp ")" ;
+ReadRExp.           RExp ::= ReadPred ;
+RExpCall.           RExp ::= Id "(" [RExp] ")" ;
+separator RExp "," ;
+
+ReadInt.           ReadPred ::= "readInt" "(" ")" ;
+ReadFloat.         ReadPred ::= "readFloat" "(" ")" ;
+ReadChar.          ReadPred ::= "readChar" "(" ")" ;
+ReadString.        ReadPred ::= "readString" "(" ")" ;
 
 LiteralBool.        Literal ::= VBool ;
 LiteralChar.        Literal ::= VChar ;
