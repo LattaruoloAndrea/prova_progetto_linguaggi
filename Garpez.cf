@@ -6,6 +6,7 @@ comment "/*" "*/" ;
 -- PROGRAM //////////////////////////////////////////
 Progr.              Program ::= [Decl] ;
 separator Decl "" ;
+terminator Decl "" ;
 
 StmDecl.            Decl ::= Stm ;
 DefDecl.            Decl ::= Def ;
@@ -45,6 +46,7 @@ FuncProc.           FunDef ::= RetType Id "(" [Param] ")" Block ;
 ParamDec.              Param ::= PassBy Type Id ;
 
 separator Param "," ;
+terminator Param "" ;
 
 PValue.             PassBy ::= "" ;
 PReference.         PassBy ::= "ref" ;
@@ -74,6 +76,7 @@ BlockStm.           Stm ::= Block ;
 Call.               Stm ::= Id "(" [RExp] ")" ";" ;
 
 separator RExp "," ;
+terminator RExp "" ;
 
 Assignement.        Stm ::= LExp AssignOp RExp ";" ;
 LExpStm.            Stm ::= LExp ";" ;
@@ -97,10 +100,13 @@ WriteFloat.         WritePred ::= "writeFloat" "(" [RExp] ")" ;
 WriteChar.          WritePred ::= "writeChar" "(" [RExp] ")" ;
 WriteString.        WritePred ::= "writeString" "(" [RExp] ")" ;
 separator RExp "," ;
+terminator RExp "" ;
 
 BlockDec.           Block ::= "{" [Def] [Stm] "}" ;
 separator Def "" ;
+terminator Def "" ;
 separator Stm "" ;
+terminator Stm "" ;
 
 AssignEq.           AssignOp ::= "=" ;
 AssignInc.          AssignOp ::= "+=" ;
@@ -131,6 +137,7 @@ Paren.              RExp ::= "(" RExp ")" ;
 ReadRExp.           RExp ::= ReadPred ;
 RExpCall.           RExp ::= Id "(" [RExp] ")" ;
 separator RExp "," ;
+terminator RExp "" ;
 
 ReadInt.           ReadPred ::= "readInt" "(" ")" ;
 ReadFloat.         ReadPred ::= "readFloat" "(" ")" ;
