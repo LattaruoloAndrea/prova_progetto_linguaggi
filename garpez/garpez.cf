@@ -44,7 +44,7 @@ YesQualifier.			Qualified_Type ::= Qualifier Type ;
 
 ConstQualifier.			Qualifier ::= "const" ;
 
-rules Type ::= "bool" | "char" | "int" | "float" | "string" ;
+rules Type ::= "bool" | "char" | "int" | "float" | "string" | Type "*" ;
 
 
 
@@ -84,10 +84,11 @@ EReadFloat.         	Exp9 ::= "readFloat" "(" ")" ;
 EReadChar.          	Exp9 ::= "readChar" "(" ")" ;
 EReadString.        	Exp9 ::= "readString" "(" ")" ;
 EUnary.					Exp10 ::=  UnaryOp Exp11 ;
-ELiteral.				Exp11 ::= Literal ;
+EIdAccess.				Exp11 ::= Id ;
+ELiteral.				Exp12 ::= Literal ;
 
 separator Exp "," ;
-coercions Exp 11 ;
+coercions Exp 12 ;
 
 rules UnaryOp ::= "&" | "*" | "+" | "-" | "!";
 
@@ -104,5 +105,5 @@ position token Id ( letter (letter | digit | '_' )* ) ;
 position token PBool {"true"} | {"false"} ;
 position token PChar ( '\'' ((char - ["'\\"]) | ('\\' ["'\\nt"])) '\'' ) ;
 position token PInt ( digit+ ) ;
-position token PFloat ( digit+ '.' digit+ ('e' '-'? digit+)? ) ;
+position token PFloat ( digit+ '.' digit+ ) ;
 position token PString ( '"' ((char - ["\"\\"]) | ('\\' ["\"\\nt"]))* '"' ) ;
