@@ -10,7 +10,7 @@ terminator Global "";
 
 
 FunDecl.			Global ::= FunctionDefinition ;
-EntityDecl.			Global ::= EntityList ;
+EntityDeclL.		Global ::= EntityDeclarationList ;
 
 -- FUNCTIONS AND PROCEDURES
 
@@ -21,14 +21,21 @@ FormalParam.		FormalParam ::= Qualified_FType Id ;
 separator FormalParam "," ;
 terminator FormalParam "" ;
 
-EntityList.			EntityList ::= Qualified_Type [EntityDecl] ;
+EntityList.			EntityDeclarationList ::= Qualified_Type [EntityDecl] ;
 GenericEntity.		EntityDecl ::= Id ;
 InitEntity.			EntityDecl ::= Id "=" RExp ;
 
 separator nonempty EntityDecl "," ;
 terminator nonempty EntityDecl ";";
 
-Block.				Block ::= "{" "}" ;
+-- Blocks and statements
+
+Blk.				Block ::= "{" [Statement] "}" ;
+
+StmDecl.			Statement ::= EntityDeclarationList ;
+
+separator nonempty Statement ";" ;
+terminator nonempty Statement "" ;
 
 -- REXP
 
