@@ -118,7 +118,7 @@ AssignBitAnd.       AssignOp ::= "&=" ;
 AssignBitOr.        AssignOp ::= "|=" ;
 
 -- LEXP //////////////////////////////////////////////
-Id.                 LExp ::= Id ;
+LExpId.                 LExp ::= Id ;
 Array.              LExp ::= LExp "[" RExp "]" ;
 Deference.          LExp ::= "*" LExp ;
 Reference.          LExp ::= "&" LExp ;
