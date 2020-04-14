@@ -49,7 +49,7 @@ PReference.         PassBy ::= "ref" ;
 PConst.             PassBy ::= "const" ;
 PRes.               PassBy ::= "res" ;
 PValRes.            PassBy ::= "valres" ;
-"PName".            PassBy ::= "name" ;
+PName.            PassBy ::= "name" ;
 
 RType.              RetType ::= SimpleType ;
 RRef.               RetType ::= "&" Type ;
@@ -69,7 +69,7 @@ TVoid.              SimpleType ::= "void" ;
 
 -- STATEMENTS ///////////////////////////////////////
 BlockStm.           Stm ::= Block ;
-Call.               Stm ::= Id "(" [RExp] ")" ";"
+Call.               Stm ::= Id "(" [RExp] ")" ";" ;
 
 separator RExp "," ;
 
@@ -79,7 +79,7 @@ IfStm.              Stm ::= "if" "(" RExp ")" Block ;
 IfElseStm.          Stm ::= "if" "(" RExp ")" Block "else" Block ;
 WhileStm.           Stm ::= "while" "(" RExp ")" Block ;
 DoWhileStm.         Stm ::= "do" Block "while" "(" RExp ")" ";" ;
-ForStm              Stm ::= "for" "(" Init ";" RExp ";" Iter ")" Block ;
+ForStm.             Stm ::= "for" "(" Init ";" RExp ";" Iter ")" Block ;
 InitType.           Init ::= Type Id "=" RExp ;
 InitAssign.         Init ::= LExp "=" RExp ;
 IterAss.            Iter ::= LExp "=" RExp ;
@@ -104,7 +104,7 @@ AssignBitOr.        AssignOp ::= "|=" ;
 Id.                 LExp ::= Id ;
 Array.              LExp ::= LExp "[" RExp "]" ;
 Deference.          LExp ::= "*" LExp ;
-Reference.          LExp ::= "&" Lexp ;
+Reference.          LExp ::= "&" LExp ;
 PreIncDec.          LExp ::= IncDecOp LExp ;
 PostIncDec.         LExp ::= LExp IncDecOp ;
 
@@ -150,6 +150,6 @@ position token VDouble ( digit+ '.' digit+ ) ;
 position token VString ( '"' ((char - ["\"\\"]) | ('\\' ["\"\\nt"]))* '"' ) ;
 position token VChar ( '\'' ((char - ["'\\"]) | ('\\' ["'\\nt"])) '\'' ) ;
 position token VBool {"true"} | {"false"} ;
-position token Break "break" ;
-position token Continue "continue" ;
-position token Return "return" ;
+position token Break {"break"} ;
+position token Continue {"continue"} ;
+position token Return {"return"} ;
