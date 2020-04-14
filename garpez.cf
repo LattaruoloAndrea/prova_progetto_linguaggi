@@ -1,74 +1,60 @@
 entrypoints Program ;
 
-
--- PROGRAM //////////////////////////////////////
-
-Prog.				Program ::= [Global] ;
-
-separator Global "";
-terminator Global "";
+comment "//" ;
+comment "/*" "*/" ;
 
 
-FunDecl.			Global ::= FunctionDefinition ;
-EntityDeclL.		Global ::= EntityDeclarationList ;
+Prog.					Program ::= [Global] ;
 
--- FUNCTIONS AND PROCEDURES
+FunDecl.				Global ::= FunctionDefinition ;
+GlobalDecl.				Global ::= Declaration ";";
 
-FunDef.				FunctionDefinition ::= Qualified_FType Id "(" [FormalParam] ")" Block ;
+terminator Global "" ;
 
-FormParam.			FormalParam ::= Qualified_FType Id ;
 
+
+
+ProcDef.				FunctionDefinition ::= "void" FunRest ;
+FunDef.					FunctionDefinition ::= Qualified_Type FunRest ;
+
+Rest.					FunRest ::= Id "(" [FormalParam] ")" Block ;
+
+FormParam.				FormalParam ::= Qualified_Type Id ;
 separator FormalParam "," ;
-terminator FormalParam "" ;
 
-EntityList.			EntityDeclarationList ::= Qualified_Type [EntityDecl] ;
-GenericEntity.		EntityDecl ::= Id ;
-InitEntity.			EntityDecl ::= Id "=" RExp ;
+NoQualifier.			Qualified_Type ::= Type ;
+YesQualifier.			Qualified_Type ::= Qualifier Type ;
 
-separator nonempty EntityDecl "," ;
-terminator nonempty EntityDecl ";";
+ConstQualifier.			Qualifier ::= "const" ;
 
--- Blocks and statements
+TInt.					Type ::= "int" ;
+TFloat.					Type ::= "float" ;
 
-Blk.				Block ::= "{" [Statement] "}" ;
 
-StmDecl.			Statement ::= EntityDeclarationList ;
+Blk.					Block ::= "{" [Statement] "}" ;
+terminator Statement ";" ;
 
-separator Statement ";" ;
-terminator Statement "" ;
-
--- REXP
-
-RLiteral.			RExp ::= Literal ;
-
-Int.				Literal ::= PInt ;
-Float.				Literal ::= PFloat ;
+StmRet1.				Statement ::= "return" ;
+StmRet2.				Statement ::= "return" RExp ;
+StmDecl.				Statement ::= Declaration ;
 
 
 
--- TYPES
 
-QualifiedFT1.		Qualified_FType ::= Qualified_Type ;
-QualifiedFT2.		Qualified_FType ::= Qualifier "void" ;
+Decl.					Declaration ::= Qualified_Type [Init] ;
 
-Qualified_T1.		Qualified_Type ::= Qualifier Type ;
+NameInit.				Init ::= Id ;
+ValueInit.				Init ::= Id "=" RExp ;
 
-NoQualifier.		Qualifier ::= "" ;
-ConstQualifier.		Qualifier ::= "const" ;
+separator nonempty Init "," ;
 
-SType.				Type ::= SimpleType ;
-PType.				Type ::= SimpleType Pointer ;
+LitExp.					RExp ::= Literal ;
 
-IntType.			SimpleType ::= "int" ;
-FloatType.			SimpleType ::= "float" ;
-
-Pointer1.			Pointer ::= "*" ;
-PointerP.			Pointer ::= Pointer "*" ;
+LitInt.					Literal ::= PInt ;
 
 
--- TOKENS
 
-position token Id		( letter (letter | digit | '_')* ) ;
 
-position token PInt		( digit+ ) ;
-position token PFloat	( digit+ '.' digit+)
+
+position token Id ( letter (letter | digit | '_' )* ) ;
+position token PInt ( digit+ ) ;
