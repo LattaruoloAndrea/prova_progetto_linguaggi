@@ -10,7 +10,10 @@
 
 ## TODO
 - ~~@Latta dammi i permessi di admin sulla repo~~
-- Refactor della grammatica per renderla più pulita
+- Refactor della grammatica per renderla più pulita:
+	- Sistemare dichiarazione di array
+	- Decidere cosa fare per if-then-else (sempre parentesi e nessun conflitto oppure
+		come in C)
 - Il refactoring è una cosa superflua ma utile da fare
 - - trattini che fanno cose
 - - altri trattini
