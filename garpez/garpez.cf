@@ -10,7 +10,7 @@ comment "/*" "*/" ;
 Prog.					Program ::= [Global] ;
 
 FunDecl.				Global ::= FunctionDefinition ;
-GlobalDecl.				Global ::= Declaration ";";
+GlobalDecl.				Global ::= Declaration ";" ;
 
 terminator Global "" ;
 
@@ -26,17 +26,36 @@ FormParam.				FormalParam ::= Qualified_Type Id ;
 separator FormalParam "," ;
 
 Blk.					Block ::= "{" [Statement] "}" ;
-terminator Statement ";" ;
+terminator Statement "" ;
 
 
 -- STATEMENTS /////////////////////////////////////////////////
 
-StmDecl.				Statement ::= Declaration ;
-StmExp.					Statement ::= Exp AssignementOp Exp ;
+StmBlk.					Statement ::= Block ;
 
-StmRet1.				Statement ::= "return" ;
-StmRet2.				Statement ::= "return" Exp ;
+StmDecl.				Statement ::= Declaration ";" ;
+StmExpAssign.			Statement ::= Exp AssignmentOp Exp ";" ;
+StmExp.					Statement ::= Exp ";" ;
 
+StmRet1.				Statement ::= "return" ";" ;
+StmRet2.				Statement ::= "return" Exp ";" ;
+
+StmCond.				Statement ::= Conditional ;
+
+CondIf.					Conditional ::= If ;
+
+RuleIf.					If ::= "if" "(" Exp ")" Block RestIf ;
+rules RestIf ::= "" | "else" If | "else" Block ;
+
+StmLoop.				Statement ::= Loop ;
+
+LoopWhile.				Loop ::= While ;
+LoopDoWhile.			Loop ::= DoWhile ;
+LoopFor.				Loop ::= For ;
+
+RuleWhile.				While ::= "while" "(" Exp ")" Block ;
+RuleDoWhile.			DoWhile ::= "do" Block "while" "(" Exp ")" ";" ;
+RuleFor.				For ::= "for" "(" Declaration ";" Exp ";" Exp ")" Block ;
 
 -- TYPES //////////////////////////////////////////////////////
 
@@ -93,7 +112,7 @@ coercions Exp 12 ;
 
 rules UnaryOp ::= "&" | "*" | "+" | "-" | "!";
 
-rules AssignementOp ::= "=" | "+=" | "-=" | "*=" | "/=" | "%=" | "&=" | "|=" | "^=";
+rules AssignmentOp ::= "=" | "+=" | "-=" | "*=" | "/=" | "%=" | "&=" | "|=" | "^=";
 
 
 
