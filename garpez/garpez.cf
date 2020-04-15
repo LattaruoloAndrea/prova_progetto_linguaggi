@@ -68,7 +68,7 @@ YesQualifier.			Qualified_Type ::= Qualifier Type ;
 
 ConstQualifier.			Qualifier ::= "const" ;
 
-rules Type ::= "bool" | "char" | "int" | "float" | "string" | Type "*" ;
+rules Type ::= "bool" | "char" | "int" | "float" | "string" | Type "*" | Type "[" Exp "]";
 
 
 
