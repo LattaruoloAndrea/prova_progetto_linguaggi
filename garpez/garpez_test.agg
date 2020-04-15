@@ -26,5 +26,35 @@ int square(int x) {
 int main(int argc, char** argv) {
 	const float pippo = 1.0+5;
 
+	if( Latta == "romano" ) {
+		string ans = "Gigi la trottola\n";
+	}
+
+	if( IfElse == true ) {
+		string ans = "True";
+	}else if( IfElseIf == true ) {
+		string ans = "False->True";
+	}else {
+		string ans = "False->False";
+	}
+
+	for(int x=-1; x<=17*square(2); ++x) {
+		if(true) {
+			x += 5;
+		}else if(x < 12) {
+			x += 1;
+		}else {
+			do {
+				x++;
+			}while(false);
+
+			while(true) {
+				do {
+					x++;
+				}while(false);
+			}
+		}
+	}
+
 	return square( 6+12-(2*5)*z*square(pippo) );
 }
