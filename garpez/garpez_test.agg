@@ -68,7 +68,12 @@ int main(int argc, char** argv) {
 		}
 	}
 
-
+	// Write
+	writeInt(12);
+	writeFloat(36.12);
+	writeChar('x');
+	writeString("pippo");
+	writeInt("Type checking!!");
 
 	return square( 6+12-(2*5)*z*square(pippo) );
 }
