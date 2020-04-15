@@ -8,6 +8,9 @@
 - *Ovviamente non serve pushare ogni volta che committate*
 - Per aggiornare la vostra repo locale usate `git pull`
 
+## Working in
+`garpez/garpez.cf`
+
 ## TODO
 - ~~@Latta dammi i permessi di admin sulla repo~~
 - Refactor della grammatica per renderla più pulita:
