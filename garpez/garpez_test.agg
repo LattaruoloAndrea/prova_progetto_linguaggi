@@ -81,5 +81,8 @@ int main(int argc, char** argv) {
 	const float[12] v_2;
 	string[readInt()] v_s;
 
+	// Initialized array
+	int[10] v = {1,2,3,4,5,6,7,8,9,10};
+
 	return square( 6+12-(2*5)*z*square(pippo) );
 }
