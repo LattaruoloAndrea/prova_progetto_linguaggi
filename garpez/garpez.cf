@@ -53,9 +53,13 @@ LoopWhile.				Loop ::= While ;
 LoopDoWhile.			Loop ::= DoWhile ;
 LoopFor.				Loop ::= For ;
 
-RuleWhile.				While ::= "while" "(" Exp ")" Block ;
-RuleDoWhile.			DoWhile ::= "do" Block "while" "(" Exp ")" ";" ;
+RuleWhile.				While ::= "while" "(" Exp ")" LoopBlock ;
+RuleDoWhile.			DoWhile ::= "do" LoopBlock "while" "(" Exp ")" ";" ;
 RuleFor.				For ::= "for" "(" Declaration ";" Exp ";" Exp ")" Block ;
+LoopBlk.				LoopBlock ::= "{" [LoopStm] "}" ;
+
+rules LoopStm ::= Statement | "break" ";" | "continue" ";" ;
+terminator LoopStm "" ;
 
 -- TYPES //////////////////////////////////////////////////////
 
