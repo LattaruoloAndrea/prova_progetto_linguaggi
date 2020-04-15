@@ -75,5 +75,11 @@ int main(int argc, char** argv) {
 	writeString("pippo");
 	writeInt("Type checking!!");
 
+
+	// Array
+	int[26] v_1;
+	const float[12] v_2;
+	string[readInt()] v_s;
+
 	return square( 6+12-(2*5)*z*square(pippo) );
 }
