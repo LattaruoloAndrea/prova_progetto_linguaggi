@@ -38,6 +38,15 @@ int main(int argc, char** argv) {
 		string ans = "False->False";
 	}
 
+	{
+		{
+			{
+				// Neasted empty blocks
+			}
+		}
+	}
+
+	// Neasted control-flow
 	for(int x=-1; x<=17*square(2); ++x) {
 		if(true) {
 			x += 5;
@@ -51,10 +60,15 @@ int main(int argc, char** argv) {
 			while(true) {
 				do {
 					x++;
+					break;
 				}while(false);
+
+				continue;
 			}
 		}
 	}
+
+
 
 	return square( 6+12-(2*5)*z*square(pippo) );
 }
