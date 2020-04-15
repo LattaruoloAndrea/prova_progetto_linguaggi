@@ -76,6 +76,7 @@ Decl.					Declaration ::= Qualified_Type [Init] ;
 
 NameInit.				Init ::= Id ;
 ValueInit.				Init ::= Id "=" Exp ;
+ArrayInit.				Init ::= Id "=" "{" [Exp] "}" ;
 
 separator nonempty Init "," ;
 
