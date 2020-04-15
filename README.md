@@ -16,5 +16,5 @@
 - - altri trattini
 - type checker
 - type system
-- riverede haskell ? per i due sopra 
-- continuare a far finta di fare ma non fare comuqnue niente
+- ~~riverede~~ rivedere haskell ? per i due sopra 
+- continuare a far finta di fare ma non fare ~~comuqnue~~ comunque niente
