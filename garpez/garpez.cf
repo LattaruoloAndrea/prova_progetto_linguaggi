@@ -34,17 +34,17 @@ terminator Statement "" ;
 StmBlk.					Statement ::= Block ;
 
 StmDecl.				Statement ::= Declaration ";" ;
-StmExp.					Statement ::= Exp ";" ;
+StmExp.					Statement ::= RExp ";" ;
 
 StmRet1.				Statement ::= "return" ";" ;
-StmRet2.				Statement ::= "return" Exp ";" ;
+StmRet2.				Statement ::= "return" RExp ";" ;
 
 StmCond.				Statement ::= Conditional ;
 
 CondIf.					Conditional ::= If ;
 
-RuleIf.					If ::= "if" "(" Exp ")" Block RestIf ;
-rules RestIf ::= "" | "else" If | "else" Block ;
+RuleIf.					If ::= "if" "(" RExp ")" Block RestIf ;
+rules					RestIf ::= "" | "else" If | "else" Block ;
 
 StmLoop.				Statement ::= Loop ;
 
@@ -52,12 +52,12 @@ LoopWhile.				Loop ::= While ;
 LoopDoWhile.			Loop ::= DoWhile ;
 LoopFor.				Loop ::= For ;
 
-RuleWhile.				While ::= "while" "(" Exp ")" LoopBlock ;
-RuleDoWhile.			DoWhile ::= "do" LoopBlock "while" "(" Exp ")" ";" ;
-RuleFor.				For ::= "for" "(" Declaration ";" Exp ";" Exp ")" Block ;
+RuleWhile.				While ::= "while" "(" RExp ")" LoopBlock ;
+RuleDoWhile.			DoWhile ::= "do" LoopBlock "while" "(" RExp ")" ";" ;
+RuleFor.				For ::= "for" "(" Declaration ";" RExp ";" RExp ")" Block ;
 LoopBlk.				LoopBlock ::= "{" [LoopStm] "}" ;
 
-rules LoopStm ::= Statement | "break" ";" | "continue" ";" ;
+rules					LoopStm ::= Statement | "break" ";" | "continue" ";" ;
 terminator LoopStm "" ;
 
 -- TYPES //////////////////////////////////////////////////////
@@ -69,15 +69,15 @@ ConstQualifier.			Qualifier ::= "const" ;
 
 rules					PassBy ::= "" | "ref" | "name";
 
-rules Type ::= "bool" | "char" | "int" | "float" | "string" | Type "*" | Type "[" Exp "]";
+rules					Type ::= "bool" | "char" | "int" | "float" | "string" | Type "*" | Type "[" RExp "]";
 
 
 
 Decl.					Declaration ::= Qualified_Type [Init] ;
 
 NameInit.				Init ::= Id ;
-ValueInit.				Init ::= Id "=" Exp ;
-ArrayInit.				Init ::= Id "=" "{" [Exp] "}" ;
+ValueInit.				Init ::= Id "=" RExp ;
+ArrayInit.				Init ::= Id "=" "{" [RExp] "}" ;
 
 separator nonempty Init "," ;
 
@@ -85,51 +85,39 @@ separator nonempty Init "," ;
 
 -- EXPRESSIONS ////////////////////////////////////////////////
 
-EAssign.				Exp  ::= Exp6 AssignmentOp Exp ;
-EXor.					Exp1 ::= Exp1 "^" Exp2 ;
-EOr.					Exp2 ::= Exp2 "||" Exp3 ;
-EAnd.					Exp3 ::= Exp3 "&&" Exp4 ;
-NEq.		  			Exp4 ::= Exp4 "==" Exp5 ;
-ENeq.		  			Exp4 ::= Exp4 "!=" Exp5 ;
-ELt.		  			Exp4 ::= Exp4 "<" Exp5 ;
-EGt.		  			Exp4 ::= Exp4 ">" Exp5 ;
-ELeq.					Exp4 ::= Exp4 "<=" Exp5 ;
-EGeq.					Exp4 ::= Exp4 ">=" Exp5 ;
-Eplus.					Exp5 ::= Exp5 "+" Exp6 ;
-EMinus.					Exp5 ::= Exp5 "-" Exp6 ;
-EProd.					Exp6 ::= Exp6 "*" Exp7 ;
-EDiv.			  		Exp6 ::= Exp6 "/" Exp7 ;
-EMod.			  		Exp6 ::= Exp6 "%" Exp7 ;
-EIncr.					Exp7 ::= "++" Exp8 ;
-EDecr.					Exp7 ::= "--" Exp8 ;
-EPIncr.					Exp8 ::= Exp9 "++" ;
-EPDecr.					Exp8 ::= Exp9 "--" ;
-EArray.					Exp9 ::= Exp10 "[" Exp "]" ;
-EFunCall.				Exp10 ::= Id "(" [Exp] ")" ;
-EReadInt.           	Exp10 ::= "readInt" "(" ")" ;
-EReadFloat.         	Exp10 ::= "readFloat" "(" ")" ;
-EReadChar.          	Exp10 ::= "readChar" "(" ")" ;
-EReadString.        	Exp10 ::= "readString" "(" ")" ;
-EWriteInt.           	Exp10 ::= "writeInt" "(" Exp ")" ;
-EWriteFloat.         	Exp10 ::= "writeFloat" "(" Exp ")" ;
-EWriteChar.          	Exp10 ::= "writeChar" "(" Exp ")" ;
-EWriteString.        	Exp10 ::= "writeString" "(" Exp ")" ;
-EUnary.					Exp11 ::=  UnaryOp Exp12 ;
-EIdAccess.				Exp12 ::= Id ;
-ELiteral.				Exp13 ::= Literal ;
+EAssign.				RExp ::= LExp AssignmentOp RExp ;
+ELogicalOr.				RExp1 ::= RExp1 "||" RExp2 ;
+EXor.					RExp2 ::= RExp2 "^" RExp3 ;
+ELogicalAnd.			RExp3 ::= RExp3 "&&" RExp4 ;
+ECompare.				RExp4 ::= RExp4 ComparisonOp RExp5 ;
+EAdd.					RExp5 ::= RExp5 "+" RExp6 ;
+ESub.					RExp5 ::= RExp5 "-" RExp6 ;
+EMul.					RExp6 ::= RExp6 "*" RExp7 ;
+EDiv.					RExp6 ::= RExp6 "/" RExp7 ;
+EMod.					RExp6 ::= RExp6 "%" RExp7 ;
+Predef.					RExp7 ::= Predefined ;
+EUnary.					RExp8 ::= UnaryOp RExp8 ;
+ERLExp.					RExp9 ::= LExp ;
+ELiteral.				RExp9 ::= Literal ;
 
-separator Exp "," ;
-coercions Exp 13 ;
+coercions RExp 9 ;
+separator RExp "," ;
 
-rules UnaryOp ::= "&" | "*" | "+" | "-" | "!";
+EPreID.					LExp ::= LExp2 IncDec ;
+EPostID.				LExp1 ::= IncDec LExp3 ;
+EDeref.					LExp2 ::= "*" LExp4 ;
+EArrayAccess.			LExp3 ::= LExp3 "[" [RExp] "]" ;
+EFunctionCall.			LExp3 ::= Id "(" [RExp] ")" ;
+EId.					LExp4 ::= Id ;
 
-rules AssignmentOp ::= "=" | "+=" | "-=" | "*=" | "/=" | "%=" | "&=" | "|=" | "^=";
+coercions LExp 4 ;
 
-
-
-rules Literal ::= PBool | PChar | PInt | PFloat | PString ;
-
-
+rules					Predefined ::=	"writeInt" "(" RExp ")" | "writeChar" "(" RExp ")" | "writeFloat" "(" RExp ")" | "writeString" "(" RExp ")" | "readInt" "(" ")" | "readChar" "(" ")" | "readFloat" "(" ")" | "readString" "(" ")" ;
+rules					UnaryOp ::= "+" | "-" | "!" | "&" ;
+rules					AssignmentOp ::= "=" | "+=" | "-=" | "*=" | "/=" | "%=" | "&=" | "|=" | "^=";
+rules					ComparisonOp ::= "<" | "<=" | "==" | "!=" | ">=" | ">" ;
+rules					IncDec ::= "++" | "--" ;
+rules 					Literal ::= PBool | PChar | PInt | PFloat | PString ;
 
 
 position token Id ( letter (letter | digit | '_' )* ) ;
