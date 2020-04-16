@@ -95,7 +95,7 @@ int main(int argc, char** argv) {
 }
 
 // Pass by reference
-void refsquare(int ref x) {
+void refsquare(ref int x) {
 	x *= x;
 	return;
 }
