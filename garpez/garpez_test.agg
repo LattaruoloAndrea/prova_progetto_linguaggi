@@ -93,3 +93,9 @@ int main(int argc, char** argv) {
 
 	return square( 6+12-(2*5)*z*square(pippo) );
 }
+
+// Pass by reference
+void refsquare(int ref x) {
+	x *= x;
+	return;
+}
