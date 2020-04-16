@@ -87,8 +87,8 @@ int main(int argc, char** argv) {
 	// Exotic assignments
 	int[3] w = {
 		v[5] += v[2] *= 5,
-		square(readInt()++) /= 1.5,
-		true &= (v[2] == 1) |= false
+		square(readInt()+1) /= 1.5,
+		true &= (v[2] == 1) || false
 	};
 
 	return square( 6+12-(2*5)*z*square(pippo) );
