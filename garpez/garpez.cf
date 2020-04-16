@@ -22,7 +22,7 @@ FunDef.					FunctionDefinition ::= Qualified_Type FunRest ;
 
 Rest.					FunRest ::= Id "(" [FormalParam] ")" Block ;
 
-FormParam.				FormalParam ::= Qualified_Type Id ;
+FormParam.				FormalParam ::= Qualified_Type PassBy Id ;
 separator FormalParam "," ;
 
 Blk.					Block ::= "{" [Statement] "}" ;
@@ -66,6 +66,8 @@ NoQualifier.			Qualified_Type ::= Type ;
 YesQualifier.			Qualified_Type ::= Qualifier Type ;
 
 ConstQualifier.			Qualifier ::= "const" ;
+
+rules					PassBy ::= "" | "ref" | "name";
 
 rules Type ::= "bool" | "char" | "int" | "float" | "string" | Type "*" | Type "[" Exp "]";
 
