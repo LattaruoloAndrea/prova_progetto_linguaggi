@@ -46,7 +46,20 @@ JmpStm.						Statement ::= Jump ";";
 
 rules Conditional ::= If ;
 rules Loop ::= While | DoWhile | For ;
-rules Jump ::= Return | Return "RExp" | Break | Continue ;
+rules Jump ::= Return | Return RExp | Break | Continue ;
+
+
+-- CONDITIONALS ////////////////////////////////////////////////////////////////////
+
+CondIf.						If ::= "if" "(" RExp ")" Block RestIf ;
+rules 						RestIf ::= "" | "else" If | "else" Block ;
+
+
+-- LOOPS ///////////////////////////////////////////////////////////////////////////
+
+LoopWhile.					While ::= "while" "(" RExp ")" Block ;
+LoopDoWhile.				DoWhile ::= "do" Block "while" "(" RExp ")" ";" ;
+LoopFor.					For ::= "for" "(" Declaration ";" RExp ";" RExp ")" Block ;
 
 
 -- TYPE ////////////////////////////////////////////////////////////////////////////
@@ -59,7 +72,6 @@ SRType.						RetType ::= SimpleType ;
 RRType.						RetType ::= "&" Type ;
 
 rules SimpleType ::= "bool" | "char" | "int" | "float" | "string" | "void" ;
-
 
 
 -- TOKENS //////////////////////////////////////////////////////////////////////////
