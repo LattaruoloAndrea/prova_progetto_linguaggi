@@ -6,19 +6,29 @@ entrypoints Program ;
 
 -- PROGRAM /////////////////////////////////////////////////////////////////////////
 
-Prog.						Program ::= [Declaration] ;
-terminator Declaration "" ;
+Prog.						Program ::= [Global] ;
+
+GlobalDecl.					Global ::= Declaration ;
+FunDecl.					Global ::= Function ;
+
+terminator Global "" ;
 
 
 -- DECLARATIONS ////////////////////////////////////////////////////////////////////
 
 ConstDecl.					Declaration ::= "const" [InitItem] ";" ;
-VarDecl.					Declaration ::= Type [InitItem] ";" ;
+VarDecl.					Declaration ::= Type [DeclItem] ";" ;
 
 InitDecl.					InitItem ::= Id "=" RExp ;
-separator InitItem "," ;
+DeclOnly.					DeclId ::= Id ;
+rules DeclItem ::= DeclId | InitItem ;
 
-FunDecl.					Declaration ::= RetType Id "(" [FormalParam] ")" Block ;
+separator nonempty DeclItem "," ;
+separator nonempty InitItem "," ;
+
+
+Fun.						Function ::= "function" RetType FunRest ;
+FRest.						FunRest ::= Id "(" [FormalParam] ")" Block ;
 
 Param.						FormalParam ::= PassBy Type Id ;
 ValuePass.					PassBy ::= "" ;
@@ -29,11 +39,13 @@ separator FormalParam "," ;
 
 Blk.						Block ::= "{" [Declaration] [Statement] "}" ;
 
+terminator Declaration "" ;
 terminator Statement "" ;
 
 
 -- STATEMENTS //////////////////////////////////////////////////////////////////////
 
+-- DeclStm.					Statement ::= Declaration;
 BlkStm.						Statement ::= Block ;
 CallStm.					Statement ::= Id "(" [RExp] ")" ";" ;
 AssignStm.					Statement ::= LExp AssignmentOp RExp ";" ;
@@ -96,7 +108,7 @@ AType.						Type ::= Type "[" PInt "]" ;
 PType.						Type ::= Type "*" ;
 
 SRType.						RetType ::= SimpleType ;
-RRType.						RetType ::= "&" Type ;
+RRType.						RetType ::= Type "*" ;
 
 rules SimpleType ::= "bool" | "char" | "int" | "float" | "string" | "void" ;
 
