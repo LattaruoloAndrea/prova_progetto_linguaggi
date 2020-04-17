@@ -74,6 +74,13 @@ RRType.						RetType ::= "&" Type ;
 rules SimpleType ::= "bool" | "char" | "int" | "float" | "string" | "void" ;
 
 
+-- OPERATORS ///////////////////////////////////////////////////////////////////////
+
+rules AssignmentOp ::= "=" | "+=" | "-=" | "*=" | "/=" | "%=" | "^=" | "&=" | "|=" ;
+rules ComparisonOp ::= "<" | "<=" | "==" | "!=" | ">=" | ">" ;
+rules IncDecOp ::= "++" | "--" ;
+
+
 -- TOKENS //////////////////////////////////////////////////////////////////////////
 
 position token Id ( letter (letter | digit | '_' )* ) ;
