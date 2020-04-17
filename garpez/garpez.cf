@@ -53,11 +53,13 @@ LExpStm.					Statement ::= LExp ";" ;
 CondStm.					Statement ::= Conditional ;
 LoopStm.					Statement ::= Loop ;
 JmpStm.						Statement ::= Jump ";";
+WriteStm.					Statement ::= WPredefined "(" RExp ")" ";" ;
 
 
 rules Conditional ::= If ;
 rules Loop ::= While | DoWhile | For ;
 rules Jump ::= Return | Return RExp | Break | Continue ;
+rules WPredefined ::= WChar | WInt | WFloat | WString ;
 
 
 -- CONDITIONALS ////////////////////////////////////////////////////////////////////
@@ -97,9 +99,11 @@ Mod.						RExp5 ::= RExp5 "%" RExp6 ;
 Unary.						RExp6 ::= UnaryOp RExp7 ;
 LRExp.						RExp7 ::= LExp ;
 CallExp.					RExp8 ::= Id "(" [RExp] ")" ;
+ReadExp.					RExp8 ::= RPredefined "(" ")" ;
 Lit.						RExp9 ::= Literal ;
 
 rules Literal ::= PBool | PChar | PInt | PFloat | PString ;
+rules RPredefined ::= RChar | RInt | RFloat | RString ;
 
 coercions RExp 9 ;
 separator RExp "," ;
@@ -136,3 +140,13 @@ position token PString ( '"' ((char - ["\"\\"]) | ('\\' ["\"\\nt"]))* '"' ) ;
 position token Return {"return"} ;
 position token Break {"break"} ;
 position token Continue {"continue"} ;
+
+position token RChar {"readChar"} ;
+position token RInt {"readInt"} ;
+position token RFloat {"readFloat"} ;
+position token RString {"readString"} ;
+
+position token WChar {"writeChar"} ;
+position token WInt {"writeInt"} ;
+position token WFloat {"writeFloat"} ;
+position token WString {"writeString"} ;
