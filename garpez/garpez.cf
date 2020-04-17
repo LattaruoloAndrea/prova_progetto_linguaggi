@@ -24,3 +24,12 @@ AType.						Type ::= Type "[" PInt "]" ;
 PType.						Type ::= Type "*" ;
 
 rules SimpleType ::= "bool" | "char" | "int" | "float" | "string" | "void" ;
+
+
+
+position token Id ( letter (letter | digit | '_' )* ) ;
+position token PBool {"true"} | {"false"} ;
+position token PChar ( '\'' ((char - ["'\\"]) | ('\\' ["'\\nt"])) '\'' ) ;
+position token PInt ( digit+ ) ;
+position token PFloat ( digit+ '.' digit+ ) ;
+position token PString ( '"' ((char - ["\"\\"]) | ('\\' ["\"\\nt"]))* '"' ) ;
