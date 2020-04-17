@@ -1,0 +1,6 @@
+const N = 12;
+int x = 1, y, z = 2*x;
+
+function void main(int argc, char** argv) {
+	return;
+}
