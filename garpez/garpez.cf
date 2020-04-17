@@ -7,14 +7,46 @@ entrypoints Program ;
 -- PROGRAM /////////////////////////////////////////////////////////////////////////
 
 Prog.						Program ::= [Declaration] ;
+terminator Declaration "" ;
+
+
+-- DECLARATIONS ////////////////////////////////////////////////////////////////////
 
 ConstDecl.					Declaration ::= "const" [InitItem] ";" ;
 VarDecl.					Declaration ::= Type [InitItem] ";" ;
+
 InitDecl.					InitItem ::= Id "=" RExp ;
-
 separator InitItem "," ;
-terminator Declaration "" ;
 
+FunDecl.					Declaration ::= RetType Id "(" [FormalParam] ")" Block ;
+
+Param.						FormalParam ::= PassBy Type Id ;
+ValuePass.					PassBy ::= "" ;
+RefPass.					PassBy ::= "ref" ;
+
+separator FormalParam "," ;
+
+
+Blk.						Block ::= "{" [Declaration] [Statement] "}" ;
+
+terminator Declaration "" ;
+terminator Statement "" ;
+
+
+-- STATEMENTS //////////////////////////////////////////////////////////////////////
+
+BlkStm.						Statement ::= Block ;
+CallStm.					Statement ::= Id "(" [RExp] ")" ";" ;
+AssignStm.					Statement ::= LExp AssignmentOp RExp ";" ;
+LExpStm.					Statement ::= LExp ";" ;
+CondStm.					Statement ::= Conditional ;
+LoopStm.					Statement ::= Loop ;
+JmpStm.						Statement ::= Jump ";";
+
+
+rules Conditional ::= If ;
+rules Loop ::= While | DoWhile | For ;
+rules Jump ::= Return | Return "RExp" | Break | Continue ;
 
 
 -- TYPE ////////////////////////////////////////////////////////////////////////////
@@ -23,9 +55,14 @@ SType.						Type ::= SimpleType ;
 AType.						Type ::= Type "[" PInt "]" ;
 PType.						Type ::= Type "*" ;
 
+SRType.						RetType ::= SimpleType ;
+RRType.						RetType ::= "&" Type ;
+
 rules SimpleType ::= "bool" | "char" | "int" | "float" | "string" | "void" ;
 
 
+
+-- TOKENS //////////////////////////////////////////////////////////////////////////
 
 position token Id ( letter (letter | digit | '_' )* ) ;
 position token PBool {"true"} | {"false"} ;
@@ -33,3 +70,7 @@ position token PChar ( '\'' ((char - ["'\\"]) | ('\\' ["'\\nt"])) '\'' ) ;
 position token PInt ( digit+ ) ;
 position token PFloat ( digit+ '.' digit+ ) ;
 position token PString ( '"' ((char - ["\"\\"]) | ('\\' ["\"\\nt"]))* '"' ) ;
+
+position token Return {"return"} ;
+position token Break {"break"} ;
+position token Continue {"continue"} ;
