@@ -88,17 +88,20 @@ coercions LExp 4 ;
 LogicalXor.					RExp ::= RExp "^" RExp1 ;
 LogicalOr.					RExp1 ::= RExp1 "||" RExp2 ;
 LogicalAnd.					RExp2 ::= RExp2 "&&" RExp3 ;
-LogicalNot.					RExp3 ::= "!" RExp4 ;
-Comparison.					RExp4 ::= RExp4 ComparisonOp RExp5 ;
-Positive.					RExp5 ::= "+" RExp6 ;
-Negative.					RExp5 ::= "-" RExp6 ;
-LRExp.						RExp6 ::= LExp ;
-CallExp.					RExp7 ::= Id "(" [RExp] ")" ;
-Lit.						RExp8 ::= Literal ;
+Comparison.					RExp3 ::= RExp3 ComparisonOp RExp4 ;
+Sum.						RExp4 ::= RExp4 "+" RExp5 ;
+Sub.						RExp4 ::= RExp4 "-" RExp5 ;
+Mul.						RExp5 ::= RExp5 "*" RExp6 ;
+Div.						RExp5 ::= RExp5 "/" RExp6 ;
+Mod.						RExp5 ::= RExp5 "%" RExp6 ;
+Unary.						RExp6 ::= UnaryOp RExp7 ;
+LRExp.						RExp7 ::= LExp ;
+CallExp.					RExp8 ::= Id "(" [RExp] ")" ;
+Lit.						RExp9 ::= Literal ;
 
 rules Literal ::= PBool | PChar | PInt | PFloat | PString ;
 
-coercions RExp 8 ;
+coercions RExp 9 ;
 separator RExp "," ;
 
 -- TYPE ////////////////////////////////////////////////////////////////////////////
@@ -118,6 +121,7 @@ rules SimpleType ::= "bool" | "char" | "int" | "float" | "string" | "void" ;
 rules AssignmentOp ::= "=" | "+=" | "-=" | "*=" | "/=" | "%=" | "^=" | "&=" | "|=" ;
 rules ComparisonOp ::= "<" | "<=" | "==" | "!=" | ">=" | ">" ;
 rules IncDecOp ::= "++" | "--" ;
+rules UnaryOp ::= "+" | "-" | "!" ;
 
 
 -- TOKENS //////////////////////////////////////////////////////////////////////////
