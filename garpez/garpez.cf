@@ -29,7 +29,6 @@ separator FormalParam "," ;
 
 Blk.						Block ::= "{" [Declaration] [Statement] "}" ;
 
-terminator Declaration "" ;
 terminator Statement "" ;
 
 
@@ -85,7 +84,10 @@ LRExp.						RExp6 ::= LExp ;
 CallExp.					RExp7 ::= Id "(" [RExp] ")" ;
 Lit.						RExp8 ::= Literal ;
 
+rules Literal ::= PBool | PChar | PInt | PFloat | PString ;
+
 coercions RExp 8 ;
+separator RExp "," ;
 
 -- TYPE ////////////////////////////////////////////////////////////////////////////
 
