@@ -51,16 +51,41 @@ rules Jump ::= Return | Return RExp | Break | Continue ;
 
 -- CONDITIONALS ////////////////////////////////////////////////////////////////////
 
-CondIf.						If ::= "if" "(" RExp ")" Block RestIf ;
+IfCond.						If ::= "if" "(" RExp ")" Block RestIf ;
 rules 						RestIf ::= "" | "else" If | "else" Block ;
 
 
 -- LOOPS ///////////////////////////////////////////////////////////////////////////
 
-LoopWhile.					While ::= "while" "(" RExp ")" Block ;
-LoopDoWhile.				DoWhile ::= "do" Block "while" "(" RExp ")" ";" ;
-LoopFor.					For ::= "for" "(" Declaration ";" RExp ";" RExp ")" Block ;
+WhileLoop.					While ::= "while" "(" RExp ")" Block ;
+DoWhileLoop.				DoWhile ::= "do" Block "while" "(" RExp ")" ";" ;
+ForLoop.					For ::= "for" "(" Declaration ";" RExp ";" RExp ")" Block ;
 
+
+-- EXPRESSIONS /////////////////////////////////////////////////////////////////////
+
+Post.						LExp ::= LExp1 IncDecOp ;
+Pre.						LExp1 ::= IncDecOp LExp2 ;
+Dereference.				LExp2 ::= "*" LExp3 ;
+Reference.					LExp2 ::= "&" LExp3 ;
+ArrayAccess.				LExp3 ::= LExp3 "[" RExp "]" ;
+IdExp.						LExp4 ::= Id ;
+
+coercions LExp 4 ;
+
+
+LogicalXor.					RExp ::= RExp "^" RExp1 ;
+LogicalOr.					RExp1 ::= RExp1 "||" RExp2 ;
+LogicalAnd.					RExp2 ::= RExp2 "&&" RExp3 ;
+LogicalNot.					RExp3 ::= "!" RExp4 ;
+Comparison.					RExp4 ::= RExp4 ComparisonOp RExp5 ;
+Positive.					RExp5 ::= "+" RExp6 ;
+Negative.					RExp5 ::= "-" RExp6 ;
+LRExp.						RExp6 ::= LExp ;
+CallExp.					RExp7 ::= Id "(" [RExp] ")" ;
+Lit.						RExp8 ::= Literal ;
+
+coercions RExp 8 ;
 
 -- TYPE ////////////////////////////////////////////////////////////////////////////
 
