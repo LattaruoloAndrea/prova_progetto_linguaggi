@@ -1,0 +1,26 @@
+comment "//" ;
+comment "/*" "*/" ;
+
+entrypoints Program ;
+
+
+-- PROGRAM /////////////////////////////////////////////////////////////////////////
+
+Prog.						Program ::= [Declaration] ;
+
+ConstDecl.					Declaration ::= "const" [InitItem] ";" ;
+VarDecl.					Declaration ::= Type [InitItem] ";" ;
+InitDecl.					InitItem ::= Id "=" RExp ;
+
+separator InitItem "," ;
+terminator Declaration "" ;
+
+
+
+-- TYPE ////////////////////////////////////////////////////////////////////////////
+
+SType.						Type ::= SimpleType ;
+AType.						Type ::= Type "[" PInt "]" ;
+PType.						Type ::= Type "*" ;
+
+rules SimpleType ::= "bool" | "char" | "int" | "float" | "string" | "void" ;
