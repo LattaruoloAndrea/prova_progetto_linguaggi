@@ -79,11 +79,10 @@ ForLoop.					For ::= "for" "(" Declaration ";" RExp ";" RExp ")" Block ;
 
 
 Dereference.				LExp ::= "*" LExp1 ;
-Reference.					LExp1 ::= "&" LExp2 ;
-Post.						LExp2 ::= LExp3 IncDecOp ;
-Pre.						LExp2 ::= IncDecOp LExp3 ;
-ArrayAccess.				LExp3 ::= LExp3 "[" RExp "]" ;
-IdExp.						LExp4 ::= Id ;
+Post.						LExp1 ::= LExp2 IncDecOp ;
+Pre.						LExp1 ::= IncDecOp LExp3 ;
+ArrayAccess.				LExp2 ::= LExp4 "[" RExp "]" ;
+IdExp.						LExp3 ::= Id ;
 
 coercions LExp 4 ;
 
@@ -91,14 +90,15 @@ coercions LExp 4 ;
 LogicalOr.					RExp ::= RExp "||" RExp1 ;
 LogicalAnd.					RExp1 ::= RExp1 "&&" RExp2 ;
 LogicalXor.					RExp2 ::= RExp2 "^" RExp3 ;
-LogicalNot.         RExp3 ::= "!" RExp4 ;
+LogicalNot.					RExp3 ::= "!" RExp4 ;
 Comparison.					RExp4 ::= RExp4 ComparisonOp RExp5 ;
 Sum.						RExp5 ::= RExp5 "+" RExp6 ;
 Sub.						RExp5 ::= RExp5 "-" RExp6 ;
 Mul.						RExp6 ::= RExp6 "*" RExp7 ;
 Div.						RExp6 ::= RExp6 "/" RExp7 ;
 Mod.						RExp6 ::= RExp6 "%" RExp7 ;
-Unary.						RExp7 ::= UnaryOp RExp8 ;
+Sign.						RExp7 ::= SignOp RExp8 ;
+Reference.					RExp7 ::= "&" LExp ;
 LRExp.						RExp8 ::= LExp ;
 CallExp.					RExp9 ::= Id "(" [RExp] ")" ;
 ReadExp.					RExp9 ::= RPredefined "(" ")" ;
@@ -127,7 +127,7 @@ rules SimpleType ::= "bool" | "char" | "int" | "float" | "string" | "void" ;
 rules AssignmentOp ::= "=" | "+=" | "-=" | "*=" | "/=" | "%=" | "^=" | "&=" | "|=" ;
 rules ComparisonOp ::= "<" | "<=" | "==" | "!=" | ">=" | ">" ;
 rules IncDecOp ::= "++" | "--" ;
-rules UnaryOp ::= "+" | "-" ;
+rules SignOp ::= "+" | "-" ;
 
 
 -- TOKENS //////////////////////////////////////////////////////////////////////////
