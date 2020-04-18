@@ -77,35 +77,37 @@ ForLoop.					For ::= "for" "(" Declaration ";" RExp ";" RExp ")" Block ;
 
 -- EXPRESSIONS /////////////////////////////////////////////////////////////////////
 
-Post.						LExp ::= LExp1 IncDecOp ;
-Pre.						LExp1 ::= IncDecOp LExp2 ;
-Dereference.				LExp2 ::= "*" LExp3 ;
-Reference.					LExp2 ::= "&" LExp3 ;
+
+Dereference.				LExp ::= "*" LExp1 ;
+Reference.					LExp1 ::= "&" LExp2 ;
+Post.						LExp2 ::= LExp3 IncDecOp ;
+Pre.						LExp2 ::= IncDecOp LExp3 ;
 ArrayAccess.				LExp3 ::= LExp3 "[" RExp "]" ;
 IdExp.						LExp4 ::= Id ;
 
 coercions LExp 4 ;
 
 
-LogicalXor.					RExp ::= RExp "^" RExp1 ;
-LogicalOr.					RExp1 ::= RExp1 "||" RExp2 ;
-LogicalAnd.					RExp2 ::= RExp2 "&&" RExp3 ;
+LogicalOr.					RExp ::= RExp "||" RExp1 ;
+LogicalAnd.					RExp1 ::= RExp1 "&&" RExp2 ;
+LogicalNot.         RExp2 ::= "!" RExp3 ;
 Comparison.					RExp3 ::= RExp3 ComparisonOp RExp4 ;
 Sum.						RExp4 ::= RExp4 "+" RExp5 ;
 Sub.						RExp4 ::= RExp4 "-" RExp5 ;
 Mul.						RExp5 ::= RExp5 "*" RExp6 ;
 Div.						RExp5 ::= RExp5 "/" RExp6 ;
 Mod.						RExp5 ::= RExp5 "%" RExp6 ;
-Unary.						RExp6 ::= UnaryOp RExp7 ;
-LRExp.						RExp7 ::= LExp ;
-CallExp.					RExp8 ::= Id "(" [RExp] ")" ;
-ReadExp.					RExp8 ::= RPredefined "(" ")" ;
-Lit.						RExp9 ::= Literal ;
+LogicalXor.					RExp6 ::= RExp6 "^" RExp7 ;
+Unary.						RExp7 ::= UnaryOp RExp8 ;
+LRExp.						RExp8 ::= LExp ;
+CallExp.					RExp9 ::= Id "(" [RExp] ")" ;
+ReadExp.					RExp9 ::= RPredefined "(" ")" ;
+Lit.						RExp10 ::= Literal ;
 
 rules Literal ::= PBool | PChar | PInt | PFloat | PString ;
 rules RPredefined ::= RChar | RInt | RFloat | RString ;
 
-coercions RExp 9 ;
+coercions RExp 10 ;
 separator RExp "," ;
 
 -- TYPE ////////////////////////////////////////////////////////////////////////////
@@ -125,7 +127,7 @@ rules SimpleType ::= "bool" | "char" | "int" | "float" | "string" | "void" ;
 rules AssignmentOp ::= "=" | "+=" | "-=" | "*=" | "/=" | "%=" | "^=" | "&=" | "|=" ;
 rules ComparisonOp ::= "<" | "<=" | "==" | "!=" | ">=" | ">" ;
 rules IncDecOp ::= "++" | "--" ;
-rules UnaryOp ::= "+" | "-" | "!" ;
+rules UnaryOp ::= "+" | "-" ;
 
 
 -- TOKENS //////////////////////////////////////////////////////////////////////////
