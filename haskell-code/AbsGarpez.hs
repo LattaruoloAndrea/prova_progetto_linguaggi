@@ -144,7 +144,6 @@ data LExp
 data RExp
     = LogicalOr RExp RExp
     | LogicalAnd RExp RExp
-    | LogicalXor RExp RExp
     | LogicalNot RExp
     | Comparison RExp ComparisonOp RExp
     | Sum RExp RExp
@@ -152,6 +151,7 @@ data RExp
     | Mul RExp RExp
     | Div RExp RExp
     | Mod RExp RExp
+    | Pow RExp RExp
     | Sign SignOp RExp
     | Reference LExp
     | LRExp LExp

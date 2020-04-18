@@ -155,7 +155,6 @@ transRExp :: RExp -> Result
 transRExp x = case x of
   LogicalOr rexp1 rexp2 -> failure x
   LogicalAnd rexp1 rexp2 -> failure x
-  LogicalXor rexp1 rexp2 -> failure x
   LogicalNot rexp -> failure x
   Comparison rexp1 comparisonop rexp2 -> failure x
   Sum rexp1 rexp2 -> failure x
@@ -163,6 +162,7 @@ transRExp x = case x of
   Mul rexp1 rexp2 -> failure x
   Div rexp1 rexp2 -> failure x
   Mod rexp1 rexp2 -> failure x
+  Pow rexp1 rexp2 -> failure x
   Sign signop rexp -> failure x
   Reference lexp -> failure x
   LRExp lexp -> failure x
