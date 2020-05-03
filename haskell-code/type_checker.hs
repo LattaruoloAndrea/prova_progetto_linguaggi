@@ -1,4 +1,4 @@
-module TypeCheckerGarpez where
+module TypeChecker where
 
 import qualified Data.Map.Strict as M
 import AbsGarpez
