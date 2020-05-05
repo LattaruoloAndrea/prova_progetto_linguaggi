@@ -23,8 +23,6 @@ data Arg = Arg Loc PassBy TCType Ident
 data Loc = Loc {line, column :: Int}
    deriving (Show)
 
-
-
 data TCType
    = TCBool
    | TCChar
@@ -134,22 +132,6 @@ updateFun id ty params =
    in
       M.insert (identOf id) (Function (locOf id) args ty)
 
--- checkExpWith inferRExp :: RExp -> Type -> Env -> Err ()
--- checkExpWith inferRExp exp typ env = do
---            typ' <- inferRExp exp env
---            if (typ' == typ) then
---               return ()
---            else
---               Bad "type error"
-
--- checkLExp :: LExp -> Type -> Env -> Err ()
--- checkLExp exp typ env = do
---            typ' <- inferLExp exp env
---            if (typ' == typ) then
---               return ()
---            else
---               Bad "type error"
-
 checkExpWith :: (a -> Env -> Err TCType) -> (a -> TCype -> Env -> Err ())
 checkExpWith inferer = \exp typ env -> do
    typ' <- inferer exp env
@@ -172,7 +154,7 @@ inferRExp :: RExp -> (Env -> Err TCType)
 inferRExp exp = case exp of
    LogicalAnd r1 r2  -> checkLogical r1 r2
    LogicalOr  r1 r2  -> checkLogical r1 r2
-   LogicalNot r1     -> checkLogical r1 TCBool
+   LogicalNot r1     -> checkExpWith inferRExp r1 TCBool
    Comparison r1 _ r2 -> \env -> do
       t1 <- inferRExp r1 env
       t2 <- inferRExp r2 env
@@ -186,7 +168,7 @@ inferRExp exp = case exp of
    Mod r1 r2         -> \env -> do
       t <- join $ leastGeneral <$> checkArithmetic r1 r2 env <*> Ok TCInt
       guard (t == TCInt)
-   Sign _ r          -> (inferRExp r . id) >>= (leastGeneral TCInt)
+   Sign _ r          -> \env -> join $ leastGeneral TCInt <$> inferRExp r env
 --   Reference lexp          -> inferLExp lexp env  ?? CHE MINCHIA DI TIPO HA UN PUNTATORE ??
    LRExp l           -> inferLExp l
 --   CallExp id rexps        -> lookFun id rexps
@@ -194,48 +176,17 @@ inferRExp exp = case exp of
    Lit lit           -> (const . Ok) (tcTypeOf lit)
    
   
-inferLExp :: LExp -> Env -> Err TCType
-inferLExp exp env = case exp of
+inferLExp :: LExp -> (Env -> Err TCType)
+inferLExp exp = case exp of
 --   Dereference lexp        ->  ??? BoH???
-   Post lexp incdecop      -> do
-                               t <- inferLExp lexp env
-                               t' <- leastGeneral t (TCInt)
-                               if (t' == (TCInt)) then
-                                  return t
-                               else
-                                  Bad "warning"
-   Pre incdecop lexp       -> do
-                               t <- inferLExp lexp env
-                               t' <- leastGeneral t (TCInt)
-                               if (t' == (TCInt)) then
-                                  return t
-                               else
-                                  Bad "warning"
-   ArrayAccess lexp rexp   -> do
-                               trexp <- inferRExp rexp env
-                               t <- leastGeneral trexp (TCInt)
-                               if (t == (TCInt)) then
-                                  inferLExp lexp env
-                               else
-                                  Bad "warning"
+   Post l _          -> \env -> join $ leastGeneral TCInt <$> inferLExp l env
+   Pre _ l           -> \env -> join $ leastGeneral TCInt <$> inferLExp l env
+   ArrayAccess l r   -> \env -> do
+      join $ leastGeneral TCInt <$> inferRExp r env
+      inferLExp l env
 --   IdExp id                -> lookVar id env    ?? o lookConst ??
 
-
--- leastGeneral :: Type -> Type -> Err Type
--- leastGeneral (TCChar) (TCChar) = Ok (TCChar)
--- leastGeneral (TCChar) (TCInt) = Ok (TCInt)
--- leastGeneral (TCChar) (TCFloat) = Ok (TCFloat)
--- leastGeneral (TCInt) (TCChar) = Ok (TCInt)
--- leastGeneral (TCInt) (TCInt) = Ok (TCInt)
--- leastGeneral (TCInt) (TCFloat) = Ok (TCFloat)
--- leastGeneral (TCFloat) (TCChar) = Ok (TCFloat)
--- leastGeneral (TCFloat) (TCInt) = Ok (TCFloat)
--- leastGeneral (TCFloat) (TCFloat) = Ok (TCFloat)
--- leastGeneral (TCBool) (TCBool) = Ok (TCBool)
--- leastGeneral (TCString) (TCString) = Ok (TCString)
--- leastGeneral _ _ = Bad "warning: types not compatible"
-
-leastGeneral :: Type -> Type -> Err Type
+leastGeneral :: TCType -> TCType -> Err TCType
 leastGeneral x y =
    case (x <=. y) of
       Ok True -> Ok y
