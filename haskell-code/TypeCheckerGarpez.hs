@@ -3,7 +3,7 @@ module TypeChecker where
 import qualified Data.Map.Strict as M
 import AbsGarpez
 import ErrM
-import Control.Monad (guard, liftM2, join)
+import Control.Monad (guard, liftM2, join, foldM)
 import Data.Maybe
 import Data.List
 
@@ -64,6 +64,9 @@ class Typeable a where
 instance Identifiable Id where
    identOf (Id (_, id)) = id
 
+instance Identifiable InitItem where
+   identOf (InitDecl id _) = identOf id
+
 instance Localizable Id where
    locOf (Id ((l, c), _)) = Loc l c
 
@@ -71,6 +74,9 @@ instance Localizable EnvEntry where
    locOf (Variable loc _) = loc
    locOf (Function loc _ _) = loc
    locOf (Constant loc _) = loc
+
+instance Localizable InitItem where
+   locOf (InitDecl id _) = locOf id
 
 instance PartialOrd SimpleType where
    x <=. y
@@ -110,11 +116,14 @@ instance Typeable SimpleType where
 
 -- ////////////////////////////////////////////////////////////////////////
 
-updateVar :: Id -> Type -> (Context -> Context)
-updateVar id ty = M.insert (identOf id) (Variable (locOf id) ty)
+-- updateVar :: Id -> Type -> (Context -> Context)
+-- updateVar id ty = M.insert (identOf id) (Variable (locOf id) ty)
 
-updateConst :: Id -> Type -> (Context -> Context)
-updateConst id ty = M.insert (identOf id) (Constant (locOf id) ty)
+-- updateConst :: Id -> Type -> (Context -> Context)
+-- updateConst id ty = M.insert (identOf id) (Constant (locOf id) ty)
+
+updateWith :: (Loc -> Type -> EnvEntry) -> Id -> Type -> (Context -> Context)
+updateWith f id ty = M.insert (identOf id) (f (locOf id) ty)
 
 updateFun :: Id -> Type -> [FormalParam] -> (Context -> Context)
 updateFun id ty params =
@@ -190,39 +199,34 @@ leastGeneral x y =
 
 -- ////////////////////////////////////////////////////////////////////////
 
-checkDecl :: Declaration -> Env -> Err Env
-checkDecl decl env = case decl of
-   ConstDecl consts -> do
-                        checkInitConst consts env
-   VarDecl typ vars -> do
-                        checkVars typ vars env
-
-checkInitConst :: [InitItem] -> Env -> Err Env
-checkInitConst [] env = Ok env
-checkInitConst ((InitDecl id rexp):xs) env = let
-      val = M.lookup (identOf id) (head env) in
-      case val of
-         Nothing -> let
-                       typ = inferRExp rexp env
-                       x' = updateConst id typ (head env) -- � da fare pattern matching su err type
-                       in checkInitConst xs (x': (tail env))
-         (Just _) -> let
-                       typ = inferRExp rexp env
-                       x' = updateConst id typ (head env)
-                       in do
-                       Bad "warning: identifier already used"
-                       checkInitConst xs (x': (tail env))
+checkDeclaration :: Declaration -> Env -> Err Env
+checkDeclaration decl env@(c:cs) = case decl of
+   ConstDecl consts -> (:cs) <$> checkConstDecl consts env
+   VarDecl typ vars -> (:cs) <$> checkVarDecl typ vars env
 
 
-checkVars :: Type -> [DeclItem] -> Env -> Err Env
-checkVars typ [] env = Ok env
-checkVars typ (x:xs) env =  case x of
-   (DeclItemDeclId (DeclOnly id)) -> let
-                           env' = checkVar typ id env
-                           in checkVars typ xs env'
-   (DeclItemInitItem (InitDecl id rexp)) -> let
-                           env' = checkInitVar typ id rexp env
-                           in checkVars typ xs env'
+initWith :: (Loc -> Type -> EnvEntry) -> Id -> RExp -> Env -> Err Context
+initWith f id r (c:cs) = do
+      guard . isNothing $ M.lookup (identOf id) c
+      ty <- inferRExp r (c:cs)
+      return $ updateWith f id ty c
+
+
+checkConstDecl :: [InitItem] -> Env -> Err Context
+checkConstDecl xs (ctx:cs) = foldM f ctx xs
+   where
+      f = \c (InitDecl id r) -> initWith Constant id r (c:cs)
+
+checkVarDecl :: Type -> [DeclItem] -> Env -> Err Context
+checkVarDecl ty xs (ctx:cs) = foldM f ctx xs
+   where
+      f = \c dIt -> case dIt of
+         (DeclItemDeclId (DeclOnly id)) -> do
+            guard . isNothing $ M.lookup (identOf id) c
+            return $ updateWith Variable id ty c
+         (DeclItemInitItem (InitDecl id r)) -> initWith Variable id r (c:cs)
+
+
 
 checkVar :: Type -> Id -> Env -> Err Env
 checkVar typ id env = let
