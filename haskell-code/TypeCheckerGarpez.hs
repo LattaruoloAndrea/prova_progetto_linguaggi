@@ -12,34 +12,26 @@ type Ident = String
 type Env = [Context]
 type Context = M.Map Ident EnvEntry
 data EnvEntry
-   = Variable Loc TCType
-   | Function Loc [Arg] TCType
-   | Constant Loc TCType
+   = Variable Loc Type
+   | Function Loc [Arg] Type
+   | Constant Loc Type
    deriving (Show)
 
-data Arg = Arg Loc PassBy TCType Ident
+data Arg = Arg Loc PassBy Type Ident
    deriving (Show)
 
 data Loc = Loc {line, column :: Int}
    deriving (Show)
 
-data TCType
-   = TCBool
-   | TCChar
-   | TCInt
-   | TCFloat
-   | TCString
-   | TCVoid
-   deriving (Show, Eq, Ord)
-
 
 -- TYPE ALIASES //////////////////////////////////////////////////////////
 
--- bool = (TCBool)
--- char = (TCChar)
--- int  = (TCInt)
--- float = (TCFloat)
--- string = (TCString)
+bool = typeOf SimpleType_bool
+char = typeOf SimpleType_char
+int  = typeOf SimpleType_int
+float = typeOf SimpleType_float
+string = typeOf SimpleType_string
+void = typeOf SimpleType_void
 
 
 -- CLASS DEFINITIONS //////////////////////////////////////////////////////
@@ -65,8 +57,8 @@ class PartialOrd a where
    x >. y  = not <$> x <=. y
 
 
-class TCTypeable a where
-   tcTypeOf :: a -> TCType
+class Typeable a where
+   typeOf :: a -> Type
 
 -- INSTANCES //////////////////////////////////////////////////////////////
 instance Identifiable Id where
@@ -80,114 +72,114 @@ instance Localizable EnvEntry where
    locOf (Function loc _ _) = loc
    locOf (Constant loc _) = loc
 
-instance PartialOrd TCType where
-   x <=. y = case (x, y) of
-      (_, TCBool) -> guard (x==y) >> Ok True
-      (_, TCString)-> guard (x==y) >> Ok True
-      _ -> return (x <= y)
+instance PartialOrd SimpleType where
+   x <=. y
+      | x == y = Ok True
+      | typeOf x `elem` [bool, string, void] = Bad "Not compatible."
+      | typeOf y `elem` [bool, string, void] = Bad "Not compatible."
+      | otherwise = Ok (x <= y)
+
+instance PartialOrd Type where
+   (SType x) <=. (SType y) = x <=. y
+   (AType t1 (PInt d1)) <=. (AType t2 (PInt d2))
+      | (snd d1) == (snd d2) = t1 <=. t2
+      | otherwise = Bad "Not compatible"
+   _ <=. _ = Bad "Not compatible"
 
 
-instance TCTypeable RPredefined where
-   tcTypeOf x = case x of
-      (RPredefinedRChar _) -> TCChar
-      (RPredefinedRInt _)  -> TCInt
-      (RPredefinedRFloat _) -> TCFloat
-      (RPredefinedRString _) -> TCString
+instance Typeable RPredefined where
+   typeOf x = case x of
+      (RPredefinedRChar _) -> (SType SimpleType_char)
+      (RPredefinedRInt _)  -> (SType SimpleType_int)
+      (RPredefinedRFloat _) -> (SType SimpleType_float)
+      (RPredefinedRString _) -> (SType SimpleType_string)
 
-instance TCTypeable Literal where
-   tcTypeOf x = case x of
-      (LiteralPBool _) -> TCBool
-      (LiteralPChar _) -> TCChar
-      (LiteralPInt _) -> TCInt
-      (LiteralPFloat _) -> TCFloat
-      (LiteralPString _) -> TCString
+instance Typeable Literal where
+   typeOf x = case x of
+      (LiteralPBool _) -> (SType SimpleType_bool)
+      (LiteralPChar _) -> (SType SimpleType_char)
+      (LiteralPInt _) -> (SType SimpleType_int)
+      (LiteralPFloat _) -> (SType SimpleType_float)
+      (LiteralPString _) -> (SType SimpleType_string)
 
 
-instance TCTypeable SimpleType where
-   tcTypeOf x = case x of
-      SimpleType_bool -> TCBool
-      SimpleType_char -> TCChar
-      SimpleType_int  -> TCInt
-      SimpleType_float -> TCFloat
-      SimpleType_string -> TCString
+instance Typeable SimpleType where
+   typeOf = SType
 
-instance TCTypeable Type where
-   tcTypeOf (SType x) = tcTypeOf x
-   tcTypeOf _ = TCVoid
 
 
 -- ////////////////////////////////////////////////////////////////////////
 
-updateVar :: Id -> TCType -> (Context -> Context)
+updateVar :: Id -> Type -> (Context -> Context)
 updateVar id ty = M.insert (identOf id) (Variable (locOf id) ty)
 
-updateConst :: Id -> TCType -> (Context -> Context)
+updateConst :: Id -> Type -> (Context -> Context)
 updateConst id ty = M.insert (identOf id) (Constant (locOf id) ty)
 
-updateFun :: Id -> TCType -> [FormalParam] -> (Context -> Context)
+updateFun :: Id -> Type -> [FormalParam] -> (Context -> Context)
 updateFun id ty params =
    let
-      p2a = \(Param pby ty id) -> (Arg (locOf id) pby (tcTypeOf ty) (identOf id))
+      p2a = \(Param pby ty id) -> (Arg (locOf id) pby ty (identOf id))
       args = p2a <$> params
    in
       M.insert (identOf id) (Function (locOf id) args ty)
 
-checkExpWith :: (a -> (Env -> Err TCType)) -> (a -> TCType -> Env -> Err ())
+checkExpWith :: (a -> (Env -> Err Type)) -> (a -> Type -> Env -> Err ())
 checkExpWith inferer = \exp typ env -> do
    typ' <- inferer exp env
    guard (typ == typ')
 
-checkLogical :: RExp -> RExp -> (Env -> Err TCType)
+checkLogical :: RExp -> RExp -> (Env -> Err Type)
 checkLogical r1 r2 = \env -> do
-   checkExpWith inferRExp r1 TCBool env
-   checkExpWith inferRExp r2 TCBool env
-   return TCBool
+   checkExpWith inferRExp r1 bool env
+   checkExpWith inferRExp r2 bool env
+   return bool
 
-checkArithmetic :: RExp -> RExp -> (Env -> Err TCType)
+checkArithmetic :: RExp -> RExp -> (Env -> Err Type)
 checkArithmetic r1 r2 = \env -> do
    t1 <- inferRExp r1 env
    t2 <- inferRExp r2 env
    leastGeneral t1 t2
 
 
-inferRExp :: RExp -> (Env -> Err TCType)
+inferRExp :: RExp -> (Env -> Err Type)
 inferRExp exp = case exp of
    LogicalAnd r1 r2  -> checkLogical r1 r2
    LogicalOr  r1 r2  -> checkLogical r1 r2
-   LogicalNot r1     -> \env -> (checkExpWith inferRExp r1 TCBool env) >> (Ok TCBool)
+   LogicalNot r1     -> \env -> (checkExpWith inferRExp r1 bool env) >> (Ok bool)
    Comparison r1 _ r2 -> \env -> do
       t1 <- inferRExp r1 env
       t2 <- inferRExp r2 env
       leastGeneral t1 t2
-      return TCBool
+      return bool
    Sum r1 r2         -> checkArithmetic r1 r2
    Sub r1 r2         -> checkArithmetic r1 r2
    Mul r1 r2         -> checkArithmetic r1 r2
    Div r1 r2         -> checkArithmetic r1 r2
    Pow r1 r2         -> checkArithmetic r1 r2
    Mod r1 r2         -> \env -> do
-      t <- join $ leastGeneral <$> checkArithmetic r1 r2 env <*> Ok TCInt
-      guard (t == TCInt)
-      Ok TCInt
-   Sign _ r          -> \env -> join $ leastGeneral TCInt <$> inferRExp r env
+      t <- join $ leastGeneral <$> checkArithmetic r1 r2 env <*> Ok int
+      guard (t == int)
+      Ok int
+   Sign _ r          -> \env -> join $ leastGeneral int <$> inferRExp r env
 --   Reference lexp          -> inferLExp lexp env  ?? CHE MINCHIA DI TIPO HA UN PUNTATORE ??
    LRExp l           -> inferLExp l
 --   CallExp id rexps        -> lookFun id rexps
-   ReadExp rpred     -> (const . Ok) (tcTypeOf rpred)
-   Lit lit           -> (const . Ok) (tcTypeOf lit)
+   ReadExp rpred     -> (const . Ok) (typeOf rpred)
+   Lit lit           -> (const . Ok) (typeOf lit)
    
   
-inferLExp :: LExp -> (Env -> Err TCType)
+inferLExp :: LExp -> (Env -> Err Type)
 inferLExp exp = case exp of
 --   Dereference lexp        ->  ??? BoH???
-   Post l _          -> \env -> join $ leastGeneral TCInt <$> inferLExp l env
-   Pre _ l           -> \env -> join $ leastGeneral TCInt <$> inferLExp l env
+   Post l _          -> \env -> join $ leastGeneral int <$> inferLExp l env
+   Pre _ l           -> \env -> join $ leastGeneral int <$> inferLExp l env
    ArrayAccess l r   -> \env -> do
-      join $ leastGeneral TCInt <$> inferRExp r env
+      join $ leastGeneral int <$> inferRExp r env
       inferLExp l env
 --   IdExp id                -> lookVar id env    ?? o lookConst ??
 
-leastGeneral :: TCType -> TCType -> Err TCType
+leastGeneral :: Type -> Type -> Err Type
 leastGeneral x y =
    case (x <=. y) of
       Ok True -> Ok y
