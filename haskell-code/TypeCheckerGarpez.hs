@@ -113,7 +113,7 @@ instance TCTypeable SimpleType where
 
 instance TCTypeable Type where
    tcTypeOf (SType x) = tcTypeOf x
-   tcTypeOf _ = ()
+   tcTypeOf _ = TCVoid
 
 
 -- ////////////////////////////////////////////////////////////////////////
@@ -132,7 +132,7 @@ updateFun id ty params =
    in
       M.insert (identOf id) (Function (locOf id) args ty)
 
-checkExpWith :: (a -> Env -> Err TCType) -> (a -> TCype -> Env -> Err ())
+checkExpWith :: (a -> (Env -> Err TCType)) -> (a -> TCType -> Env -> Err ())
 checkExpWith inferer = \exp typ env -> do
    typ' <- inferer exp env
    guard (typ == typ')
@@ -154,7 +154,7 @@ inferRExp :: RExp -> (Env -> Err TCType)
 inferRExp exp = case exp of
    LogicalAnd r1 r2  -> checkLogical r1 r2
    LogicalOr  r1 r2  -> checkLogical r1 r2
-   LogicalNot r1     -> checkExpWith inferRExp r1 TCBool
+   LogicalNot r1     -> \env -> (checkExpWith inferRExp r1 TCBool env) >> (Ok TCBool)
    Comparison r1 _ r2 -> \env -> do
       t1 <- inferRExp r1 env
       t2 <- inferRExp r2 env
@@ -168,6 +168,7 @@ inferRExp exp = case exp of
    Mod r1 r2         -> \env -> do
       t <- join $ leastGeneral <$> checkArithmetic r1 r2 env <*> Ok TCInt
       guard (t == TCInt)
+      Ok TCInt
    Sign _ r          -> \env -> join $ leastGeneral TCInt <$> inferRExp r env
 --   Reference lexp          -> inferLExp lexp env  ?? CHE MINCHIA DI TIPO HA UN PUNTATORE ??
    LRExp l           -> inferLExp l
