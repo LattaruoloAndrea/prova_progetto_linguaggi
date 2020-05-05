@@ -3,24 +3,45 @@ module TypeChecker where
 import qualified Data.Map.Strict as M
 import AbsGarpez
 import ErrM
-
+import Control.Monad (guard, liftM2, join)
+import Data.Maybe
+import Data.List
 
 -- // DATA TYPES //////////////////////////////////////////////////////////
 type Ident = String
 type Env = [Context]
 type Context = M.Map Ident EnvEntry
 data EnvEntry
-   = Variable Loc Type
-   | Function Loc [Arg] RetType
-   | Constant Loc Type
+   = Variable Loc TCType
+   | Function Loc [Arg] TCType
+   | Constant Loc TCType
    deriving (Show)
 
-data Arg = Arg Loc PassBy Type Ident
+data Arg = Arg Loc PassBy TCType Ident
    deriving (Show)
 
 data Loc = Loc {line, column :: Int}
    deriving (Show)
 
+
+
+data TCType
+   = TCBool
+   | TCChar
+   | TCInt
+   | TCFloat
+   | TCString
+   | TCVoid
+   deriving (Show, Eq, Ord)
+
+
+-- TYPE ALIASES //////////////////////////////////////////////////////////
+
+-- bool = (TCBool)
+-- char = (TCChar)
+-- int  = (TCInt)
+-- float = (TCFloat)
+-- string = (TCString)
 
 
 -- CLASS DEFINITIONS //////////////////////////////////////////////////////
@@ -30,6 +51,24 @@ class Identifiable a where
 class Localizable a where
    locOf :: a -> Loc
 
+class PartialOrd a where
+   (<=.) :: a -> a -> Err Bool -- Minimal complete definition
+   (==.) :: a -> a -> Err Bool
+   (/=.) :: a -> a -> Err Bool
+   (>=.) :: a -> a -> Err Bool
+   (<.) :: a -> a -> Err Bool
+   (>.) :: a -> a -> Err Bool
+
+
+   x ==. y = (&&) <$> x <=. y <*> y <=. x
+   x /=. y = not <$> x ==. y
+   x >=. y = y <=. x
+   x <. y  = not <$> x >=. y
+   x >. y  = not <$> x <=. y
+
+
+class TCTypeable a where
+   tcTypeOf :: a -> TCType
 
 -- INSTANCES //////////////////////////////////////////////////////////////
 instance Identifiable Id where
@@ -43,143 +82,162 @@ instance Localizable EnvEntry where
    locOf (Function loc _ _) = loc
    locOf (Constant loc _) = loc
 
+instance PartialOrd TCType where
+   x <=. y = case (x, y) of
+      (_, TCBool) -> guard (x==y) >> Ok True
+      (_, TCString)-> guard (x==y) >> Ok True
+      _ -> return (x <= y)
+
+
+instance TCTypeable RPredefined where
+   tcTypeOf x = case x of
+      (RPredefinedRChar _) -> TCChar
+      (RPredefinedRInt _)  -> TCInt
+      (RPredefinedRFloat _) -> TCFloat
+      (RPredefinedRString _) -> TCString
+
+instance TCTypeable Literal where
+   tcTypeOf x = case x of
+      (LiteralPBool _) -> TCBool
+      (LiteralPChar _) -> TCChar
+      (LiteralPInt _) -> TCInt
+      (LiteralPFloat _) -> TCFloat
+      (LiteralPString _) -> TCString
+
+
+instance TCTypeable SimpleType where
+   tcTypeOf x = case x of
+      SimpleType_bool -> TCBool
+      SimpleType_char -> TCChar
+      SimpleType_int  -> TCInt
+      SimpleType_float -> TCFloat
+      SimpleType_string -> TCString
+
+instance TCTypeable Type where
+   tcTypeOf (SType x) = tcTypeOf x
+   tcTypeOf _ = ()
+
 
 -- ////////////////////////////////////////////////////////////////////////
 
-updateVar :: Id -> Type -> (Context -> Context)
+updateVar :: Id -> TCType -> (Context -> Context)
 updateVar id ty = M.insert (identOf id) (Variable (locOf id) ty)
 
-updateConst :: Id -> Type -> (Context -> Context)
+updateConst :: Id -> TCType -> (Context -> Context)
 updateConst id ty = M.insert (identOf id) (Constant (locOf id) ty)
 
-updateFun :: Id -> RetType -> [FormalParam] -> (Context -> Context)
+updateFun :: Id -> TCType -> [FormalParam] -> (Context -> Context)
 updateFun id ty params =
    let
-      p2a = (\(Param pby ty id) -> (Arg (locOf id) pby ty (identOf id)))
-      args = map p2a params
+      p2a = \(Param pby ty id) -> (Arg (locOf id) pby (tcTypeOf ty) (identOf id))
+      args = p2a <$> params
    in
       M.insert (identOf id) (Function (locOf id) args ty)
 
-checkRExp :: RExp -> Type -> Env -> Err ()
-checkRExp exp typ env = do
-           typ' <- inferRExp exp env
-           if (typ' == typ) then
-              return ()
-           else
-              Bad "type error"
+-- checkExpWith inferRExp :: RExp -> Type -> Env -> Err ()
+-- checkExpWith inferRExp exp typ env = do
+--            typ' <- inferRExp exp env
+--            if (typ' == typ) then
+--               return ()
+--            else
+--               Bad "type error"
 
-checkLExp :: LExp -> Type -> Env -> Err ()
-checkLExp exp typ env = do
-           typ' <- inferLExp exp env
-           if (typ' == typ) then
-              return ()
-           else
-              Bad "type error"
+-- checkLExp :: LExp -> Type -> Env -> Err ()
+-- checkLExp exp typ env = do
+--            typ' <- inferLExp exp env
+--            if (typ' == typ) then
+--               return ()
+--            else
+--               Bad "type error"
+
+checkExpWith :: (a -> Env -> Err TCType) -> (a -> TCype -> Env -> Err ())
+checkExpWith inferer = \exp typ env -> do
+   typ' <- inferer exp env
+   guard (typ == typ')
+
+checkLogical :: RExp -> RExp -> (Env -> Err TCType)
+checkLogical r1 r2 = \env -> do
+   checkExpWith inferRExp r1 TCBool env
+   checkExpWith inferRExp r2 TCBool env
+   return TCBool
+
+checkArithmetic :: RExp -> RExp -> (Env -> Err TCType)
+checkArithmetic r1 r2 = \env -> do
+   t1 <- inferRExp r1 env
+   t2 <- inferRExp r2 env
+   leastGeneral t1 t2
 
 
-inferRExp :: RExp -> Env -> Err Type
-inferRExp exp env = case exp of
-   LogicalAnd rexp1 rexp2  -> do
-                               checkRExp rexp1 (SType SimpleType_bool) env
-                               checkRExp rexp2 (SType SimpleType_bool) env
-                               return (SType SimpleType_bool)
-   LogicalOr rexp1 rexp2   -> do
-                               checkRExp rexp1 (SType SimpleType_bool) env
-                               checkRExp rexp2 (SType SimpleType_bool) env
-                               return (SType SimpleType_bool)
-   LogicalNot rexp         -> do
-                               checkRExp rexp (SType SimpleType_bool) env
-                               return (SType SimpleType_bool)
-   Comparison rexp1 compop rexp2 -> do
-                               t1 <- inferRExp rexp1 env
-                               t2 <- inferRExp rexp2 env
-                               leastGeneral t1 t2
-                               return (SType SimpleType_bool)
-   Sum rexp1 rexp2         -> do
-                               t1 <- inferRExp rexp1 env
-                               t2 <- inferRExp rexp2 env
-                               leastGeneral t1 t2
-   Sub rexp1 rexp2         -> do
-                               t1 <- inferRExp rexp1 env
-                               t2 <- inferRExp rexp2 env
-                               leastGeneral t1 t2
-   Mul rexp1 rexp2         -> do
-                               t1 <- inferRExp rexp1 env
-                               t2 <- inferRExp rexp2 env
-                               leastGeneral t1 t2
-   Div rexp1 rexp2         -> do
-                               t1 <- inferRExp rexp1 env
-                               t2 <- inferRExp rexp2 env
-                               leastGeneral t1 t2
-   Pow rexp1 rexp2         -> do
-                               t1 <- inferRExp rexp1 env
-                               t2 <- inferRExp rexp2 env
-                               leastGeneral t1 t2
-   Mod rexp1 rexp2         -> do
-                               t1 <- inferRExp rexp1 env
-                               t2 <- inferRExp rexp2 env
-                               t <- leastGeneral t1 t2
-                               t' <- leastGeneral t (SType SimpleType_int)
-                               if (t' == (SType SimpleType_int)) then
-                                  return (SType SimpleType_int)
-                               else
-                                  Bad "warning"
-   Sign signop rexp        -> do
-                               t <- inferRExp rexp env
-                               leastGeneral t (SType SimpleType_int)
+inferRExp :: RExp -> (Env -> Err TCType)
+inferRExp exp = case exp of
+   LogicalAnd r1 r2  -> checkLogical r1 r2
+   LogicalOr  r1 r2  -> checkLogical r1 r2
+   LogicalNot r1     -> checkLogical r1 TCBool
+   Comparison r1 _ r2 -> \env -> do
+      t1 <- inferRExp r1 env
+      t2 <- inferRExp r2 env
+      leastGeneral t1 t2
+      return TCBool
+   Sum r1 r2         -> checkArithmetic r1 r2
+   Sub r1 r2         -> checkArithmetic r1 r2
+   Mul r1 r2         -> checkArithmetic r1 r2
+   Div r1 r2         -> checkArithmetic r1 r2
+   Pow r1 r2         -> checkArithmetic r1 r2
+   Mod r1 r2         -> \env -> do
+      t <- join $ leastGeneral <$> checkArithmetic r1 r2 env <*> Ok TCInt
+      guard (t == TCInt)
+   Sign _ r          -> (inferRExp r . id) >>= (leastGeneral TCInt)
 --   Reference lexp          -> inferLExp lexp env  ?? CHE MINCHIA DI TIPO HA UN PUNTATORE ??
-   LRExp lexp              -> inferLExp lexp env
+   LRExp l           -> inferLExp l
 --   CallExp id rexps        -> lookFun id rexps
-   ReadExp rpred           -> case rpred of 
-                                (RPredefinedRChar _) -> Ok (SType SimpleType_char)
-                                (RPredefinedRInt _) -> Ok (SType SimpleType_int)
-                                (RPredefinedRFloat _) -> Ok (SType SimpleType_float)
-                                (RPredefinedRString _) -> Ok (SType SimpleType_string)
-   Lit literal             -> case literal of
-                                (LiteralPBool _) -> Ok (SType SimpleType_bool)
-                                (LiteralPChar _) -> Ok (SType SimpleType_char)
-                                (LiteralPInt _) -> Ok (SType SimpleType_int)
-                                (LiteralPFloat _) -> Ok (SType SimpleType_float)
-                                (LiteralPString _) -> Ok (SType SimpleType_string)
+   ReadExp rpred     -> (const . Ok) (tcTypeOf rpred)
+   Lit lit           -> (const . Ok) (tcTypeOf lit)
    
   
-inferLExp :: LExp -> Env -> Err Type
+inferLExp :: LExp -> Env -> Err TCType
 inferLExp exp env = case exp of
 --   Dereference lexp        ->  ??? BoH???
    Post lexp incdecop      -> do
                                t <- inferLExp lexp env
-                               t' <- leastGeneral t (SType SimpleType_int)
-                               if (t' == (SType SimpleType_int)) then
+                               t' <- leastGeneral t (TCInt)
+                               if (t' == (TCInt)) then
                                   return t
                                else
                                   Bad "warning"
    Pre incdecop lexp       -> do
                                t <- inferLExp lexp env
-                               t' <- leastGeneral t (SType SimpleType_int)
-                               if (t' == (SType SimpleType_int)) then
+                               t' <- leastGeneral t (TCInt)
+                               if (t' == (TCInt)) then
                                   return t
                                else
                                   Bad "warning"
    ArrayAccess lexp rexp   -> do
                                trexp <- inferRExp rexp env
-                               t <- leastGeneral trexp (SType SimpleType_int)
-                               if (t == (SType SimpleType_int)) then
+                               t <- leastGeneral trexp (TCInt)
+                               if (t == (TCInt)) then
                                   inferLExp lexp env
                                else
                                   Bad "warning"
 --   IdExp id                -> lookVar id env    ?? o lookConst ??
 
 
+-- leastGeneral :: Type -> Type -> Err Type
+-- leastGeneral (TCChar) (TCChar) = Ok (TCChar)
+-- leastGeneral (TCChar) (TCInt) = Ok (TCInt)
+-- leastGeneral (TCChar) (TCFloat) = Ok (TCFloat)
+-- leastGeneral (TCInt) (TCChar) = Ok (TCInt)
+-- leastGeneral (TCInt) (TCInt) = Ok (TCInt)
+-- leastGeneral (TCInt) (TCFloat) = Ok (TCFloat)
+-- leastGeneral (TCFloat) (TCChar) = Ok (TCFloat)
+-- leastGeneral (TCFloat) (TCInt) = Ok (TCFloat)
+-- leastGeneral (TCFloat) (TCFloat) = Ok (TCFloat)
+-- leastGeneral (TCBool) (TCBool) = Ok (TCBool)
+-- leastGeneral (TCString) (TCString) = Ok (TCString)
+-- leastGeneral _ _ = Bad "warning: types not compatible"
+
 leastGeneral :: Type -> Type -> Err Type
-leastGeneral (SType SimpleType_char) (SType SimpleType_char) = Ok (SType SimpleType_char)
-leastGeneral (SType SimpleType_char) (SType SimpleType_int) = Ok (SType SimpleType_int)
-leastGeneral (SType SimpleType_char) (SType SimpleType_float) = Ok (SType SimpleType_float)
-leastGeneral (SType SimpleType_int) (SType SimpleType_char) = Ok (SType SimpleType_int)
-leastGeneral (SType SimpleType_int) (SType SimpleType_int) = Ok (SType SimpleType_int)
-leastGeneral (SType SimpleType_int) (SType SimpleType_float) = Ok (SType SimpleType_float)
-leastGeneral (SType SimpleType_float) (SType SimpleType_char) = Ok (SType SimpleType_float)
-leastGeneral (SType SimpleType_float) (SType SimpleType_int) = Ok (SType SimpleType_float)
-leastGeneral (SType SimpleType_float) (SType SimpleType_float) = Ok (SType SimpleType_float)
-leastGeneral (SType SimpleType_bool) (SType SimpleType_bool) = Ok (SType SimpleType_bool)
-leastGeneral (SType SimpleType_string) (SType SimpleType_string) = Ok (SType SimpleType_string)
-leastGeneral _ _ = Bad "warning: types not compatible"
+leastGeneral x y =
+   case (x <=. y) of
+      Ok True -> Ok y
+      Ok False -> Ok x
+      _ -> Bad $ "Error: " ++ (show x) ++ " and " ++ (show y) ++ " are not compatible."
