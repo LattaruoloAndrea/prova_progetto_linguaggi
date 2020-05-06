@@ -228,52 +228,52 @@ checkVarDecl ty xs (ctx:cs) = foldM f ctx xs
 
 
 
-checkVar :: Type -> Id -> Env -> Err Env
-checkVar typ id env = let
-      val = M.lookup (identOf id) (head env) in
-      case val of
-         Nothing -> let
-                     x' = updateVar id typ (head env) in
-                     return (x' : (tail env))
-         (Just _) -> let x' = updateVar id typ (head env)
-                     in do
-                       Bad "warning: identifier already used"
-                       return (x' : (tail env))
+-- checkVar :: Type -> Id -> Env -> Err Env
+-- checkVar typ id env = let
+--       val = M.lookup (identOf id) (head env) in
+--       case val of
+--          Nothing -> let
+--                      x' = updateVar id typ (head env) in
+--                      return (x' : (tail env))
+--          (Just _) -> let x' = updateVar id typ (head env)
+--                      in do
+--                        Bad "warning: identifier already used"
+--                        return (x' : (tail env))
 
-checkInitVar :: Type -> Id -> RExp -> Env -> Err Env
-checkInitVar typ id rexp env = let
-      val = M.lookup (identOf id) (head env) in
-      case val of
-          Nothing -> let
-                       typ' = inferRExp rexp env in
-                       if (typ == typ') then let
-                          x' = updateVar id typ (head env)
-                          in return (x' : (tail env))
-                       else
-                          Bad ("variable" ++ (show id) ++ "has type different from declared")   -- int a = "ciao"
-          (Just _) -> do
-                       Bad "warning: identifier already used"
-                       typ' <- inferRExp rexp env
-                       if (typ == typ') then let
-                          x' = updateVar id typ (head env)
-                          in return (x' : (tail env))
-                       else
-                          Bad ("variable" ++ (identOf id) ++ "has type different from declared")   -- int a = "ciao"
-
-
-lookVar :: Id -> Env -> Err Type
-lookVar id env = let
-      kind = head' (lookupList (identOf id) env) in
-      case kind of
-         Nothing                            -> Bad ((identOf id) ++ "never declared")
-         (Just (Variable loc typ))          -> Ok typ
-         (Just (Function loc params typ))   -> Bad ((identOf id) ++ "is a function")
-         (Just (Constant loc typ))          -> Bad ((identOf id) ++ "is a constant")
+-- checkInitVar :: Type -> Id -> RExp -> Env -> Err Env
+-- checkInitVar typ id rexp env = let
+--       val = M.lookup (identOf id) (head env) in
+--       case val of
+--           Nothing -> let
+--                        typ' = inferRExp rexp env in
+--                        if (typ == typ') then let
+--                           x' = updateVar id typ (head env)
+--                           in return (x' : (tail env))
+--                        else
+--                           Bad ("variable" ++ (show id) ++ "has type different from declared")   -- int a = "ciao"
+--           (Just _) -> do
+--                        Bad "warning: identifier already used"
+--                        typ' <- inferRExp rexp env
+--                        if (typ == typ') then let
+--                           x' = updateVar id typ (head env)
+--                           in return (x' : (tail env))
+--                        else
+--                           Bad ("variable" ++ (identOf id) ++ "has type different from declared")   -- int a = "ciao"
 
 
-lookupList :: Ord k => k -> [M.Map k a] -> [Maybe a]
-lookupList k [] = [Nothing]
-lookupList k (x:xs) = M.lookup k x : lookupList k xs
+-- lookVar :: Id -> Env -> Err Type
+-- lookVar id env = let
+--       kind = head' (lookupList (identOf id) env) in
+--       case kind of
+--          Nothing                            -> Bad ((identOf id) ++ "never declared")
+--          (Just (Variable loc typ))          -> Ok typ
+--          (Just (Function loc params typ))   -> Bad ((identOf id) ++ "is a function")
+--          (Just (Constant loc typ))          -> Bad ((identOf id) ++ "is a constant")
 
+
+lookupList :: Ident -> (Env -> Maybe EnvEntry)
+lookupList k = head' . dropWhile isNothing . map (M.lookup k)
+
+head' :: [Maybe a] -> Maybe a
 head' [] = Nothing
 head' xs = head xs
