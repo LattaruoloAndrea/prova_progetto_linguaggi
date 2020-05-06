@@ -241,6 +241,56 @@ checkVarDecl ty xs (ctx:cs) = foldM f ctx xs
             return $ updateWith Variable id ty c
          (DeclItemInitItem (InitDecl id r)) -> initWith Variable id r (c:cs)
 
+{-
+checkFun :: Function -> Env -> Err Env
+checkFun (Fun rettyp (FRest id params blk)) env = let
+         val = M.lookup (identOf id) (head env) in
+         case val of
+            Nothing -> let 
+                        x' = updateFun id rettyp params (head env)
+                        startblk = addParams params [[] ++ (x : (tail env))]
+                        (env', ret) = checkBlock blk startblk False
+                        in if ((typeOf rettype) == void || ret == True) then
+                           return env -- dovrebbe essere uguale a env'
+                        else
+                           Bad "error"
+            (Just _) -> do
+                        Bad "warning"
+                        let 
+                        x' = updateFun id rettyp params (head env)
+                        startblk = addParams params [[] ++ (x : (tail env))]
+                        (env', ret) = checkBlock blk startblk False
+                        in if ((typeOf rettype) == void || ret == True) then
+                           return env -- dovrebbe essere uguale a env'
+                        else
+                           Bad "error"
+
+addParams :: [FormalParam] -> Env -> Err Env
+addParams [] env = Ok env
+addParams ((Param pass typ id) : xs) = case pass of
+   ValuePass -> ...
+   RefPass -> ...
+
+checkBlock :: Block -> Env -> Bool -> (Err Env, Bool)     -- PRENDE IN INPUT ANCHE RETTYPE DELLA FUNZIONE?? IO DIREI DI SI
+checkBlock (Blk [] []) env ret = return (tail(env), ret)
+checkBlock (Blk (x:xs) ys) env ret = let
+         env' = checkDeclaration x env
+         in case env' of
+             (Ok env'')  -> checkBlock (Blk xs ys) env'' False
+             (Bad s) -> do
+                         Bad s
+                         checkBlock (Blk xs ys) env'' False
+checkBlock (Blk [] (y:ys)) env ret = 
+         if (ret == True) then 
+            return (tail(env), ret)
+         else
+            let (env', ret') = checkStm y env False
+            in return (checkBlock (Blk [] ys) env' (ret || ret'))
+                        
+checkStm :: Statement :: Stm -> Env -> (Err Env, Bool)   -- PRENDE IN INPUT ANCHE RETTYPE DELLA FUNZIONE? IO DIREI DI SI
+checkStm stm env = case stm of
+   ....
+-}
 
 
 -- checkVar :: Type -> Id -> Env -> Err Env
