@@ -285,7 +285,12 @@ checkBlock (Blk [] (y:ys)) env ret =
             return (tail(env), ret)
          else
             let (env', ret') = checkStm y env False
-            in return (checkBlock (Blk [] ys) env' (ret || ret'))
+            in
+            case env' of
+               (Ok env'') -> return (checkBlock (Blk [] ys) env' (ret || ret'))
+               (Bad s) -> do
+                         Bad s
+                         checkBlock (Blk [] ys) env' (ret || ret')
                         
 checkStm :: Statement :: Stm -> Env -> (Err Env, Bool)   -- PRENDE IN INPUT ANCHE RETTYPE DELLA FUNZIONE? IO DIREI DI SI
 checkStm stm env = case stm of
