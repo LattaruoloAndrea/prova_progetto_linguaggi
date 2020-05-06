@@ -198,6 +198,21 @@ leastGeneral x y =
 
 
 -- ////////////////////////////////////////////////////////////////////////
+checkProgram :: Program -> Err Env
+checkProgram (Prog globs) = checkGlobal globs [M.empty]
+
+checkGlobal :: [Global] -> Env -> Err Env
+checkGlobal [] env = Ok env
+checkGlobal (x:xs) env = case x of
+   GlobalDecl decl -> let 
+     env' = checkDeclaration decl env
+     in case env' of
+        (Ok e) -> checkGlobal xs e
+        (Bad s) -> Bad s
+{-   FunDecl fun -> let
+     env' = checkFunction fun env
+     in checkGlobal xs env'
+-}
 
 checkDeclaration :: Declaration -> Env -> Err Env
 checkDeclaration decl env@(c:cs) = case decl of
