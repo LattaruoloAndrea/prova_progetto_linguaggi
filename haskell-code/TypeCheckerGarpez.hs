@@ -423,6 +423,7 @@ checkStmWhile :: Statement :: Stm -> Env -> Type -> (Err Env, Bool)   -- oppure 
 checkStmWhile stm env rettyp = case stm of
    JumpStm (JumpBreak brk) -> (Ok env, False)
    JumpStm (JumpContinue cnt) -> (Ok env, False)
+   -- gli altri casi con i blocchi vanno definiti chiamando checkBlockWhile
    _ -> checkStm stm env rettyp
 
 checkConditional :: Conditional -> Type -> Env -> (Err Env, Bool)
