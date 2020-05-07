@@ -5,6 +5,6 @@
 - Static scope, local visibility only of variables declared "above" 
 
 ## TODO
-[] Grammar
-[] Type checker
-[] Three Address Code
+- [ ] Grammar
+- [ ] Type checker
+- [ ] Three Address Code
