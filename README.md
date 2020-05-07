@@ -1,26 +1,10 @@
-# Progetto Linguaggi e Compilatori
+# Progetto Linguaggi e Compilatori, GARPEZ++
 
-## Occorrente
-- Forbici dalla punta arrotondata
-- Colla vinilica diluita in parti uguali con acqua
-- Possibilità di poter usare la frase "Fatto?" q.b.
-- *Fate un commit **per ogni piccola modifica** e descrivetela in due parole nel messaggio.*
-- *Ovviamente non serve pushare ogni volta che committate*
-- Per aggiornare la vostra repo locale usate `git pull`
-
-## Working in
-`garpez/garpez.cf`
+## Features
+- C-like syntax
+- Static scope, local visibility only of variables declared "above" 
 
 ## TODO
-- ~~@Latta dammi i permessi di admin sulla repo~~
-- Refactor della grammatica per renderla più pulita:
-	- Sistemare dichiarazione di array
-	- Decidere cosa fare per if-then-else (sempre parentesi e nessun conflitto oppure
-		come in C)
-- Il refactoring è una cosa superflua ma utile da fare
-- - trattini che fanno cose
-- - altri trattini
-- type checker
-- type system
-- ~~riverede~~ rivedere haskell ? per i due sopra 
-- continuare a far finta di fare ma non fare ~~comuqnue~~ comunque niente
+[] Grammar
+[] Type checker
+[] Three Address Code
