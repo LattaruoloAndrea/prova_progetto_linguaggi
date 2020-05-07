@@ -296,7 +296,12 @@ checkBlock (Blk [] (y:ys)) env ret rettyp =
 checkStm :: Statement :: Stm -> Env -> Type -> (Err Env, Bool)   -- oppure Err (Env, Bool)?
 checkStm stm env rettyp = case stm of
    BlkStm blk -> checkBlock blk env False rettyp
--- CallStm??
+   CallStm id rexps -> let
+                       val = lookupList id env
+                       in case val of
+      (Just (Function loc params typ)) -> checkParams rexps params env
+      (Just _) -> Bad (show id) ++ "is not a function"
+      Nothing -> Bad "function" ++ (show id) ++ "not defined"
    Assign lexp assop rexp -> let
                              t1 = inferLExp lexp env
                              t2 = inferRExp rexp env
@@ -381,6 +386,17 @@ checkStm stm env rettyp = case stm of
                                   return (Env, False)
                                else
                                   Bad "different types"
+
+checkParams :: [RExp] -> [Arg] -> Env -> Err ()
+checkParams [] [] env = Ok ()
+checkParams [] ys env = Bad "different number of args"
+checkParams xs [] env = Bad "different number of args"
+checkParams (x:xs) ((Arg loc passby typ id):ys) env = let 
+                      t = inferRExp x env
+                      if (x == typ) then
+                         checkParams xs ys env
+                      else
+                         Bad "expression" ++ (show x) ++ "has different type from arg" ++ (show id)
 
 checkBlockWhile :: Block -> Env -> Bool -> Type -> (Err Env, Bool)
 checkBlockWhile (Blk [] []) env ret rettyp = return (tail(env), ret)
