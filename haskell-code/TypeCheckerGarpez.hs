@@ -210,6 +210,21 @@ leastGeneral x y =
 
 
 -- ////////////////////////////////////////////////////////////////////////
+checkProgram :: Program -> Err Env
+checkProgram (Prog globs) = checkGlobal globs [M.empty]
+
+checkGlobal :: [Global] -> Env -> Err Env
+checkGlobal [] env = Ok env
+checkGlobal (x:xs) env = case x of
+   GlobalDecl decl -> let 
+     env' = checkDeclaration decl env
+     in case env' of
+        (Ok e) -> checkGlobal xs e
+        (Bad s) -> Bad s
+{-   FunDecl fun -> let
+     env' = checkFunction fun env
+     in checkGlobal xs env'
+-}
 
 -- check di una dichiarazione: la notazione "strana" è più o meno l'equivalente di
 -- (checkConstDecl consts env) : cs
@@ -259,6 +274,209 @@ checkVarDecl ty xs (ctx:cs) = foldM f ctx xs
                (Ok True) -> initWith Variable id r (c:cs)
                _         -> Bad "Not compatible."
 
+{-
+checkFun :: Function -> Env -> Err Env
+checkFun (Fun rettyp (FRest id params blk)) env = let
+         val = M.lookup (identOf id) (head env) in
+         case val of
+            Nothing -> let 
+                        x' = updateFun id rettyp params (head env)
+                        startblk = addParams params [[] ++ (x : (tail env))]
+                        (env', ret) = checkBlock blk startblk False
+                        in if ((typeOf rettype) == void || ret == True) then
+                           return env -- dovrebbe essere uguale a env'
+                        else
+                           Bad "error"
+            (Just _) -> do
+                        Bad "warning"
+                        let 
+                        x' = updateFun id rettyp params (head env)
+                        startblk = addParams params [[] ++ (x : (tail env))]
+                        (env', ret) = checkBlock blk startblk False
+                        in if ((typeOf rettype) == void || ret == True) then
+                           return env -- dovrebbe essere uguale a env'
+                        else
+                           Bad "error"
+
+addParams :: [FormalParam] -> Env -> Err Env
+addParams [] env = Ok env
+addParams ((Param pass typ id) : xs) = case pass of
+   ValuePass -> ...
+   RefPass -> ...
+
+
+checkBlock :: Block -> Env -> Bool -> Type -> (Err Env, Bool)
+checkBlock (Blk [] []) env ret rettyp = return (tail(env), ret)
+checkBlock (Blk (x:xs) ys) env ret rettyp = let
+         env' = checkDeclaration x env
+         in case env' of
+             (Ok env'')  -> checkBlock (Blk xs ys) env'' False rettyp
+             (Bad s) -> do
+                         Bad s
+                         checkBlock (Blk xs ys) env'' False rettyp
+checkBlock (Blk [] (y:ys)) env ret rettyp = 
+         if (ret == True) then 
+            return (tail(env), ret)
+         else
+            let (env', ret') = checkStm y env False rettyp
+            in
+            case env' of
+               (Ok env'') -> return (checkBlock (Blk [] ys) env' (ret || ret') rettyp)
+               (Bad s) -> do
+                         Bad s
+                         checkBlock (Blk [] ys) env' (ret || ret') rettyp
+                        
+checkStm :: Statement :: Stm -> Env -> Type -> (Err Env, Bool)   -- oppure Err (Env, Bool)?
+checkStm stm env rettyp = case stm of
+   BlkStm blk -> checkBlock blk env False rettyp
+   CallStm id rexps -> let
+                       val = lookupList id env
+                       in case val of
+      (Just (Function loc params typ)) -> checkParams rexps params env
+      (Just _) -> Bad (show id) ++ "is not a function"
+      Nothing -> Bad "function" ++ (show id) ++ "not defined"
+   Assign lexp assop rexp -> let
+                             t1 = inferLExp lexp env
+                             t2 = inferRExp rexp env
+                             in case t1 of
+                                (Ok t1') -> case t2 of
+                                   (Ok t2') -> if (t1' == t2' ... leastGeneral) then
+                                      return (env, False)
+                                   else
+                                      Bad " ... "
+                                   (Bad s) -> (Bad s, False)
+                                (Bad s1) -> (Bad s1, False)
+   LExp lexp -> case lexp of
+      Dereference _ -> do
+                        Bad "..."
+                        return (env, False)
+      ArrayAccess _ -> do
+                        Bad "..."
+                        return (env, False)
+      IdExp _       -> do
+                        Bad "..."
+                        return (env, False)
+      Post lexp incdec -> do
+                           checkExpWith lexp env int
+                           return (env, False)
+      Pre incdec lexp  -> do
+                           checkExpWith lexp env int
+                           return (env, False)
+   CondStm cond -> checkConditional cond env rettyp   -- non devo passare return (?)
+   LoopStm loop -> case loop of
+      LoopWhile (WhileLoop rexp blk)     -> do
+                                             checkExpWith rexp env (typeOf bool)
+                                             let
+                                             (env', ret') = checkBlockWhile blk rettyp env False
+                                             in case env' of
+                                                (Ok env'') -> return (env'', False) -- se un while è returning non importa: potrei non entrarci
+                                                (Bad s) -> return (Bad s, False)
+      LoopDoWhile (DoWhileLoop blk rexp) -> do
+                                             checkExpWith rexp env (typeOf bool)
+                                             let
+                                             (env', ret') = checkBlockWhile blk rettyp env False -- uguale a checkblock, ma permette break e return
+                                             in case env' of
+                                                (Ok env'') -> return (env'', False) -- se un while è returning non importa: potrei non entrarci
+                                                (Bad s) -> return (Bad s, False)
+      LoopFor (ForLoop decl rexp1 rexp2 blk) -> do
+                                             checkDeclaration decl env
+                                             checkExpWith rexp1 env (typeOf bool)
+                                             checkExpWith rexp1 env (typeOf bool)
+                                             let
+                                             (env', ret') = checkBlock blk rettyp env False
+                                             in case env' of
+                                                (Ok env'') -> return (env'', False) -- se un for è returning non importa: potrei non entrarci
+                                                (Bad s) -> return (Bad s, False)
+   JumpStm jump -> case jump of
+      JumpReturn ret -> if (rettyp == (typeOf void)) then
+                           return (env, True)
+                        else
+                           Bad "cannot return whithout type in a function"
+      Jump1 ret rexp -> let
+                        t = inferRExp rexp env
+                        if (rettyp == (typeOf t)) then
+                           return (env, True)
+                        else
+                           Bad "different types"
+      JumpBreak brk -> Bad "cannot have breake outside a while loop"
+      JumpContinue cnt -> Bad "cannot have continue outside a while loop"
+   WriteStm wpred recp -> let
+                          t = inferRExp rexp env
+                          case wpred of
+      (WPredefinedWChar ch) -> if (t == (typeOf char)) then
+                                  return (Env, False)
+                               else
+                                  Bad "different types"
+      (WPredefinedWInt in) -> if (t == (typeOf int)) then
+                                  return (Env, False)
+                               else
+                                  Bad "different types"
+      (WPredefinedWFloat fl) -> if (t == (typeOf float)) then
+                                  return (Env, False)
+                               else
+                                  Bad "different types"
+      (WPredefinedWString st) -> if (t == (typeOf string)) then
+                                  return (Env, False)
+                               else
+                                  Bad "different types"
+
+checkParams :: [RExp] -> [Arg] -> Env -> Err ()
+checkParams [] [] env = Ok ()
+checkParams [] ys env = Bad "different number of args"
+checkParams xs [] env = Bad "different number of args"
+checkParams (x:xs) ((Arg loc passby typ id):ys) env = let 
+                      t = inferRExp x env
+                      if (x == typ) then
+                         checkParams xs ys env
+                      else
+                         Bad "expression" ++ (show x) ++ "has different type from arg" ++ (show id)
+
+checkBlockWhile :: Block -> Env -> Bool -> Type -> (Err Env, Bool)
+checkBlockWhile (Blk [] []) env ret rettyp = return (tail(env), ret)
+checkBlockWhile (Blk (x:xs) ys) env ret rettyp = let
+         env' = checkDeclaration x env
+         in case env' of
+             (Ok env'')  -> checkBlockWhile (Blk xs ys) env'' False rettyp
+             (Bad s) -> do
+                         Bad s
+                         checkBlockWhile (Blk xs ys) env'' False rettyp
+checkBlockWhile (Blk [] (y:ys)) env ret rettyp = 
+         if (ret == True) then 
+            return (tail(env), ret)
+         else
+            let (env', ret') = checkStmWhile y env False rettyp
+            in
+            case env' of
+               (Ok env'') -> return (checkBlockWhile (Blk [] ys) env' (ret || ret') rettyp)
+               (Bad s) -> do
+                         Bad s
+                         checkBlockWhile (Blk [] ys) env' (ret || ret') rettyp
+
+checkStmWhile :: Statement :: Stm -> Env -> Type -> (Err Env, Bool)   -- oppure Err (Env, Bool)?
+checkStmWhile stm env rettyp = case stm of
+   JumpStm (JumpBreak brk) -> (Ok env, False)
+   JumpStm (JumpContinue cnt) -> (Ok env, False)
+   -- gli altri casi con i blocchi vanno definiti chiamando checkBlockWhile
+   _ -> checkStm stm env rettyp
+
+checkConditional :: Conditional -> Type -> Env -> (Err Env, Bool)
+checkConditional cond rettyp env = case cond of
+   ConditionalIf if -> checkIf if rettyp env
+-- eventualmente altri condizionali
+
+checkIf :: If -> Type -> Env -> (Err Env, Bool)
+checkIf (IfCond rexp blk rest) rettyp env = let
+                         env1 = checkRExpWith rexp env (typeOf bool)
+                         (env2, ret) = checkBlock blk env False rettyp
+                         in case rest of
+   RestIf_     -> return (env2, ret)
+   RestIf1 if  -> let
+                  (env3, ret1) = checkIf if rettyp env
+                  return (env3, ret && ret1)
+   RestIf2 blk -> let
+                  (env4, ret2) = checkBlock blk env False rettyp
+                  return (env4, ret && ret2)
+-}
 
 
 -- checkVar :: Type -> Id -> Env -> Err Env
