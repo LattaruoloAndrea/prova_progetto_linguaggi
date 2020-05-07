@@ -122,6 +122,9 @@ instance Typeable SimpleType where
 -- updateConst :: Id -> Type -> (Context -> Context)
 -- updateConst id ty = M.insert (identOf id) (Constant (locOf id) ty)
 
+
+-- updateVar/updateConst generalizzate: f qui può essere una fra "Variable" e "Constant"
+-- Da pensarci per quanto riguarda updateFun
 updateWith :: (Loc -> Type -> EnvEntry) -> Id -> Type -> (Context -> Context)
 updateWith f id ty = M.insert (identOf id) (f (locOf id) ty)
 
@@ -133,41 +136,46 @@ updateFun id ty params =
    in
       M.insert (identOf id) (Function (locOf id) args ty)
 
+-- check di un'espressione (LExp o RExp che sia) tramite una funzione "inferitrice"
 checkExpWith :: (a -> (Env -> Err Type)) -> (a -> Type -> Env -> Err ())
 checkExpWith inferer = \exp typ env -> do
    typ' <- inferer exp env
    guard (typ == typ')
 
-checkLogical :: RExp -> RExp -> (Env -> Err Type)
-checkLogical r1 r2 = \env -> do
+-- inferisce espressione binaria booleane (&& ||)
+inferLogical :: RExp -> RExp -> (Env -> Err Type)
+inferLogical r1 r2 = \env -> do
    checkExpWith inferRExp r1 bool env
    checkExpWith inferRExp r2 bool env
    return bool
 
-checkArithmetic :: RExp -> RExp -> (Env -> Err Type)
-checkArithmetic r1 r2 = \env -> do
+
+-- inferisce espressione binaria aritmetiche (+ - * / ^)
+inferArithmetic :: RExp -> RExp -> (Env -> Err Type)
+inferArithmetic r1 r2 = \env -> do
    t1 <- inferRExp r1 env
    t2 <- inferRExp r2 env
    leastGeneral t1 t2
 
 
+-- inferisce RExp
 inferRExp :: RExp -> (Env -> Err Type)
 inferRExp exp = case exp of
-   LogicalAnd r1 r2  -> checkLogical r1 r2
-   LogicalOr  r1 r2  -> checkLogical r1 r2
+   LogicalAnd r1 r2  -> inferLogical r1 r2
+   LogicalOr  r1 r2  -> inferLogical r1 r2
    LogicalNot r1     -> \env -> (checkExpWith inferRExp r1 bool env) >> (Ok bool)
    Comparison r1 _ r2 -> \env -> do
       t1 <- inferRExp r1 env
       t2 <- inferRExp r2 env
       leastGeneral t1 t2
       return bool
-   Sum r1 r2         -> checkArithmetic r1 r2
-   Sub r1 r2         -> checkArithmetic r1 r2
-   Mul r1 r2         -> checkArithmetic r1 r2
-   Div r1 r2         -> checkArithmetic r1 r2
-   Pow r1 r2         -> checkArithmetic r1 r2
-   Mod r1 r2         -> \env -> do
-      t <- join $ leastGeneral <$> checkArithmetic r1 r2 env <*> Ok int
+   Sum r1 r2         -> inferArithmetic r1 r2
+   Sub r1 r2         -> inferArithmetic r1 r2
+   Mul r1 r2         -> inferArithmetic r1 r2
+   Div r1 r2         -> inferArithmetic r1 r2
+   Pow r1 r2         -> inferArithmetic r1 r2
+   Mod r1 r2         -> \env -> do -- Per il mod facciamo oltre ad inferire imponiamo che il tipo generale sia int
+      t <- join $ leastGeneral <$> inferArithmetic r1 r2 env <*> Ok int
       guard (t == int)
       Ok int
    Sign _ r          -> \env -> join $ leastGeneral int <$> inferRExp r env
@@ -178,6 +186,7 @@ inferRExp exp = case exp of
    Lit lit           -> (const . Ok) (typeOf lit)
    
   
+-- inferisce LExp
 inferLExp :: LExp -> (Env -> Err Type)
 inferLExp exp = case exp of
 --   Dereference lexp        ->  ??? BoH???
@@ -188,6 +197,9 @@ inferLExp exp = case exp of
       inferLExp l env
 --   IdExp id                -> lookVar id env    ?? o lookConst ??
 
+
+-- Dati due tipi, restituisce il meno generale tra i due (Ok)
+-- Se i tipi non sono compatibili errore (Bad)
 leastGeneral :: Type -> Type -> Err Type
 leastGeneral x y =
    case (x <=. y) of
@@ -199,12 +211,20 @@ leastGeneral x y =
 
 -- ////////////////////////////////////////////////////////////////////////
 
+-- check di una dichiarazione: la notazione "strana" è più o meno l'equivalente di
+-- (checkConstDecl consts env) : cs
+-- la necessità di <$> è per permettere di concatenare in modo pulito la testa
+-- di un Env monadico (Err ritornato dal check) con la tail non monadica (cs) 
+-- Analogo per checkVarDecl
 checkDeclaration :: Declaration -> Env -> Err Env
 checkDeclaration decl env@(c:cs) = case decl of
    ConstDecl consts -> (:cs) <$> checkConstDecl consts env
    VarDecl typ vars -> (:cs) <$> checkVarDecl typ vars env
 
 
+-- Dati un costruttore di EnvEntry (f che può essere Variable o Constant)
+-- un Id, una RExp e un Env, aggiunge Id=RExp nel contesto (ritornandolo)
+-- se era già presente Bad
 initWith :: (Loc -> Type -> EnvEntry) -> Id -> RExp -> Env -> Err Context
 initWith f id r (c:cs) = do
       guard . isNothing $ M.lookup (identOf id) c
@@ -212,11 +232,20 @@ initWith f id r (c:cs) = do
       return $ updateWith f id ty c
 
 
+-- Data una lista di InitItem xs, faccio un "foldl" su questa lista
+-- accumulando il nuovo Context (e inserendo delle Constant)
+-- la version monadica (foldM) è necessaria per ritornare
+-- in modo pulito un Err Context
 checkConstDecl :: [InitItem] -> Env -> Err Context
 checkConstDecl xs (ctx:cs) = foldM f ctx xs
    where
       f = \c (InitDecl id r) -> initWith Constant id r (c:cs)
 
+
+-- Dato un tipo e una lista di DeclItem xs, faccio un "foldl" su questa lista
+-- accumulando il nuovo Context (e inserendo delle Variable)
+-- la version monadica (foldM) è necessaria per ritornare
+-- in modo pulito un Err Context
 checkVarDecl :: Type -> [DeclItem] -> Env -> Err Context
 checkVarDecl ty xs (ctx:cs) = foldM f ctx xs
    where
@@ -224,7 +253,11 @@ checkVarDecl ty xs (ctx:cs) = foldM f ctx xs
          (DeclItemDeclId (DeclOnly id)) -> do
             guard . isNothing $ M.lookup (identOf id) c
             return $ updateWith Variable id ty c
-         (DeclItemInitItem (InitDecl id r)) -> initWith Variable id r (c:cs)
+         (DeclItemInitItem (InitDecl id r)) -> do
+            t <- inferRExp r [c]
+            case ty >=. t of
+               (Ok True) -> initWith Variable id r (c:cs)
+               _         -> Bad "Not compatible."
 
 
 
