@@ -1,9 +1,0 @@
-const N = 12;
-int x = 1, y, z = 2*x;
-
-function int[3]* main(int argc, char** argv) {
-	string s = readString();
-	writeString(s);
-
-	return;
-}
