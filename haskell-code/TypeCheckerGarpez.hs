@@ -338,9 +338,10 @@ checkStm stm env rettyp = case stm of
    Assign lexp assop rexp -> let
                              t1 = inferLExp lexp env
                              t2 = inferRExp rexp env
+                             t = leastGeneral t1 t2
                              in case t1 of
                                 (Ok t1') -> case t2 of
-                                   (Ok t2') -> if (t1' == t2' ... leastGeneral) then
+                                   (Ok t2') -> if (t1' == t) then
                                       return (env, False)
                                    else
                                       Bad " ... "
