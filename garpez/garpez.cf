@@ -16,8 +16,9 @@ terminator Global "" ;
 
 -- DECLARATIONS ////////////////////////////////////////////////////////////////////
 
-ConstDecl.					Declaration ::= "const" [InitItem] ";" ;
-VarDecl.					Declaration ::= Type [DeclItem] ";" ;
+rules						Declaration ::= DeclConst | DeclVar ;
+ConstDecl.					DeclConst ::= "const" [InitItem] ";" ;
+VarDecl.					DeclVar ::= Type [DeclItem] ";" ;
 
 InitDecl.					InitItem ::= Id "=" RExp ;
 DeclOnly.					DeclId ::= Id ;
@@ -72,7 +73,7 @@ rules 						RestIf ::= "" | "else" If | "else" Block ;
 
 WhileLoop.					While ::= "while" "(" RExp ")" Block ;
 DoWhileLoop.				DoWhile ::= "do" Block "while" "(" RExp ")" ";" ;
-ForLoop.					For ::= "for" "(" Declaration ";" RExp ";" RExp ")" Block ;
+ForLoop.					For ::= "for" "(" DeclVar RExp ";" RExp ")" Block ;
 
 
 -- EXPRESSIONS /////////////////////////////////////////////////////////////////////
