@@ -1,0 +1,18 @@
+char aa = 'a';
+
+function int prova (int p){
+	int p = 5;
+	const d = 'a';
+	if (p == d){
+	p= 6;
+	}
+	while( ! (i<=5 && (True || False)) && (! d)){
+	miao();
+	}
+
+	for (int i =0; i<=5; ++i){
+		const d = 5;
+		int p = 4;
+	}
+	return 5;
+}
