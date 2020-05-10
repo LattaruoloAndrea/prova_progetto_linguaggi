@@ -15,20 +15,19 @@ separator nonempty FDecl "" ;
 separator nonempty VDecl "," ;
 separator nonempty CDecl "," ;
 
-FDecl.						FDecl ::= RType Id "(" [Param] ")" Block ;
+FDecl.						FDecl ::= RType Ident "(" [Param] ")" Block ;
 
 VList.						DList  ::= Type [VDecl] ";" ;
 CList.						DList  ::= "const" [CDecl] ";" ;
 
-VSolo.						VDecl  ::= Id ;
-VInit.						VDecl  ::= Id "=" RExp;
+VSolo.						VDecl  ::= Ident ;
+VInit.						VDecl  ::= Ident "=" RExp;
 
-CDecl.						CDecl  ::= Id "=" RExp;
+CDecl.						CDecl  ::= Ident "=" RExp;
 
 
 -- TYPES ///////////////////////////////////////////////////////////////////////
 
-Type.						
 
 
 -- EXPRESSIONS /////////////////////////////////////////////////////////////////
@@ -36,75 +35,39 @@ Type.
 coercions LExp 4 ;
 coercions RExp 10 ;
 
-Deref.						LExp  ::= Star LExp ;
+Deref.						LExp  ::= "*" LExp ;
 Post.						LExp1 ::= LExp2 IncDecOp ;
 Pre.						LExp2 ::= IncDecOp LExp3 ;
 Access.						LExp3 ::= LExp3 "[" RExp "]" ;
-Name.						LExp4 ::= Id ;
+Name.						LExp4 ::= Ident ;
 
 
-Or.							RExp ::= RExp OrS RExp1 ;
-And.						RExp1 ::= RExp1 AndS RExp2 ;
-Not.						RExp2 ::= NotS RExp3 ;
+Or.							RExp ::= RExp "||" RExp1 ;
+And.						RExp1 ::= RExp1 "&&" RExp2 ;
+Not.						RExp2 ::= "!" RExp3 ;
 Comp.						RExp3 ::= RExp3 CompOp RExp4 ;
-Add.						RExp4 ::= RExp4 Plus RExp5 ;
-Sub.						RExp4 ::= RExp4 Minus RExp5 ;
-Mul.						RExp5 ::= RExp5 Star RExp6 ;
-Div.						RExp5 ::= RExp5 Slash RExp6 ;
-Rem.						RExp5 ::= RExp5 Mod RExp6 ;
-Pow.						RExp6 ::= RExp7 PowS RExp6 ;
+Add.						RExp4 ::= RExp4 "+" RExp5 ;
+Sub.						RExp4 ::= RExp4 "-" RExp5 ;
+Mul.						RExp5 ::= RExp5 "*" RExp6 ;
+Div.						RExp5 ::= RExp5 "/" RExp6 ;
+Rem.						RExp5 ::= RExp5 "%" RExp6 ;
+Pow.						RExp6 ::= RExp7 "^" RExp6 ;
 Sign.						RExp7 ::= SignOp RExp8 ;
-Ref.						RExp7 ::= RefS LExp ;
+Ref.						RExp7 ::= "&" LExp ;
 Left.						RExp8 ::= LExp ;
-FCall.						RExp9 ::= Id "(" [RExp] ")" ;
+FCall.						RExp9 ::= Ident "(" [RExp] ")" ;
 PRead.						RExp9 ::= PRead "(" ")" ;
 Lit.						RExp10 ::= Literal ;
 
 
 -- PREDEFINED FUNCTIONS ///////////////////////////////////////////////////////
 
-rules PRead  ::= RChar | RInt | RFloat | RString ;
-rules PWrite ::= WChar | WInt | WFloat | WString ;
+rules PRead  ::= "readChar" | "readInt" | "readFloat" | "readString" ;
+rules PWrite ::= "writeChar" | "writeInt" | "writeFloat" | "writeString" ;
 
 
+-- LITERALS //////////////////////////////////////////////////////////////////
 
--- TOKENS /////////////////////////////////////////////////////////////////////
+rules Literal ::= Bool | Char | Integer | Double | String ;
 
-position token Id ( letter (letter | digit | '_' )* ) ;
-position token PBool {"true"} | {"false"} ;
-position token PChar ( '\'' ((char - ["'\\"]) | ('\\' ["'\\nt"])) '\'' ) ;
-position token PInt ( digit+ ) ;
-position token PFloat ( digit+ '.' digit+ ) ;
-position token PString ( '"' ((char - ["\"\\"]) | ('\\' ["\"\\nt"]))* '"' ) ;
-
-position token Return {"return"} ;
-position token Break {"break"} ;
-position token Continue {"continue"} ;
-
-position token RChar {"readChar"} ;
-position token RInt {"readInt"} ;
-position token RFloat {"readFloat"} ;
-position token RString {"readString"} ;
-
-position token WChar {"writeChar"} ;
-position token WInt {"writeInt"} ;
-position token WFloat {"writeFloat"} ;
-position token WString {"writeString"} ;
-
-position token Lt {"<"} ;
-position token Le {"<="} ;
-position token Eq {"=="} ;
-position token Nq {"!="} ;
-position token Ge {">="} ;
-position token Gt {">"} ;
-
-position token Plus {"+"} ;
-position token Minus {"-"} ;
-position token Star {"*"} ;
-position token Slash {"/"} ;
-position token PowS {"^"} ;
-position token Mod {"%"} ;
-position token RefS {"&"} ;
-position token OrS {"||"} ;
-position token AndS {"&&"} ;
-position token NotS {"!"} ;
+token Bool {"false" | "true"} ;
