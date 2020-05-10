@@ -1,0 +1,200 @@
+- leastGeneral deve considerare anche array e puntatori (per assegnamenti)
+- Quando si USANO variabili, costanti, funzioni vanno cercate sull'intero env
+  Quando si DICHIARANO, vanno cercate solo nell'env corrente
+
+
+Program ::= [Global]
+
+-- DICHIARAZIONI --
+
+ Global ::= Declaration
+  Declaration ::= "const" [InitItem]
+   InitItem ::= Id "=" RExp
+   1) Verifico se Id è gia stata definita nell'ambiente corrente
+   2) Se sì, warning "id già definito"
+   3) In ogni caso, verifico se RExp si può ridurre ad operazioni sui literal
+      (NO rif. a variabili/funzioni/(?puntatori?), Sì a costanti già definite),
+      in modo che sia valutabile a compile time
+   4) Non sono possibili definizioni mutuali di costanti (dovrebbe già essere
+      risolto con la visibilità solo dopo la dichiarazione)
+   5) Aggiorno l'ambiente locale (update Constant)
+
+  Declaration ::= Type [DeclItem]
+   (a) DeclItem ::= Id "=" RExp
+   (b) DeclItem ::= Id
+   1) Verifico se Id è gia stata definita nell'ambiente corrente
+   2) Se sì, warning "id già definito"
+   3a) Aggiorno l'ambiente (update Variable)
+   4a) warning "assegnato valore di default"
+   3b) Inferisco il tipo di RExp
+   4b) Verifico che Type sia uguale a leastGeneral Type inferRExp, per ogni
+       RExp della lista (?altrimenti warning e la creo del tipo giusto?)
+   5b) Aggiorno l'ambiente (update Variable)
+   (? comportamento per int a; int a=a+1?)
+
+-- FUNZIONI --
+
+ Global ::= Function
+  Function ::= "function" RetType FunRest
+   FunRest ::= Id "(" [FormalParam] ")" Block
+    FormalParam ::= PassBy Type Id
+     PassBy = "", "ref" (vanno aggiunti gli altri)
+     1) Verifico se Id è gia stata definita nell'ambiente corrente
+     2) Se sì, warning "id già definito"
+     3) Aggiorno l'ambiente locale (update Function)
+     4) Creo un nuovo ambiente per il check del blocco in cui inserisco i parametri 
+        della funzione a seconda delle modalità di passaggio dei parametri:
+        - per costante: il par. formale non può essere modificato -> NO LExp in
+          assegnamenti, NO pre/post incrementi (? const locale?)
+        - per risultato: deve essergli assegnato un valore in tutti i possibili rami
+          (? valore di default come per normali variabili ?)
+        - per nome: influisce sulla compatibilità dei par. attuali
+     5) Check del blocco
+     6) Verifico che la funzione sia tipo void o sia returning (a posteriori)
+     7) Ritorno l'env originale
+
+  Block ::= "{" [Declaration] [Statement] "}"
+    1) Check delle dichiarazioni (come per il caso global)
+    2) Check degli statement. Appena trovo uno statement returning il check del blocco finisce
+    3) Determino se il blocco è returning
+    4) Alla chiusura del blocco (returning o [Statement] = []) rimuovo l'env locale
+
+-- STATEMENT --
+
+  Stm ::= Block
+    1) Creo un nuovo ambiente vuoto
+    2) Check del blocco
+
+  Stm ::= Id ([Rexp])
+    1) Verifico che Id esista, prendo la definizione più recente e verifico che sia una 
+       procedura con ret type = void
+    2) Verifico che le RExp abbiano i tipi giusti a seconda delle modalità di passaggio dei parametri:
+       Se il par. formale ha tipo T,
+       - per valore: il tipo del parametro attuale deve essere compatibile con T
+       - per riferimento/costante/risultato/valore-risultato: il tipo del parametro attuale deve essere
+         esattamente T
+       - per nome: se viene alterato nel corpo della funzione/procedura, allora il tipo del parametro
+         attuale deve essere esattamente T, altrimenti deve essere compatibile con T
+
+  Stm ::= LExp AssOp RExp
+    1) Verifico che LExp sia valida (NO pre/post incrementi all'esterno, no costante o funzione se ID,
+       (? al max 1 pre/post in/decremento ?)
+    2) Verifico che il tipo della LExp sia uguale a leastGeneral inferLExp inferRExp
+
+  Stm ::= LExp ";"
+    1) Verifico che LExp sia adeguata (No Id, No el.di array, No puntatori, OK pre/post in/decrementi, ma 
+       al max 1 e non per le costanti
+
+  Stm ::= Conditional
+   Conditional ::= If
+    If ::= "if" RExp Block RestIf
+     RestIf ::= (a) "" | (b) "else" If | (c) "else" Block
+    1) Verifico che RExp abbia tipo Bool
+    2) Creo un nuovo ambiente vuoto
+    3) Check del blocco, memorizzo se returning (ret)
+      (a) returning = ret
+      (b) passo ricorsivo genera ret' -> returning = ret && ret'
+      (c) Creo nuovo ambiente, check del blocco che genera ret'' -> returning = ret && ret''
+
+  Stm ::= Loop
+  Loop ::= while RExp Block
+  Loop ::= do Block while RExp
+    1) Verifico che RExp abbia tipo Bool (?alla fine per il do while?)
+    2) Creo un nuovo ambiente vuoto
+    3) Check del blocco: devo sapere di trovarmi in un while per permettere break e continue, anche nei sottoblocchi
+    4) Anche se il blocco è returning, questi statement non possono essere returning (potrei non entrarci)
+
+  Loop ::= for DeclVar RExp1 RExp2 Block
+    1) Check di DeclVar (val. default se non inizializzata) + verifica che abbia tipo più generale int
+    2) Verifico che RExp1 abbia tipo Bool
+    3) Verifico che RExp2 abbia tipo int
+    4) Creo un nuovo ambiente per il blocco: non è possibile modificare l'iteration identifier nel blocco
+       con pre/post in/decrementi o assegnamenti (? costante locale?)
+    5) Check del blocco in cui devo sapere di trovarmi in un for: non posso avere break, continue e return
+       anche se il for è dentro ad un while (the body of bounded iteration
+       constructs (for and foreach) is not considered as part of the body of
+       an enclosing iteration construct. Hence a break within the body of a
+       bounded iteration construct contained in the body of a unbounded iter-
+       ation construct is not allowed. For example while (True) { foreach
+       (float w in vx) break; } is not legal.) (?Mentre il viceversa va bene?)
+
+  Stm ::= Jump
+  Jump ::= Break
+  Jump ::= Continue
+    1) Ok se il blocco in cui mi trovo è un while
+
+  Jump ::= Return
+    1) Verifico di non essere in un blocco for
+    2) Verifico che il rettype della funzione in cui mi trovo sia void
+    3) Torno returning = True
+
+  Jump ::= Return RExp
+    1) Verifico di non essere in un blocco for
+    2) Inferisco il tipo della RExp
+    3) Verifico che il rettype della funzione in cui mi trovo sia lo stesso di quello della RExp (o compatibile)
+    [4) Comini: se ret type è "pointer to ..." le RExp possono essere solo riferimenti a var globali -> ultimo env?]
+
+  Stm ::= WPredefined RExp
+    1) Verifico che la RExp abbia tipo compatibile
+
+-- ESPRESSIONI --
+
+  LExp ::= * LExp
+    ???
+
+  LExp ::= IncDec LExp
+  LExp ::= LExp IncDec
+    1) Verifico che LExp sia valida (No costante, No funzione, ?puntatore?)
+    2) Verifico che LExp abbia tipo int o char
+    [3) Comini: verifico che ci sia al max un pre/post in/decremento]
+    4) Ritorno tipo LExp
+
+  LExp ::= LExp[RExp]
+    1) Verifico che RExp abbia tipo più generale int
+    2) (? Verifico che la LExp abbia tipo array ?)
+    3) Ritorno il tipo dell'array
+
+  LExp ::= Id
+    ? Ritorno lookVar? Può essere solo una variabile, ma se usata come RExp anche una costante
+
+  RExp ::= RExp1 LogOp RExp2
+    1) Verifico che le RExp abbiano tipo Bool
+    2) Ritorno tipo Bool
+
+  RExp ::= RExp1 AritmOp RExp2
+    1) Verifico che le Rexp siano compatibili
+    2) RItorno leastGeneral t1 t2
+
+  RExp ::= RExp1 CompOp RExp2
+    1) Verifico che t1 e t2 siano compatibili
+    2) Ritorno tipo Bool
+
+  RExp ::= & LExp
+    ???
+
+  RExp ::= LExp
+    1) Ritorno tipo LExp
+
+  RExp ::= Id [RExp]
+    1) Verifico che Id esista e sia una funzione NON di tipo void
+    2) Verifico le le rexp siano giuste a seconda delle modalità di passaggio dei parametri (vedi LExp)
+    3) Ritorno rettype della funzione
+
+  RExp ::= RPredefined -> Ritorno tipo argomento
+  RExp ::= Literal -> RItorno tipo literal
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
