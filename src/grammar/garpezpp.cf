@@ -42,7 +42,7 @@ Block.						Block ::= "{" [DList] [Stm] "}" ;
 
 StmBlock.					Stm ::= Block ;
 StmCall.					Stm ::= Ident "(" [RExp] ")" ";" ;
-PredW.						Stm ::= PWrite "(" ")" ";" ;
+PredW.						Stm ::= PWrite "(" RExp ")" ";" ;
 Assign.						Stm ::= LExp AssignOp RExp ";" ;
 StmL.						Stm ::= LExp ";" ;
 
@@ -53,9 +53,13 @@ While.						Stm ::= "while" "(" RExp ")" Stm ;
 DoWhile.					Stm ::= "do" Stm "while" "(" RExp ")" ";" ;
 For.						Stm ::= "for" "(" Ident "=" RExp Dir RExp ")" Stm ;
 
+JmpStm.						Stm ::= Jump ";" ;
+
 UpTo.						Dir ::= "upto" ;
 DownTo.						Dir ::= "downto" ;
 
+
+rules Jump ::= "return" | "return" RExp | "break" | "continue" ;
 
 -- EXPRESSIONS /////////////////////////////////////////////////////////////////
 
