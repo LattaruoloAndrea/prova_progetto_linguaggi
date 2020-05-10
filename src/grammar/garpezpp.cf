@@ -1,0 +1,110 @@
+comment "//" ;
+comment "/*" "*/" ;
+
+entrypoints Program ;
+
+
+-- PROGRAM /////////////////////////////////////////////////////////////////////
+
+Prog.						Program ::= [FDecl] ;
+
+
+-- DECLARATION ////////////////////////////////////////////////////////////////
+
+separator nonempty FDecl "" ;
+separator nonempty VDecl "," ;
+separator nonempty CDecl "," ;
+
+FDecl.						FDecl ::= RType Id "(" [Param] ")" Block ;
+
+VList.						DList  ::= Type [VDecl] ";" ;
+CList.						DList  ::= "const" [CDecl] ";" ;
+
+VSolo.						VDecl  ::= Id ;
+VInit.						VDecl  ::= Id "=" RExp;
+
+CDecl.						CDecl  ::= Id "=" RExp;
+
+
+-- TYPES ///////////////////////////////////////////////////////////////////////
+
+Type.						
+
+
+-- EXPRESSIONS /////////////////////////////////////////////////////////////////
+
+coercions LExp 4 ;
+coercions RExp 10 ;
+
+Deref.						LExp  ::= Star LExp ;
+Post.						LExp1 ::= LExp2 IncDecOp ;
+Pre.						LExp2 ::= IncDecOp LExp3 ;
+Access.						LExp3 ::= LExp3 "[" RExp "]" ;
+Name.						LExp4 ::= Id ;
+
+
+Or.							RExp ::= RExp OrS RExp1 ;
+And.						RExp1 ::= RExp1 AndS RExp2 ;
+Not.						RExp2 ::= NotS RExp3 ;
+Comp.						RExp3 ::= RExp3 CompOp RExp4 ;
+Add.						RExp4 ::= RExp4 Plus RExp5 ;
+Sub.						RExp4 ::= RExp4 Minus RExp5 ;
+Mul.						RExp5 ::= RExp5 Star RExp6 ;
+Div.						RExp5 ::= RExp5 Slash RExp6 ;
+Rem.						RExp5 ::= RExp5 Mod RExp6 ;
+Pow.						RExp6 ::= RExp7 PowS RExp6 ;
+Sign.						RExp7 ::= SignOp RExp8 ;
+Ref.						RExp7 ::= RefS LExp ;
+Left.						RExp8 ::= LExp ;
+FCall.						RExp9 ::= Id "(" [RExp] ")" ;
+PRead.						RExp9 ::= PRead "(" ")" ;
+Lit.						RExp10 ::= Literal ;
+
+
+-- PREDEFINED FUNCTIONS ///////////////////////////////////////////////////////
+
+rules PRead  ::= RChar | RInt | RFloat | RString ;
+rules PWrite ::= WChar | WInt | WFloat | WString ;
+
+
+
+-- TOKENS /////////////////////////////////////////////////////////////////////
+
+position token Id ( letter (letter | digit | '_' )* ) ;
+position token PBool {"true"} | {"false"} ;
+position token PChar ( '\'' ((char - ["'\\"]) | ('\\' ["'\\nt"])) '\'' ) ;
+position token PInt ( digit+ ) ;
+position token PFloat ( digit+ '.' digit+ ) ;
+position token PString ( '"' ((char - ["\"\\"]) | ('\\' ["\"\\nt"]))* '"' ) ;
+
+position token Return {"return"} ;
+position token Break {"break"} ;
+position token Continue {"continue"} ;
+
+position token RChar {"readChar"} ;
+position token RInt {"readInt"} ;
+position token RFloat {"readFloat"} ;
+position token RString {"readString"} ;
+
+position token WChar {"writeChar"} ;
+position token WInt {"writeInt"} ;
+position token WFloat {"writeFloat"} ;
+position token WString {"writeString"} ;
+
+position token Lt {"<"} ;
+position token Le {"<="} ;
+position token Eq {"=="} ;
+position token Nq {"!="} ;
+position token Ge {">="} ;
+position token Gt {">"} ;
+
+position token Plus {"+"} ;
+position token Minus {"-"} ;
+position token Star {"*"} ;
+position token Slash {"/"} ;
+position token PowS {"^"} ;
+position token Mod {"%"} ;
+position token RefS {"&"} ;
+position token OrS {"||"} ;
+position token AndS {"&&"} ;
+position token NotS {"!"} ;
