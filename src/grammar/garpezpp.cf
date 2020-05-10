@@ -11,23 +11,50 @@ Prog.						Program ::= [FDecl] ;
 
 -- DECLARATION ////////////////////////////////////////////////////////////////
 
-separator nonempty FDecl "" ;
-separator nonempty VDecl "," ;
-separator nonempty CDecl "," ;
-
 FDecl.						FDecl ::= RType Ident "(" [Param] ")" Block ;
 
-VList.						DList  ::= Type [VDecl] ";" ;
-CList.						DList  ::= "const" [CDecl] ";" ;
+Param.						Param ::= Type PassBy Ident ;
+rules PassBy ::= "" | "&" ;
 
-VSolo.						VDecl  ::= Ident ;
-VInit.						VDecl  ::= Ident "=" RExp;
+VList.						DList ::= Type [VDecl] ";" ;
+CList.						DList ::= "const" [CDecl] ";" ;
 
-CDecl.						CDecl  ::= Ident "=" RExp;
+VSolo.						VDecl ::= Ident ;
+VInit.						VDecl ::= Ident "=" RExp;
+
+CDecl.						CDecl ::= Ident "=" RExp;
 
 
 -- TYPES ///////////////////////////////////////////////////////////////////////
 
+Type.						Type ::= Basic Compound ;
+
+Simple.						Compound ::= "" ;
+Array.						Compound ::= "[" RExp "]" Compound ;
+Pointer.					Compound ::= "*" Compound ;
+
+rules Basic ::= "bool" | "char" | "int" | "float" | "string" ;
+rules RType ::= Basic | Type "&" ;
+
+-- STATEMENTS //////////////////////////////////////////////////////////////////
+
+Block.						Block ::= "{" [DList] [Stm] "}" ;
+
+StmBlock.					Stm ::= Block ;
+StmCall.					Stm ::= Ident "(" [RExp] ")" ";" ;
+PredW.						Stm ::= PWrite "(" ")" ";" ;
+Assign.						Stm ::= LExp AssignOp RExp ";" ;
+StmL.						Stm ::= LExp ";" ;
+
+If.							Stm ::= "if" "(" RExp ")" Stm ;
+IfElse.						Stm ::= "if" "(" RExp ")" Stm "else" Stm ;
+
+While.						Stm ::= "while" "(" RExp ")" Stm ;
+DoWhile.					Stm ::= "do" Stm "while" "(" RExp ")" ";" ;
+For.						Stm ::= "for" "(" Ident "=" RExp Dir RExp ")" Stm ;
+
+UpTo.						Dir ::= "upto" ;
+DownTo.						Dir ::= "downto" ;
 
 
 -- EXPRESSIONS /////////////////////////////////////////////////////////////////
@@ -35,14 +62,14 @@ CDecl.						CDecl  ::= Ident "=" RExp;
 coercions LExp 4 ;
 coercions RExp 10 ;
 
-Deref.						LExp  ::= "*" LExp ;
+Deref.						LExp  ::= "*" LExp1 ;
 Post.						LExp1 ::= LExp2 IncDecOp ;
 Pre.						LExp2 ::= IncDecOp LExp3 ;
 Access.						LExp3 ::= LExp3 "[" RExp "]" ;
 Name.						LExp4 ::= Ident ;
 
 
-Or.							RExp ::= RExp "||" RExp1 ;
+Or.							RExp ::=  RExp "||" RExp1 ;
 And.						RExp1 ::= RExp1 "&&" RExp2 ;
 Not.						RExp2 ::= "!" RExp3 ;
 Comp.						RExp3 ::= RExp3 CompOp RExp4 ;
@@ -54,9 +81,9 @@ Rem.						RExp5 ::= RExp5 "%" RExp6 ;
 Pow.						RExp6 ::= RExp7 "^" RExp6 ;
 Sign.						RExp7 ::= SignOp RExp8 ;
 Ref.						RExp7 ::= "&" LExp ;
-Left.						RExp8 ::= LExp ;
+RLExp.						RExp8 ::= LExp ;
 FCall.						RExp9 ::= Ident "(" [RExp] ")" ;
-PRead.						RExp9 ::= PRead "(" ")" ;
+PredR.						RExp9 ::= PRead "(" ")" ;
 Lit.						RExp10 ::= Literal ;
 
 
@@ -65,9 +92,26 @@ Lit.						RExp10 ::= Literal ;
 rules PRead  ::= "readChar" | "readInt" | "readFloat" | "readString" ;
 rules PWrite ::= "writeChar" | "writeInt" | "writeFloat" | "writeString" ;
 
+-- OPERATORS /////////////////////////////////////////////////////////////////
+
+rules AssignOp ::= "=" | "+=" | "-=" | "*=" | "/=" | "%=" | "^=" | "&=" | "|=" ;
+rules CompOp ::= "<" | "<=" | "==" | "!=" | ">=" | ">" ;
+rules IncDecOp ::= "++" | "--" ;
+rules SignOp ::= "+" | "-" ;
+
 
 -- LITERALS //////////////////////////////////////////////////////////////////
 
-rules Literal ::= Bool | Char | Integer | Double | String ;
+rules Literal ::= Boolean | Char | Integer | Double | String ;
 
-token Bool {"false" | "true"} ;
+token Boolean {"false"} | {"true"} ;
+
+-- SEPARATORS ////////////////////////////////////////////////////////////////
+
+separator Param "," ;
+separator nonempty FDecl "" ;
+separator nonempty VDecl "," ;
+separator nonempty CDecl "," ;
+separator DList "" ;
+separator Stm "" ;
+separator nonempty RExp "," ;
