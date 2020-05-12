@@ -3,152 +3,111 @@
 
 module AbsGarpezpp where
 
-newtype Ident' string = Ident string
-  deriving (Eq, Ord, Show, Read)
-newtype IdentN n = Ident n (Ident' (StringN n))
+newtype Ident = Ident String
   deriving (Eq, Ord, Show, Read)
 
-newtype Boolean' string = Boolean string
-  deriving (Eq, Ord, Show, Read)
-newtype BooleanN n = Boolean n (Boolean' (StringN n))
+newtype Boolean = Boolean String
   deriving (Eq, Ord, Show, Read)
 
-data Program' fdecl = Prog [fdecl]
-  deriving (Eq, Ord, Show, Read)
-newtype ProgramN n = Prog n (Program' (FDeclN n))
+data Program = Prog [FDecl]
   deriving (Eq, Ord, Show, Read)
 
-data FDecl' rtype ident param block = FDecl rtype ident [param] block
-  deriving (Eq, Ord, Show, Read)
-newtype FDeclN n = FDecl n (FDecl' (RTypeN n) (IdentN n) (ParamN n) (BlockN n))
+data FDecl = FDecl RType Ident [Param] Block
   deriving (Eq, Ord, Show, Read)
 
-data Param' type passby ident = Param type passby ident
-  deriving (Eq, Ord, Show, Read)
-newtype ParamN n = Param n (Param' (TypeN n) (PassByN n) (IdentN n))
+data Param = Param Type PassBy Ident
   deriving (Eq, Ord, Show, Read)
 
-data PassBy' = PassBy_ | PassBy1
-  deriving (Eq, Ord, Show, Read)
-newtype PassByN n = PassBy n (PassBy')
-
-data DList' type vdecl cdecl = VList type [vdecl] | CList [cdecl]
-  deriving (Eq, Ord, Show, Read)
-newtype DListN n = DList n (DList' (TypeN n) (VDeclN n) (CDeclN n))
+data PassBy = PassBy_ | PassBy1
   deriving (Eq, Ord, Show, Read)
 
-data VDecl' ident rexp = VSolo ident | VInit ident rexp
-  deriving (Eq, Ord, Show, Read)
-newtype VDeclN n = VDecl n (VDecl' (IdentN n) (RExpN n))
+data DList = VList Type [VDecl] | CList [CDecl]
   deriving (Eq, Ord, Show, Read)
 
-data CDecl' ident rexp = CDecl ident rexp
-  deriving (Eq, Ord, Show, Read)
-newtype CDeclN n = CDecl n (CDecl' (IdentN n) (RExpN n))
+data VDecl = VSolo Ident | VInit Ident RExp
   deriving (Eq, Ord, Show, Read)
 
-data Type' basic compound = Type basic compound
-  deriving (Eq, Ord, Show, Read)
-newtype TypeN n = Type n (Type' (BasicN n) (CompoundN n))
+data CDecl = CDecl Ident RExp
   deriving (Eq, Ord, Show, Read)
 
-data Compound' rexp compound = Simple | Array rexp compound | Pointer compound
-  deriving (Eq, Ord, Show, Read)
-newtype CompoundN n = Compound n (Compound' (RExpN n) (CompoundN n))
+data Type = Type Basic Compound
   deriving (Eq, Ord, Show, Read)
 
-data Basic'
+data Compound = Simple | Array RExp Compound | Pointer Compound
+  deriving (Eq, Ord, Show, Read)
+
+data Basic
     = Basic_bool | Basic_char | Basic_int | Basic_float | Basic_string
   deriving (Eq, Ord, Show, Read)
-newtype BasicN n = Basic n (Basic')
+
+data RType = RTypeBasic Basic | RType1 Type
   deriving (Eq, Ord, Show, Read)
 
-data RType' basic type = RTypeBasic basic | RType1 type
-  deriving (Eq, Ord, Show, Read)
-newtype RTypeN n = RType n (RType' (BasicN n) (TypeN n))
+data Block = Block [DList] [Stm]
   deriving (Eq, Ord, Show, Read)
 
-data Block' dlist stm = Block [dlist] [stm]
-  deriving (Eq, Ord, Show, Read)
-newtype BlockN n = Block n (Block' (DListN n) (StmN n))
-  deriving (Eq, Ord, Show, Read)
-
-data Stm' block ident rexp pwrite lexp assignop stm dir jump
-    = StmBlock block
-    | StmCall ident [rexp]
-    | PredW pwrite rexp
-    | Assign lexp assignop rexp
-    | StmL lexp
-    | If rexp stm
-    | IfElse rexp stm stm
-    | While rexp stm
-    | DoWhile stm rexp
-    | For ident rexp dir rexp stm
-    | JmpStm jump
-  deriving (Eq, Ord, Show, Read)
-data StmN n = Stm n (Stm' (BlockN n) (IdentN n) (RExpN n) (PWriteN n) (LExpN n) (AssignOpN n) (StmN n) (DirN n) (JumpN n))
+data Stm
+    = StmBlock Block
+    | StmCall Ident [RExp]
+    | PredW PWrite RExp
+    | Assign LExp AssignOp RExp
+    | StmL LExp
+    | If RExp Stm
+    | IfElse RExp Stm Stm
+    | While RExp Stm
+    | DoWhile Stm RExp
+    | For Ident RExp Dir RExp Stm
+    | JmpStm Jump
   deriving (Eq, Ord, Show, Read)
 
-data Dir' = UpTo | DownTo
-  deriving (Eq, Ord, Show, Read)
-newtype DirN n = Dir n (Dir')
+data Dir = UpTo | DownTo
   deriving (Eq, Ord, Show, Read)
 
-data Jump' rexp = Jump_return | Jump1 rexp | Jump_break | Jump_continue
-  deriving (Eq, Ord, Show, Read)
-newtype JumpN n = Jump n (Jump' (RExpN n))
+data Jump = Jump_return | Jump1 RExp | Jump_break | Jump_continue
   deriving (Eq, Ord, Show, Read)
 
-data LExp' lexp incdecop rexp ident
-    = Deref lexp
-    | Post lexp incdecop
-    | Pre incdecop lexp
-    | Access lexp rexp
-    | Name ident
-  deriving (Eq, Ord, Show, Read)
-newtype LExpN n = LExp n (LExp' (LExpN n) (IncDecOpN n) (RExpN n) (IdentN n))
+data LExp
+    = Deref LExp
+    | Post LExp IncDecOp
+    | Pre IncDecOp LExp
+    | Access LExp RExp
+    | Name Ident
   deriving (Eq, Ord, Show, Read)
 
-data RExp' rexp compop signop lexp ident pread literal
-    = Or rexp rexp
-    | And rexp rexp
-    | Not rexp
-    | Comp rexp compop rexp
-    | Add rexp rexp
-    | Sub rexp rexp
-    | Mul rexp rexp
-    | Div rexp rexp
-    | Rem rexp rexp
-    | Pow rexp rexp
-    | Sign signop rexp
-    | Ref lexp
-    | RLExp lexp
-    | FCall ident [rexp]
-    | PredR pread
-    | Lit literal
-  deriving (Eq, Ord, Show, Read)
-newtype RExpN n = RExp n (RExp' (RExpN n) (CompOpN n) (SignOpN n) (LExpN n) (IdentN n) (PReadN n) (LiteralN n))
+data RExp
+    = Or RExp RExp
+    | And RExp RExp
+    | Not RExp
+    | Comp RExp CompOp RExp
+    | Add RExp RExp
+    | Sub RExp RExp
+    | Mul RExp RExp
+    | Div RExp RExp
+    | Rem RExp RExp
+    | Pow RExp RExp
+    | Sign SignOp RExp
+    | Ref LExp
+    | RLExp LExp
+    | FCall Ident [RExp]
+    | PredR PRead
+    | Lit Literal
   deriving (Eq, Ord, Show, Read)
 
-data PRead'
+data PRead
     = PRead_readChar
     | PRead_readInt
     | PRead_readFloat
     | PRead_readString
   deriving (Eq, Ord, Show, Read)
-newtype PReadN n = PRead n (PRead')
-  deriving (Eq, Ord, Show, Read)
 
-data PWrite'
+data PWrite
     = PWrite_writeChar
     | PWrite_writeInt
     | PWrite_writeFloat
     | PWrite_writeString
   deriving (Eq, Ord, Show, Read)
-newtype PWriteN n = PWrite n (PWrite')
-  deriving (Eq, Ord, Show, Read)
 
-data AssignOp'
+data AssignOp
     = AssignOp1
     | AssignOp2
     | AssignOp3
@@ -159,32 +118,22 @@ data AssignOp'
     | AssignOp8
     | AssignOp9
   deriving (Eq, Ord, Show, Read)
-newtype AssignOpN n = AssignOp n (AssignOp')
-  deriving (Eq, Ord, Show, Read)
 
-data CompOp'
+data CompOp
     = CompOp1 | CompOp2 | CompOp3 | CompOp4 | CompOp5 | CompOp6
   deriving (Eq, Ord, Show, Read)
-newtype CompOpN n = CompOp n (CompOp')
+
+data IncDecOp = IncDecOp1 | IncDecOp2
   deriving (Eq, Ord, Show, Read)
 
-data IncDecOp' = IncDecOp1 | IncDecOp2
-  deriving (Eq, Ord, Show, Read)
-newtype IncDecOpN n = IncDecOp n (IncDecOp')
+data SignOp = SignOp1 | SignOp2
   deriving (Eq, Ord, Show, Read)
 
-data SignOp' = SignOp1 | SignOp2
-  deriving (Eq, Ord, Show, Read)
-newtype SignOpN n = SignOp n (SignOp')
-  deriving (Eq, Ord, Show, Read)
-
-data Literal' boolean char integer double string
-    = LiteralBoolean boolean
-    | LiteralChar char
-    | LiteralInteger integer
-    | LiteralDouble double
-    | LiteralString string
-  deriving (Eq, Ord, Show, Read)
-newtype LiteralN n = Literal n (Literal' (BooleanN n) (CharN n) (IntegerN n) (DoubleN n) (StringN n))
+data Literal
+    = LiteralBoolean Boolean
+    | LiteralChar Char
+    | LiteralInteger Integer
+    | LiteralDouble Double
+    | LiteralString String
   deriving (Eq, Ord, Show, Read)
 
