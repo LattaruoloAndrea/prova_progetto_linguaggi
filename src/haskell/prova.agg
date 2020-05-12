@@ -1,0 +1,12 @@
+int main() {
+	string s = readString();
+	writeString(s);
+
+	for(i=0 upto 10) {
+		const s = "Franco";
+		x += 10;
+		z = x*x + 12^2;
+	}
+
+	return 0;
+}
