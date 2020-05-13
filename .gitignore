@@ -3,6 +3,8 @@
 *.exe
 *.sh
 *.pdf
+*.bak
+*.hi
 
 # Folders Brian
 bin/*
