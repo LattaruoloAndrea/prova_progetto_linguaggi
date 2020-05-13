@@ -2,8 +2,7 @@ module TypeChecker where
 
 import AbsGarpezpp
 import Data.Maybe
-import qualified Data.DList as DL
-import Control.Monad.Writer.Lazy (WriterT)
+import ErrTC
 
 
 -- Given an RExp, returns Just the value of the RExp or Nothing in case of a non-const expression.
@@ -73,23 +72,6 @@ instance TCTypeable FDecl where
         ls = map (\(Param t p _) -> (toTCType t, p)) ps
 
 
-{-
-
-The typechecking will return (Maybe) an annotated syntax tree
-The Writer monad will enable logging functionality
-
-The logic is to have a pair (value, log) where value is:
-* Just something if there are no errors
-* Nothing if there are errors
-In either cases, log will store all the informations about fatal errors or warnings
-
-WriterT monad transformer will take care of this process
-
--}
-
-type Log = WriterT (DL.DList String) Maybe
-
-
 
 -- TODO leastGeneral
--- leastGeneral :: TCType -> TCType -> ?? (To be decided what kind of Error to use)
+-- leastGeneral :: TCType -> TCType -> ErrTC TCType
