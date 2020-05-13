@@ -6,15 +6,21 @@ entrypoints Program ;
 
 -- PROGRAM /////////////////////////////////////////////////////////////////////
 
+-- TyC: { }
+-- TAC: { P.code = f1.code ++ f2.code ++ ... ++ fn.code }
 Prog.						Program ::= [FDecl] ;
 
 
 -- DECLARATION ////////////////////////////////////////////////////////////////
 
-FDecl.						FDecl ::= RType Ident "(" [Param] ")" Block ;
+-- TyC: { F.type = (RType.type, [p1.type, ..., pn.type]) }
+-- TAC: { F.code = f.preamble ++ Block.code }
+FDecl.						FDecl ::= RType Ident "(" [Param] ")" Block ;		
 
 Param.						Param ::= Type PassBy Ident ;
-rules PassBy ::= "" | "&" ;
+
+PassVal.					PassBy ::= "val" ;
+PassRef.					PassBy ::= "ref" ;
 
 VList.						DList ::= Type [VDecl] ";" ;
 CList.						DList ::= "const" [CDecl] ";" ;
@@ -30,11 +36,18 @@ CDecl.						CDecl ::= Ident "=" RExp;
 Type.						Type ::= Basic Compound ;
 
 Simple.						Compound ::= "" ;
-Array.						Compound ::= "[" RExp "]" Compound ;
-Pointer.					Compound ::= "*" Compound ;
+Array.						Compound ::= Compound "[" RExp "]" ;
+Pointer.					Compound ::= Compound "*" ;
 
-rules Basic ::= "bool" | "char" | "int" | "float" | "string" ;
-rules RType ::= Basic | Type "&" ;
+BBool.						Basic ::= "bool" ;
+BChar.						Basic ::= "char" ;
+BInt.						Basic ::= "int" ;
+BFloat.						Basic ::= "float" ;
+BString.					Basic ::= "string" ;
+
+RVoid.						RType ::= "void" ;
+RBasic.						RType ::= Basic ;
+RRef.						RType ::= Type "&" ;
 
 -- STATEMENTS //////////////////////////////////////////////////////////////////
 
@@ -58,15 +71,18 @@ JmpStm.						Stm ::= Jump ";" ;
 UpTo.						Dir ::= "upto" ;
 DownTo.						Dir ::= "downto" ;
 
+Return.						Jump ::= "return" ;
+ReturnE.					Jump ::= "return" RExp ;
+Break.						Jump ::= "break" ;
+Continue.					Jump ::= "continue" ;
 
-rules Jump ::= "return" | "return" RExp | "break" | "continue" ;
 
 -- EXPRESSIONS /////////////////////////////////////////////////////////////////
 
 coercions LExp 4 ;
 coercions RExp 10 ;
 
-Deref.						LExp  ::= "*" LExp1 ;
+Deref.						LExp  ::= "*" LExp ;
 Post.						LExp1 ::= LExp2 IncDecOp ;
 Pre.						LExp2 ::= IncDecOp LExp3 ;
 Access.						LExp3 ::= LExp3 "[" RExp "]" ;
@@ -86,6 +102,7 @@ Pow.						RExp6 ::= RExp7 "^" RExp6 ;
 Sign.						RExp7 ::= SignOp RExp8 ;
 Ref.						RExp7 ::= "&" LExp ;
 RLExp.						RExp8 ::= LExp ;
+ArrList.					RExp9 ::= "[" [RExp] "]" ;
 FCall.						RExp9 ::= Ident "(" [RExp] ")" ;
 PredR.						RExp9 ::= PRead "(" ")" ;
 Lit.						RExp10 ::= Literal ;
@@ -93,22 +110,50 @@ Lit.						RExp10 ::= Literal ;
 
 -- PREDEFINED FUNCTIONS ///////////////////////////////////////////////////////
 
-rules PRead  ::= "readChar" | "readInt" | "readFloat" | "readString" ;
-rules PWrite ::= "writeChar" | "writeInt" | "writeFloat" | "writeString" ;
+ReadChar.					PRead ::= "readChar" ;
+ReadInt.					PRead ::= "readInt" ;
+ReadFloat.					PRead ::= "readFloat" ;
+ReadString.					PRead ::= "readString" ;
+
+WriteChar.					PWrite ::= "writeChar" ;
+WriteInt.					PWrite ::= "writeInt" ;
+WriteFloat.					PWrite ::= "writeFloat" ;
+WriteString.				PWrite ::= "writeString" ;
+
 
 -- OPERATORS /////////////////////////////////////////////////////////////////
 
-rules AssignOp ::= "=" | "+=" | "-=" | "*=" | "/=" | "%=" | "^=" | "&=" | "|=" ;
-rules CompOp ::= "<" | "<=" | "==" | "!=" | ">=" | ">" ;
-rules IncDecOp ::= "++" | "--" ;
-rules SignOp ::= "+" | "-" ;
+AssignEq.					AssignOp ::= "=" ;
+AssignAdd.					AssignOp ::= "+=" ;
+AssignSub.					AssignOp ::= "-=" ;
+AssignMul.					AssignOp ::= "*=" ;
+AssignDiv.					AssignOp ::= "/=" ;
+AssignMod.					AssignOp ::= "%=" ;
+
+Lt.							CompOp ::= "<" ;
+Leq.						CompOp ::= "<=" ;
+Eq.							CompOp ::= "==" ;
+Neq.						CompOp ::= "!=" ;
+Geq.						CompOp ::= ">=" ;
+Gt.							CompOp ::= ">" ;
+
+Inc.						IncDecOp ::= "++" ;
+Dec.						IncDecOp ::= "--" ;
+
+Pos.						SignOp ::= "+" ;
+Neg.						SignOp ::= "-" ;
 
 
 -- LITERALS //////////////////////////////////////////////////////////////////
 
-rules Literal ::= Boolean | Char | Integer | Double | String ;
+LBool.						Literal ::= Boolean ;
+LChar.						Literal ::= Char ;
+LInt.						Literal ::= Integer ;
+LFloat.						Literal ::= Double ;
+LString.					Literal ::= String ;
 
-token Boolean {"false"} | {"true"} ;
+BFalse.						Boolean ::= "false" ;
+BTrue.						Boolean ::= "true" ;
 
 -- SEPARATORS ////////////////////////////////////////////////////////////////
 
