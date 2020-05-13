@@ -1,6 +1,6 @@
 module TypeChecker where
 
-import AbsGarpezpp
+import qualified AbsGarpezpp as AG
 import Data.Maybe
 
 
