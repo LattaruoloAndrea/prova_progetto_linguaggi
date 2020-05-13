@@ -20,9 +20,9 @@ data TCType
     | TInt
     | TFloat
     | TString
-    | TPoint TCType
-    | TArr (Int, TCType)
-    | TFun (TCType, [(TCType, PassBy)])
+    | TPoint TCType                     -- Pointer to
+    | TArr (Int, TCType)                -- Array (Dim, Type)
+    | TFun (TCType, [(TCType, PassBy)]) -- Function (Return type, [Parameter Type, Parameter Modality])
     deriving (Show, Eq)
 
 -- Class to have a "universal" converter to TCType
@@ -53,11 +53,11 @@ instance TCTypeable Literal where
 instance TCTypeable Type where
     toTCType x = case x of
         Type b Simple -> toTCType b
-        Type b c -> helper (toTCType b) c where
+        Type b c -> helper (toTCType b) c where     -- helper to pass the type "down" the declaration tree
             helper t c = case c of
                 Simple -> t
                 Pointer c' -> TPoint $ helper t c'
-                Array c' r -> TArr (fromJust $ constexpr r, helper t c')
+                Array c' r -> TArr (fromJust $ constexpr r, helper t c') -- Assume r a constexper (this is checked before)
 
 -- Return types are TCTypes
 instance TCTypeable RType where
