@@ -81,8 +81,8 @@ All other symbols are terminals.
   | //CDecl// | -> | //Ident// ``=`` //RExp//
   | //Type// | -> | //Basic// //Compound//
   | //Compound// | -> | **eps**
-  |  |  **|**  | //Compound// ``[`` //RExp// ``]``
-  |  |  **|**  | //Compound// ``*``
+  |  |  **|**  | ``[`` //RExp// ``]`` //Compound//
+  |  |  **|**  | ``*`` //Compound//
   | //Basic// | -> | ``bool``
   |  |  **|**  | ``char``
   |  |  **|**  | ``int``

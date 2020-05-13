@@ -1,5 +1,6 @@
 int main() {
 	string s = readString();
+	int [6]**[5] v;
 	writeString(s);
 
 	for(i=0 upto 10) {
@@ -8,5 +9,9 @@ int main() {
 		z = x*x + 12^2;
 	}
 
+	return 0;
+}
+
+int**[5] & fun(int val x, float[5] ref v) {
 	return 0;
 }

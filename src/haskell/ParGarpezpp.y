@@ -19,65 +19,66 @@ import ErrM
   '%=' { PT _ (TS _ 4) }
   '&' { PT _ (TS _ 5) }
   '&&' { PT _ (TS _ 6) }
-  '&=' { PT _ (TS _ 7) }
-  '(' { PT _ (TS _ 8) }
-  ')' { PT _ (TS _ 9) }
-  '*' { PT _ (TS _ 10) }
-  '*=' { PT _ (TS _ 11) }
-  '+' { PT _ (TS _ 12) }
-  '++' { PT _ (TS _ 13) }
-  '+=' { PT _ (TS _ 14) }
-  ',' { PT _ (TS _ 15) }
-  '-' { PT _ (TS _ 16) }
-  '--' { PT _ (TS _ 17) }
-  '-=' { PT _ (TS _ 18) }
-  '/' { PT _ (TS _ 19) }
-  '/=' { PT _ (TS _ 20) }
-  ';' { PT _ (TS _ 21) }
-  '<' { PT _ (TS _ 22) }
-  '<=' { PT _ (TS _ 23) }
-  '=' { PT _ (TS _ 24) }
-  '==' { PT _ (TS _ 25) }
-  '>' { PT _ (TS _ 26) }
-  '>=' { PT _ (TS _ 27) }
-  '[' { PT _ (TS _ 28) }
-  ']' { PT _ (TS _ 29) }
-  '^' { PT _ (TS _ 30) }
-  '^=' { PT _ (TS _ 31) }
-  'bool' { PT _ (TS _ 32) }
-  'break' { PT _ (TS _ 33) }
-  'char' { PT _ (TS _ 34) }
-  'const' { PT _ (TS _ 35) }
-  'continue' { PT _ (TS _ 36) }
-  'do' { PT _ (TS _ 37) }
-  'downto' { PT _ (TS _ 38) }
-  'else' { PT _ (TS _ 39) }
-  'float' { PT _ (TS _ 40) }
-  'for' { PT _ (TS _ 41) }
-  'if' { PT _ (TS _ 42) }
-  'int' { PT _ (TS _ 43) }
-  'readChar' { PT _ (TS _ 44) }
-  'readFloat' { PT _ (TS _ 45) }
-  'readInt' { PT _ (TS _ 46) }
-  'readString' { PT _ (TS _ 47) }
+  '(' { PT _ (TS _ 7) }
+  ')' { PT _ (TS _ 8) }
+  '*' { PT _ (TS _ 9) }
+  '*=' { PT _ (TS _ 10) }
+  '+' { PT _ (TS _ 11) }
+  '++' { PT _ (TS _ 12) }
+  '+=' { PT _ (TS _ 13) }
+  ',' { PT _ (TS _ 14) }
+  '-' { PT _ (TS _ 15) }
+  '--' { PT _ (TS _ 16) }
+  '-=' { PT _ (TS _ 17) }
+  '/' { PT _ (TS _ 18) }
+  '/=' { PT _ (TS _ 19) }
+  ';' { PT _ (TS _ 20) }
+  '<' { PT _ (TS _ 21) }
+  '<=' { PT _ (TS _ 22) }
+  '=' { PT _ (TS _ 23) }
+  '==' { PT _ (TS _ 24) }
+  '>' { PT _ (TS _ 25) }
+  '>=' { PT _ (TS _ 26) }
+  '[' { PT _ (TS _ 27) }
+  ']' { PT _ (TS _ 28) }
+  '^' { PT _ (TS _ 29) }
+  'bool' { PT _ (TS _ 30) }
+  'break' { PT _ (TS _ 31) }
+  'char' { PT _ (TS _ 32) }
+  'const' { PT _ (TS _ 33) }
+  'continue' { PT _ (TS _ 34) }
+  'do' { PT _ (TS _ 35) }
+  'downto' { PT _ (TS _ 36) }
+  'else' { PT _ (TS _ 37) }
+  'false' { PT _ (TS _ 38) }
+  'float' { PT _ (TS _ 39) }
+  'for' { PT _ (TS _ 40) }
+  'if' { PT _ (TS _ 41) }
+  'int' { PT _ (TS _ 42) }
+  'readChar' { PT _ (TS _ 43) }
+  'readFloat' { PT _ (TS _ 44) }
+  'readInt' { PT _ (TS _ 45) }
+  'readString' { PT _ (TS _ 46) }
+  'ref' { PT _ (TS _ 47) }
   'return' { PT _ (TS _ 48) }
   'string' { PT _ (TS _ 49) }
-  'upto' { PT _ (TS _ 50) }
-  'while' { PT _ (TS _ 51) }
-  'writeChar' { PT _ (TS _ 52) }
-  'writeFloat' { PT _ (TS _ 53) }
-  'writeInt' { PT _ (TS _ 54) }
-  'writeString' { PT _ (TS _ 55) }
-  '{' { PT _ (TS _ 56) }
-  '|=' { PT _ (TS _ 57) }
-  '||' { PT _ (TS _ 58) }
-  '}' { PT _ (TS _ 59) }
+  'true' { PT _ (TS _ 50) }
+  'upto' { PT _ (TS _ 51) }
+  'val' { PT _ (TS _ 52) }
+  'void' { PT _ (TS _ 53) }
+  'while' { PT _ (TS _ 54) }
+  'writeChar' { PT _ (TS _ 55) }
+  'writeFloat' { PT _ (TS _ 56) }
+  'writeInt' { PT _ (TS _ 57) }
+  'writeString' { PT _ (TS _ 58) }
+  '{' { PT _ (TS _ 59) }
+  '||' { PT _ (TS _ 60) }
+  '}' { PT _ (TS _ 61) }
   L_ident  { PT _ (TV $$) }
   L_charac { PT _ (TC $$) }
   L_integ  { PT _ (TI $$) }
   L_doubl  { PT _ (TD $$) }
   L_quoted { PT _ (TL $$) }
-  L_Boolean { PT _ (T_Boolean $$) }
 
 %%
 
@@ -96,9 +97,6 @@ Double   : L_doubl  { (read ( $1)) :: Double }
 String  :: { String }
 String   : L_quoted {  $1 }
 
-Boolean :: { Boolean}
-Boolean  : L_Boolean { Boolean ($1)}
-
 Program :: { Program }
 Program : ListFDecl { AbsGarpezpp.Prog $1 }
 FDecl :: { FDecl }
@@ -106,8 +104,8 @@ FDecl : RType Ident '(' ListParam ')' Block { AbsGarpezpp.FDecl $1 $2 $4 $6 }
 Param :: { Param }
 Param : Type PassBy Ident { AbsGarpezpp.Param $1 $2 $3 }
 PassBy :: { PassBy }
-PassBy : {- empty -} { AbsGarpezpp.PassBy_ }
-       | '&' { AbsGarpezpp.PassBy1 }
+PassBy : 'val' { AbsGarpezpp.PassVal }
+       | 'ref' { AbsGarpezpp.PassRef }
 DList :: { DList }
 DList : Type ListVDecl ';' { AbsGarpezpp.VList $1 $2 }
       | 'const' ListCDecl ';' { AbsGarpezpp.CList $2 }
@@ -120,17 +118,18 @@ Type :: { Type }
 Type : Basic Compound { AbsGarpezpp.Type $1 $2 }
 Compound :: { Compound }
 Compound : {- empty -} { AbsGarpezpp.Simple }
-         | '[' RExp ']' Compound { AbsGarpezpp.Array $2 $4 }
-         | '*' Compound { AbsGarpezpp.Pointer $2 }
+         | Compound '[' RExp ']' { AbsGarpezpp.Array $1 $3 }
+         | Compound '*' { AbsGarpezpp.Pointer $1 }
 Basic :: { Basic }
-Basic : 'bool' { AbsGarpezpp.Basic_bool }
-      | 'char' { AbsGarpezpp.Basic_char }
-      | 'int' { AbsGarpezpp.Basic_int }
-      | 'float' { AbsGarpezpp.Basic_float }
-      | 'string' { AbsGarpezpp.Basic_string }
+Basic : 'bool' { AbsGarpezpp.BBool }
+      | 'char' { AbsGarpezpp.BChar }
+      | 'int' { AbsGarpezpp.BInt }
+      | 'float' { AbsGarpezpp.BFloat }
+      | 'string' { AbsGarpezpp.BString }
 RType :: { RType }
-RType : Basic { AbsGarpezpp.RTypeBasic $1 }
-      | Type '&' { AbsGarpezpp.RType1 $1 }
+RType : 'void' { AbsGarpezpp.RVoid }
+      | Basic { AbsGarpezpp.RBasic $1 }
+      | Type '&' { AbsGarpezpp.RRef $1 }
 Block :: { Block }
 Block : '{' ListDList ListStm '}' { AbsGarpezpp.Block (reverse $2) (reverse $3) }
 Stm :: { Stm }
@@ -148,12 +147,12 @@ Stm : Block { AbsGarpezpp.StmBlock $1 }
 Dir :: { Dir }
 Dir : 'upto' { AbsGarpezpp.UpTo } | 'downto' { AbsGarpezpp.DownTo }
 Jump :: { Jump }
-Jump : 'return' { AbsGarpezpp.Jump_return }
-     | 'return' RExp { AbsGarpezpp.Jump1 $2 }
-     | 'break' { AbsGarpezpp.Jump_break }
-     | 'continue' { AbsGarpezpp.Jump_continue }
+Jump : 'return' { AbsGarpezpp.Return }
+     | 'return' RExp { AbsGarpezpp.ReturnE $2 }
+     | 'break' { AbsGarpezpp.Break }
+     | 'continue' { AbsGarpezpp.Continue }
 LExp :: { LExp }
-LExp : LExp1 { $1 } | '*' LExp1 { AbsGarpezpp.Deref $2 }
+LExp : LExp1 { $1 } | '*' LExp { AbsGarpezpp.Deref $2 }
 LExp1 :: { LExp }
 LExp1 : LExp2 { $1 } | LExp2 IncDecOp { AbsGarpezpp.Post $1 $2 }
 LExp2 :: { LExp }
@@ -191,48 +190,48 @@ RExp8 :: { RExp }
 RExp8 : RExp9 { $1 } | LExp { AbsGarpezpp.RLExp $1 }
 RExp9 :: { RExp }
 RExp9 : RExp10 { $1 }
+      | '[' ListRExp ']' { AbsGarpezpp.ArrList $2 }
       | Ident '(' ListRExp ')' { AbsGarpezpp.FCall $1 $3 }
       | PRead '(' ')' { AbsGarpezpp.PredR $1 }
 RExp10 :: { RExp }
 RExp10 : '(' RExp ')' { $2 } | Literal { AbsGarpezpp.Lit $1 }
 PRead :: { PRead }
-PRead : 'readChar' { AbsGarpezpp.PRead_readChar }
-      | 'readInt' { AbsGarpezpp.PRead_readInt }
-      | 'readFloat' { AbsGarpezpp.PRead_readFloat }
-      | 'readString' { AbsGarpezpp.PRead_readString }
+PRead : 'readChar' { AbsGarpezpp.ReadChar }
+      | 'readInt' { AbsGarpezpp.ReadInt }
+      | 'readFloat' { AbsGarpezpp.ReadFloat }
+      | 'readString' { AbsGarpezpp.ReadString }
 PWrite :: { PWrite }
-PWrite : 'writeChar' { AbsGarpezpp.PWrite_writeChar }
-       | 'writeInt' { AbsGarpezpp.PWrite_writeInt }
-       | 'writeFloat' { AbsGarpezpp.PWrite_writeFloat }
-       | 'writeString' { AbsGarpezpp.PWrite_writeString }
+PWrite : 'writeChar' { AbsGarpezpp.WriteChar }
+       | 'writeInt' { AbsGarpezpp.WriteInt }
+       | 'writeFloat' { AbsGarpezpp.WriteFloat }
+       | 'writeString' { AbsGarpezpp.WriteString }
 AssignOp :: { AssignOp }
-AssignOp : '=' { AbsGarpezpp.AssignOp1 }
-         | '+=' { AbsGarpezpp.AssignOp2 }
-         | '-=' { AbsGarpezpp.AssignOp3 }
-         | '*=' { AbsGarpezpp.AssignOp4 }
-         | '/=' { AbsGarpezpp.AssignOp5 }
-         | '%=' { AbsGarpezpp.AssignOp6 }
-         | '^=' { AbsGarpezpp.AssignOp7 }
-         | '&=' { AbsGarpezpp.AssignOp8 }
-         | '|=' { AbsGarpezpp.AssignOp9 }
+AssignOp : '=' { AbsGarpezpp.AssignEq }
+         | '+=' { AbsGarpezpp.AssignAdd }
+         | '-=' { AbsGarpezpp.AssignSub }
+         | '*=' { AbsGarpezpp.AssignMul }
+         | '/=' { AbsGarpezpp.AssignDiv }
+         | '%=' { AbsGarpezpp.AssignMod }
 CompOp :: { CompOp }
-CompOp : '<' { AbsGarpezpp.CompOp1 }
-       | '<=' { AbsGarpezpp.CompOp2 }
-       | '==' { AbsGarpezpp.CompOp3 }
-       | '!=' { AbsGarpezpp.CompOp4 }
-       | '>=' { AbsGarpezpp.CompOp5 }
-       | '>' { AbsGarpezpp.CompOp6 }
+CompOp : '<' { AbsGarpezpp.Lt }
+       | '<=' { AbsGarpezpp.Leq }
+       | '==' { AbsGarpezpp.Eq }
+       | '!=' { AbsGarpezpp.Neq }
+       | '>=' { AbsGarpezpp.Geq }
+       | '>' { AbsGarpezpp.Gt }
 IncDecOp :: { IncDecOp }
-IncDecOp : '++' { AbsGarpezpp.IncDecOp1 }
-         | '--' { AbsGarpezpp.IncDecOp2 }
+IncDecOp : '++' { AbsGarpezpp.Inc } | '--' { AbsGarpezpp.Dec }
 SignOp :: { SignOp }
-SignOp : '+' { AbsGarpezpp.SignOp1 } | '-' { AbsGarpezpp.SignOp2 }
+SignOp : '+' { AbsGarpezpp.Pos } | '-' { AbsGarpezpp.Neg }
 Literal :: { Literal }
-Literal : Boolean { AbsGarpezpp.LiteralBoolean $1 }
-        | Char { AbsGarpezpp.LiteralChar $1 }
-        | Integer { AbsGarpezpp.LiteralInteger $1 }
-        | Double { AbsGarpezpp.LiteralDouble $1 }
-        | String { AbsGarpezpp.LiteralString $1 }
+Literal : Boolean { AbsGarpezpp.LBool $1 }
+        | Char { AbsGarpezpp.LChar $1 }
+        | Integer { AbsGarpezpp.LInt $1 }
+        | Double { AbsGarpezpp.LFloat $1 }
+        | String { AbsGarpezpp.LString $1 }
+Boolean :: { Boolean }
+Boolean : 'false' { AbsGarpezpp.BFalse }
+        | 'true' { AbsGarpezpp.BTrue }
 ListParam :: { [Param] }
 ListParam : {- empty -} { [] }
           | Param { (:[]) $1 }

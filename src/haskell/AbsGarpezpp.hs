@@ -6,9 +6,6 @@ module AbsGarpezpp where
 newtype Ident = Ident String
   deriving (Eq, Ord, Show, Read)
 
-newtype Boolean = Boolean String
-  deriving (Eq, Ord, Show, Read)
-
 data Program = Prog [FDecl]
   deriving (Eq, Ord, Show, Read)
 
@@ -18,7 +15,7 @@ data FDecl = FDecl RType Ident [Param] Block
 data Param = Param Type PassBy Ident
   deriving (Eq, Ord, Show, Read)
 
-data PassBy = PassBy_ | PassBy1
+data PassBy = PassVal | PassRef
   deriving (Eq, Ord, Show, Read)
 
 data DList = VList Type [VDecl] | CList [CDecl]
@@ -33,14 +30,13 @@ data CDecl = CDecl Ident RExp
 data Type = Type Basic Compound
   deriving (Eq, Ord, Show, Read)
 
-data Compound = Simple | Array RExp Compound | Pointer Compound
+data Compound = Simple | Array Compound RExp | Pointer Compound
   deriving (Eq, Ord, Show, Read)
 
-data Basic
-    = Basic_bool | Basic_char | Basic_int | Basic_float | Basic_string
+data Basic = BBool | BChar | BInt | BFloat | BString
   deriving (Eq, Ord, Show, Read)
 
-data RType = RTypeBasic Basic | RType1 Type
+data RType = RVoid | RBasic Basic | RRef Type
   deriving (Eq, Ord, Show, Read)
 
 data Block = Block [DList] [Stm]
@@ -63,7 +59,7 @@ data Stm
 data Dir = UpTo | DownTo
   deriving (Eq, Ord, Show, Read)
 
-data Jump = Jump_return | Jump1 RExp | Jump_break | Jump_continue
+data Jump = Return | ReturnE RExp | Break | Continue
   deriving (Eq, Ord, Show, Read)
 
 data LExp
@@ -88,52 +84,44 @@ data RExp
     | Sign SignOp RExp
     | Ref LExp
     | RLExp LExp
+    | ArrList [RExp]
     | FCall Ident [RExp]
     | PredR PRead
     | Lit Literal
   deriving (Eq, Ord, Show, Read)
 
-data PRead
-    = PRead_readChar
-    | PRead_readInt
-    | PRead_readFloat
-    | PRead_readString
+data PRead = ReadChar | ReadInt | ReadFloat | ReadString
   deriving (Eq, Ord, Show, Read)
 
-data PWrite
-    = PWrite_writeChar
-    | PWrite_writeInt
-    | PWrite_writeFloat
-    | PWrite_writeString
+data PWrite = WriteChar | WriteInt | WriteFloat | WriteString
   deriving (Eq, Ord, Show, Read)
 
 data AssignOp
-    = AssignOp1
-    | AssignOp2
-    | AssignOp3
-    | AssignOp4
-    | AssignOp5
-    | AssignOp6
-    | AssignOp7
-    | AssignOp8
-    | AssignOp9
+    = AssignEq
+    | AssignAdd
+    | AssignSub
+    | AssignMul
+    | AssignDiv
+    | AssignMod
   deriving (Eq, Ord, Show, Read)
 
-data CompOp
-    = CompOp1 | CompOp2 | CompOp3 | CompOp4 | CompOp5 | CompOp6
+data CompOp = Lt | Leq | Eq | Neq | Geq | Gt
   deriving (Eq, Ord, Show, Read)
 
-data IncDecOp = IncDecOp1 | IncDecOp2
+data IncDecOp = Inc | Dec
   deriving (Eq, Ord, Show, Read)
 
-data SignOp = SignOp1 | SignOp2
+data SignOp = Pos | Neg
   deriving (Eq, Ord, Show, Read)
 
 data Literal
-    = LiteralBoolean Boolean
-    | LiteralChar Char
-    | LiteralInteger Integer
-    | LiteralDouble Double
-    | LiteralString String
+    = LBool Boolean
+    | LChar Char
+    | LInt Integer
+    | LFloat Double
+    | LString String
+  deriving (Eq, Ord, Show, Read)
+
+data Boolean = BFalse | BTrue
   deriving (Eq, Ord, Show, Read)
 

@@ -91,9 +91,6 @@ instance Print Double where
 instance Print AbsGarpezpp.Ident where
   prt _ (AbsGarpezpp.Ident i) = doc (showString i)
 
-instance Print AbsGarpezpp.Boolean where
-  prt _ (AbsGarpezpp.Boolean i) = doc (showString i)
-
 instance Print AbsGarpezpp.Program where
   prt i e = case e of
     AbsGarpezpp.Prog fdecls -> prPrec i 0 (concatD [prt 0 fdecls])
@@ -113,8 +110,8 @@ instance Print AbsGarpezpp.Param where
 
 instance Print AbsGarpezpp.PassBy where
   prt i e = case e of
-    AbsGarpezpp.PassBy_ -> prPrec i 0 (concatD [])
-    AbsGarpezpp.PassBy1 -> prPrec i 0 (concatD [doc (showString "&")])
+    AbsGarpezpp.PassVal -> prPrec i 0 (concatD [doc (showString "val")])
+    AbsGarpezpp.PassRef -> prPrec i 0 (concatD [doc (showString "ref")])
 
 instance Print AbsGarpezpp.DList where
   prt i e = case e of
@@ -143,21 +140,22 @@ instance Print AbsGarpezpp.Type where
 instance Print AbsGarpezpp.Compound where
   prt i e = case e of
     AbsGarpezpp.Simple -> prPrec i 0 (concatD [])
-    AbsGarpezpp.Array rexp compound -> prPrec i 0 (concatD [doc (showString "["), prt 0 rexp, doc (showString "]"), prt 0 compound])
-    AbsGarpezpp.Pointer compound -> prPrec i 0 (concatD [doc (showString "*"), prt 0 compound])
+    AbsGarpezpp.Array compound rexp -> prPrec i 0 (concatD [prt 0 compound, doc (showString "["), prt 0 rexp, doc (showString "]")])
+    AbsGarpezpp.Pointer compound -> prPrec i 0 (concatD [prt 0 compound, doc (showString "*")])
 
 instance Print AbsGarpezpp.Basic where
   prt i e = case e of
-    AbsGarpezpp.Basic_bool -> prPrec i 0 (concatD [doc (showString "bool")])
-    AbsGarpezpp.Basic_char -> prPrec i 0 (concatD [doc (showString "char")])
-    AbsGarpezpp.Basic_int -> prPrec i 0 (concatD [doc (showString "int")])
-    AbsGarpezpp.Basic_float -> prPrec i 0 (concatD [doc (showString "float")])
-    AbsGarpezpp.Basic_string -> prPrec i 0 (concatD [doc (showString "string")])
+    AbsGarpezpp.BBool -> prPrec i 0 (concatD [doc (showString "bool")])
+    AbsGarpezpp.BChar -> prPrec i 0 (concatD [doc (showString "char")])
+    AbsGarpezpp.BInt -> prPrec i 0 (concatD [doc (showString "int")])
+    AbsGarpezpp.BFloat -> prPrec i 0 (concatD [doc (showString "float")])
+    AbsGarpezpp.BString -> prPrec i 0 (concatD [doc (showString "string")])
 
 instance Print AbsGarpezpp.RType where
   prt i e = case e of
-    AbsGarpezpp.RTypeBasic basic -> prPrec i 0 (concatD [prt 0 basic])
-    AbsGarpezpp.RType1 type_ -> prPrec i 0 (concatD [prt 0 type_, doc (showString "&")])
+    AbsGarpezpp.RVoid -> prPrec i 0 (concatD [doc (showString "void")])
+    AbsGarpezpp.RBasic basic -> prPrec i 0 (concatD [prt 0 basic])
+    AbsGarpezpp.RRef type_ -> prPrec i 0 (concatD [prt 0 type_, doc (showString "&")])
 
 instance Print AbsGarpezpp.Block where
   prt i e = case e of
@@ -168,7 +166,7 @@ instance Print AbsGarpezpp.Stm where
     AbsGarpezpp.StmBlock block -> prPrec i 0 (concatD [prt 0 block])
     AbsGarpezpp.StmCall id rexps -> prPrec i 0 (concatD [prt 0 id, doc (showString "("), prt 0 rexps, doc (showString ")"), doc (showString ";")])
     AbsGarpezpp.PredW pwrite rexp -> prPrec i 0 (concatD [prt 0 pwrite, doc (showString "("), prt 0 rexp, doc (showString ")"), doc (showString ";")])
-    AbsGarpezpp.Assign lexp {- assignop -} rexp -> prPrec i 0 (concatD [prt 0 lexp, {- prt 0 assignop, -} prt 0 rexp, doc (showString ";")])
+    AbsGarpezpp.Assign lexp assignop rexp -> prPrec i 0 (concatD [prt 0 lexp, prt 0 assignop, prt 0 rexp, doc (showString ";")])
     AbsGarpezpp.StmL lexp -> prPrec i 0 (concatD [prt 0 lexp, doc (showString ";")])
     AbsGarpezpp.If rexp stm -> prPrec i 0 (concatD [doc (showString "if"), doc (showString "("), prt 0 rexp, doc (showString ")"), prt 0 stm])
     AbsGarpezpp.IfElse rexp stm1 stm2 -> prPrec i 0 (concatD [doc (showString "if"), doc (showString "("), prt 0 rexp, doc (showString ")"), prt 0 stm1, doc (showString "else"), prt 0 stm2])
@@ -186,14 +184,14 @@ instance Print AbsGarpezpp.Dir where
 
 instance Print AbsGarpezpp.Jump where
   prt i e = case e of
-    AbsGarpezpp.Jump_return -> prPrec i 0 (concatD [doc (showString "return")])
-    AbsGarpezpp.Jump1 rexp -> prPrec i 0 (concatD [doc (showString "return"), prt 0 rexp])
-    AbsGarpezpp.Jump_break -> prPrec i 0 (concatD [doc (showString "break")])
-    AbsGarpezpp.Jump_continue -> prPrec i 0 (concatD [doc (showString "continue")])
+    AbsGarpezpp.Return -> prPrec i 0 (concatD [doc (showString "return")])
+    AbsGarpezpp.ReturnE rexp -> prPrec i 0 (concatD [doc (showString "return"), prt 0 rexp])
+    AbsGarpezpp.Break -> prPrec i 0 (concatD [doc (showString "break")])
+    AbsGarpezpp.Continue -> prPrec i 0 (concatD [doc (showString "continue")])
 
 instance Print AbsGarpezpp.LExp where
   prt i e = case e of
-    AbsGarpezpp.Deref lexp -> prPrec i 0 (concatD [doc (showString "*"), prt 1 lexp])
+    AbsGarpezpp.Deref lexp -> prPrec i 0 (concatD [doc (showString "*"), prt 0 lexp])
     AbsGarpezpp.Post lexp incdecop -> prPrec i 1 (concatD [prt 2 lexp, prt 0 incdecop])
     AbsGarpezpp.Pre incdecop lexp -> prPrec i 2 (concatD [prt 0 incdecop, prt 3 lexp])
     AbsGarpezpp.Access lexp rexp -> prPrec i 3 (concatD [prt 3 lexp, doc (showString "["), prt 0 rexp, doc (showString "]")])
@@ -214,6 +212,7 @@ instance Print AbsGarpezpp.RExp where
     AbsGarpezpp.Sign signop rexp -> prPrec i 7 (concatD [prt 0 signop, prt 8 rexp])
     AbsGarpezpp.Ref lexp -> prPrec i 7 (concatD [doc (showString "&"), prt 0 lexp])
     AbsGarpezpp.RLExp lexp -> prPrec i 8 (concatD [prt 0 lexp])
+    AbsGarpezpp.ArrList rexps -> prPrec i 9 (concatD [doc (showString "["), prt 0 rexps, doc (showString "]")])
     AbsGarpezpp.FCall id rexps -> prPrec i 9 (concatD [prt 0 id, doc (showString "("), prt 0 rexps, doc (showString ")")])
     AbsGarpezpp.PredR pread -> prPrec i 9 (concatD [prt 0 pread, doc (showString "("), doc (showString ")")])
     AbsGarpezpp.Lit literal -> prPrec i 10 (concatD [prt 0 literal])
@@ -222,56 +221,58 @@ instance Print AbsGarpezpp.RExp where
 
 instance Print AbsGarpezpp.PRead where
   prt i e = case e of
-    AbsGarpezpp.PRead_readChar -> prPrec i 0 (concatD [doc (showString "readChar")])
-    AbsGarpezpp.PRead_readInt -> prPrec i 0 (concatD [doc (showString "readInt")])
-    AbsGarpezpp.PRead_readFloat -> prPrec i 0 (concatD [doc (showString "readFloat")])
-    AbsGarpezpp.PRead_readString -> prPrec i 0 (concatD [doc (showString "readString")])
+    AbsGarpezpp.ReadChar -> prPrec i 0 (concatD [doc (showString "readChar")])
+    AbsGarpezpp.ReadInt -> prPrec i 0 (concatD [doc (showString "readInt")])
+    AbsGarpezpp.ReadFloat -> prPrec i 0 (concatD [doc (showString "readFloat")])
+    AbsGarpezpp.ReadString -> prPrec i 0 (concatD [doc (showString "readString")])
 
 instance Print AbsGarpezpp.PWrite where
   prt i e = case e of
-    AbsGarpezpp.PWrite_writeChar -> prPrec i 0 (concatD [doc (showString "writeChar")])
-    AbsGarpezpp.PWrite_writeInt -> prPrec i 0 (concatD [doc (showString "writeInt")])
-    AbsGarpezpp.PWrite_writeFloat -> prPrec i 0 (concatD [doc (showString "writeFloat")])
-    AbsGarpezpp.PWrite_writeString -> prPrec i 0 (concatD [doc (showString "writeString")])
+    AbsGarpezpp.WriteChar -> prPrec i 0 (concatD [doc (showString "writeChar")])
+    AbsGarpezpp.WriteInt -> prPrec i 0 (concatD [doc (showString "writeInt")])
+    AbsGarpezpp.WriteFloat -> prPrec i 0 (concatD [doc (showString "writeFloat")])
+    AbsGarpezpp.WriteString -> prPrec i 0 (concatD [doc (showString "writeString")])
 
 instance Print AbsGarpezpp.AssignOp where
   prt i e = case e of
-    AbsGarpezpp.AssignOp1 -> prPrec i 0 (concatD [doc (showString "=")])
-    AbsGarpezpp.AssignOp2 -> prPrec i 0 (concatD [doc (showString "+=")])
-    AbsGarpezpp.AssignOp3 -> prPrec i 0 (concatD [doc (showString "-=")])
-    AbsGarpezpp.AssignOp4 -> prPrec i 0 (concatD [doc (showString "*=")])
-    AbsGarpezpp.AssignOp5 -> prPrec i 0 (concatD [doc (showString "/=")])
-    AbsGarpezpp.AssignOp6 -> prPrec i 0 (concatD [doc (showString "%=")])
-    AbsGarpezpp.AssignOp7 -> prPrec i 0 (concatD [doc (showString "^=")])
-    AbsGarpezpp.AssignOp8 -> prPrec i 0 (concatD [doc (showString "&=")])
-    AbsGarpezpp.AssignOp9 -> prPrec i 0 (concatD [doc (showString "|=")])
+    AbsGarpezpp.AssignEq -> prPrec i 0 (concatD [doc (showString "=")])
+    AbsGarpezpp.AssignAdd -> prPrec i 0 (concatD [doc (showString "+=")])
+    AbsGarpezpp.AssignSub -> prPrec i 0 (concatD [doc (showString "-=")])
+    AbsGarpezpp.AssignMul -> prPrec i 0 (concatD [doc (showString "*=")])
+    AbsGarpezpp.AssignDiv -> prPrec i 0 (concatD [doc (showString "/=")])
+    AbsGarpezpp.AssignMod -> prPrec i 0 (concatD [doc (showString "%=")])
 
 instance Print AbsGarpezpp.CompOp where
   prt i e = case e of
-    AbsGarpezpp.CompOp1 -> prPrec i 0 (concatD [doc (showString "<")])
-    AbsGarpezpp.CompOp2 -> prPrec i 0 (concatD [doc (showString "<=")])
-    AbsGarpezpp.CompOp3 -> prPrec i 0 (concatD [doc (showString "==")])
-    AbsGarpezpp.CompOp4 -> prPrec i 0 (concatD [doc (showString "!=")])
-    AbsGarpezpp.CompOp5 -> prPrec i 0 (concatD [doc (showString ">=")])
-    AbsGarpezpp.CompOp6 -> prPrec i 0 (concatD [doc (showString ">")])
+    AbsGarpezpp.Lt -> prPrec i 0 (concatD [doc (showString "<")])
+    AbsGarpezpp.Leq -> prPrec i 0 (concatD [doc (showString "<=")])
+    AbsGarpezpp.Eq -> prPrec i 0 (concatD [doc (showString "==")])
+    AbsGarpezpp.Neq -> prPrec i 0 (concatD [doc (showString "!=")])
+    AbsGarpezpp.Geq -> prPrec i 0 (concatD [doc (showString ">=")])
+    AbsGarpezpp.Gt -> prPrec i 0 (concatD [doc (showString ">")])
 
 instance Print AbsGarpezpp.IncDecOp where
   prt i e = case e of
-    AbsGarpezpp.IncDecOp1 -> prPrec i 0 (concatD [doc (showString "++")])
-    AbsGarpezpp.IncDecOp2 -> prPrec i 0 (concatD [doc (showString "--")])
+    AbsGarpezpp.Inc -> prPrec i 0 (concatD [doc (showString "++")])
+    AbsGarpezpp.Dec -> prPrec i 0 (concatD [doc (showString "--")])
 
 instance Print AbsGarpezpp.SignOp where
   prt i e = case e of
-    AbsGarpezpp.SignOp1 -> prPrec i 0 (concatD [doc (showString "+")])
-    AbsGarpezpp.SignOp2 -> prPrec i 0 (concatD [doc (showString "-")])
+    AbsGarpezpp.Pos -> prPrec i 0 (concatD [doc (showString "+")])
+    AbsGarpezpp.Neg -> prPrec i 0 (concatD [doc (showString "-")])
 
 instance Print AbsGarpezpp.Literal where
   prt i e = case e of
-    AbsGarpezpp.LiteralBoolean boolean -> prPrec i 0 (concatD [prt 0 boolean])
-    AbsGarpezpp.LiteralChar c -> prPrec i 0 (concatD [prt 0 c])
-    AbsGarpezpp.LiteralInteger n -> prPrec i 0 (concatD [prt 0 n])
-    AbsGarpezpp.LiteralDouble d -> prPrec i 0 (concatD [prt 0 d])
-    AbsGarpezpp.LiteralString str -> prPrec i 0 (concatD [prt 0 str])
+    AbsGarpezpp.LBool boolean -> prPrec i 0 (concatD [prt 0 boolean])
+    AbsGarpezpp.LChar c -> prPrec i 0 (concatD [prt 0 c])
+    AbsGarpezpp.LInt n -> prPrec i 0 (concatD [prt 0 n])
+    AbsGarpezpp.LFloat d -> prPrec i 0 (concatD [prt 0 d])
+    AbsGarpezpp.LString str -> prPrec i 0 (concatD [prt 0 str])
+
+instance Print AbsGarpezpp.Boolean where
+  prt i e = case e of
+    AbsGarpezpp.False -> prPrec i 0 (concatD [doc (showString "false")])
+    AbsGarpezpp.True -> prPrec i 0 (concatD [doc (showString "true")])
 
 instance Print [AbsGarpezpp.Param] where
   prt = prtList
