@@ -11,5 +11,5 @@
 	- [ ] Construct parametric AST () for Parser
 	- [ ] Set the Err monad suitable for error concat and warning/fatal distinction
 	- [ ] Work on parametric AST Info for checkers and inferers
-	- [ ] Build up a type system
+	- [X] Build up a type system
 - [ ] Three Address Code
