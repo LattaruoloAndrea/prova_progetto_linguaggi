@@ -1,6 +1,6 @@
 module TypeChecker where
 
-import AbsGarpezpp
+import AbstractSyntaxTree
 import Data.Maybe
 import ErrTC
 
