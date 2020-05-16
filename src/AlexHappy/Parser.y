@@ -2,7 +2,7 @@
 {
 {-# OPTIONS_GHC -fno-warn-incomplete-patterns -fno-warn-overlapping-patterns #-}
 module ParGarpezpp where
-import AbsGarpezpp
+import qualified AbstractSyntaxTree as AST
 import LexGarpezpp
 import ErrM
 
@@ -82,8 +82,8 @@ import ErrM
 
 %%
 
-Ident   :: { Ident }
-Ident    : L_ident  { Ident $1 }
+Ident   :: { AST.Posn AST.Ident }
+Ident    : L_ident  { AST.Posn { pos = tokenLineCol $1, value = AST.Ident (prToken $1)} }
 
 Char    :: { Char }
 Char     : L_charac { (read ( $1)) :: Char }
@@ -97,147 +97,155 @@ Double   : L_doubl  { (read ( $1)) :: Double }
 String  :: { String }
 String   : L_quoted {  $1 }
 
-Program :: { Program }
-Program : ListFDecl { AbsGarpezpp.Prog $1 }
-FDecl :: { FDecl }
-FDecl : RType Ident '(' ListParam ')' Block { AbsGarpezpp.FDecl $1 $2 $4 $6 }
-Param :: { Param }
-Param : Type PassBy Ident { AbsGarpezpp.Param $1 $2 $3 }
-PassBy :: { PassBy }
-PassBy : 'val' { AbsGarpezpp.PassVal }
-       | 'ref' { AbsGarpezpp.PassRef }
-DList :: { DList }
-DList : Type ListVDecl ';' { AbsGarpezpp.VList $1 $2 }
-      | 'const' ListCDecl ';' { AbsGarpezpp.CList $2 }
-VDecl :: { VDecl }
-VDecl : Ident { AbsGarpezpp.VSolo $1 }
-      | Ident '=' RExp { AbsGarpezpp.VInit $1 $3 }
+Program :: { AST.Program }
+Program : ListFDecl { AST.Prog $1 }
+
+FDecl :: { AST.Posn AST.FDecl }
+FDecl : RType Ident '(' ListParam ')' Block { AST.Posn { pos = pos $2, value = AST.FDecl $1 $2 $4 $6 } }
+
+Param :: { AST.Posn AST.Param }
+Param : Type PassBy Ident { AST.Posn { pos = pos $3, value = AST.Param $1 $2 $3 } }
+
+PassBy :: { AST.PassBy }
+PassBy : 'val' { AST.PassVal }
+       | 'ref' { AST.PassRef }
+
+DList :: { AST.DList }
+DList : Type ListVDecl ';' { AST.VList $1 $2 }
+      | 'const' ListCDecl ';' { AST.CList $2 }
+
+VDecl :: { AST.Posn AST.VDecl }
+VDecl : Ident { AST.VSolo $1 }
+      | Ident '=' RExp { AST.VInit $1 $3 }
 CDecl :: { CDecl }
-CDecl : Ident '=' RExp { AbsGarpezpp.CDecl $1 $3 }
+CDecl : Ident '=' RExp { AST.CDecl $1 $3 }
 Type :: { Type }
-Type : Basic Compound { AbsGarpezpp.Type $1 $2 }
+Type : Basic Compound { AST.Type $1 $2 }
 Compound :: { Compound }
-Compound : {- empty -} { AbsGarpezpp.Simple }
-         | Compound '[' RExp ']' { AbsGarpezpp.Array $1 $3 }
-         | Compound '*' { AbsGarpezpp.Pointer $1 }
+Compound : {- empty -} { AST.Simple }
+         | Compound '[' RExp ']' { AST.Array $1 $3 }
+         | Compound '*' { AST.Pointer $1 }
 Basic :: { Basic }
-Basic : 'bool' { AbsGarpezpp.BBool }
-      | 'char' { AbsGarpezpp.BChar }
-      | 'int' { AbsGarpezpp.BInt }
-      | 'float' { AbsGarpezpp.BFloat }
-      | 'string' { AbsGarpezpp.BString }
+Basic : 'bool' { AST.BBool }
+      | 'char' { AST.BChar }
+      | 'int' { AST.BInt }
+      | 'float' { AST.BFloat }
+      | 'string' { AST.BString }
 RType :: { RType }
-RType : 'void' { AbsGarpezpp.RVoid }
-      | Basic { AbsGarpezpp.RBasic $1 }
-      | Type '&' { AbsGarpezpp.RRef $1 }
+RType : 'void' { AST.RVoid }
+      | Basic { AST.RBasic $1 }
+      | Type '&' { AST.RRef $1 }
 Block :: { Block }
-Block : '{' ListDList ListStm '}' { AbsGarpezpp.Block (reverse $2) (reverse $3) }
+Block : '{' ListDList ListStm '}' { AST.Block (reverse $2) (reverse $3) }
 Stm :: { Stm }
-Stm : Block { AbsGarpezpp.StmBlock $1 }
-    | Ident '(' ListRExp ')' ';' { AbsGarpezpp.StmCall $1 $3 }
-    | PWrite '(' RExp ')' ';' { AbsGarpezpp.PredW $1 $3 }
-    | LExp AssignOp RExp ';' { AbsGarpezpp.Assign $1 $2 $3 }
-    | LExp ';' { AbsGarpezpp.StmL $1 }
-    | 'if' '(' RExp ')' Stm { AbsGarpezpp.If $3 $5 }
-    | 'if' '(' RExp ')' Stm 'else' Stm { AbsGarpezpp.IfElse $3 $5 $7 }
-    | 'while' '(' RExp ')' Stm { AbsGarpezpp.While $3 $5 }
-    | 'do' Stm 'while' '(' RExp ')' ';' { AbsGarpezpp.DoWhile $2 $5 }
-    | 'for' '(' Ident '=' RExp Dir RExp ')' Stm { AbsGarpezpp.For $3 $5 $6 $7 $9 }
-    | Jump ';' { AbsGarpezpp.JmpStm $1 }
+Stm : Block { AST.StmBlock $1 }
+    | Ident '(' ListRExp ')' ';' { AST.StmCall $1 $3 }
+    | PWrite '(' RExp ')' ';' { AST.PredW $1 $3 }
+    | LExp AssignOp RExp ';' { AST.Assign $1 $2 $3 }
+    | LExp ';' { AST.StmL $1 }
+    | 'if' '(' RExp ')' Stm { AST.If $3 $5 }
+    | 'if' '(' RExp ')' Stm 'else' Stm { AST.IfElse $3 $5 $7 }
+    | 'while' '(' RExp ')' Stm { AST.While $3 $5 }
+    | 'do' Stm 'while' '(' RExp ')' ';' { AST.DoWhile $2 $5 }
+    | 'for' '(' Ident '=' RExp Dir RExp ')' Stm { AST.For $3 $5 $6 $7 $9 }
+    | Jump ';' { AST.JmpStm $1 }
 Dir :: { Dir }
-Dir : 'upto' { AbsGarpezpp.UpTo } | 'downto' { AbsGarpezpp.DownTo }
+Dir : 'upto' { AST.UpTo } | 'downto' { AST.DownTo }
 Jump :: { Jump }
-Jump : 'return' { AbsGarpezpp.Return }
-     | 'return' RExp { AbsGarpezpp.ReturnE $2 }
-     | 'break' { AbsGarpezpp.Break }
-     | 'continue' { AbsGarpezpp.Continue }
+Jump : 'return' { AST.Return }
+     | 'return' RExp { AST.ReturnE $2 }
+     | 'break' { AST.Break }
+     | 'continue' { AST.Continue }
 LExp :: { LExp }
-LExp : LExp1 { $1 } | '*' LExp { AbsGarpezpp.Deref $2 }
+LExp : LExp1 { $1 } | '*' LExp { AST.Deref $2 }
 LExp1 :: { LExp }
-LExp1 : LExp2 { $1 } | LExp2 IncDecOp { AbsGarpezpp.Post $1 $2 }
+LExp1 : LExp2 { $1 } | LExp2 IncDecOp { AST.Post $1 $2 }
 LExp2 :: { LExp }
-LExp2 : LExp3 { $1 } | IncDecOp LExp3 { AbsGarpezpp.Pre $1 $2 }
+LExp2 : LExp3 { $1 } | IncDecOp LExp3 { AST.Pre $1 $2 }
 LExp3 :: { LExp }
 LExp3 : LExp4 { $1 }
-      | LExp3 '[' RExp ']' { AbsGarpezpp.Access $1 $3 }
+      | LExp3 '[' RExp ']' { AST.Access $1 $3 }
 LExp4 :: { LExp }
-LExp4 : '(' LExp ')' { $2 } | Ident { AbsGarpezpp.Name $1 }
+LExp4 : '(' LExp ')' { $2 } | Ident { AST.Name $1 }
 RExp :: { RExp }
-RExp : RExp1 { $1 } | RExp '||' RExp1 { AbsGarpezpp.Or $1 $3 }
+RExp : RExp1 { $1 } | RExp '||' RExp1 { AST.Or $1 $3 }
 RExp1 :: { RExp }
-RExp1 : RExp2 { $1 } | RExp1 '&&' RExp2 { AbsGarpezpp.And $1 $3 }
+RExp1 : RExp2 { $1 } | RExp1 '&&' RExp2 { AST.And $1 $3 }
 RExp2 :: { RExp }
-RExp2 : RExp3 { $1 } | '!' RExp3 { AbsGarpezpp.Not $2 }
+RExp2 : RExp3 { $1 } | '!' RExp3 { AST.Not $2 }
 RExp3 :: { RExp }
 RExp3 : RExp4 { $1 }
-      | RExp3 CompOp RExp4 { AbsGarpezpp.Comp $1 $2 $3 }
+      | RExp3 CompOp RExp4 { AST.Comp $1 $2 $3 }
 RExp4 :: { RExp }
 RExp4 : RExp5 { $1 }
-      | RExp4 '+' RExp5 { AbsGarpezpp.Add $1 $3 }
-      | RExp4 '-' RExp5 { AbsGarpezpp.Sub $1 $3 }
+      | RExp4 '+' RExp5 { AST.Add $1 $3 }
+      | RExp4 '-' RExp5 { AST.Sub $1 $3 }
 RExp5 :: { RExp }
 RExp5 : RExp6 { $1 }
-      | RExp5 '*' RExp6 { AbsGarpezpp.Mul $1 $3 }
-      | RExp5 '/' RExp6 { AbsGarpezpp.Div $1 $3 }
-      | RExp5 '%' RExp6 { AbsGarpezpp.Rem $1 $3 }
+      | RExp5 '*' RExp6 { AST.Mul $1 $3 }
+      | RExp5 '/' RExp6 { AST.Div $1 $3 }
+      | RExp5 '%' RExp6 { AST.Rem $1 $3 }
 RExp6 :: { RExp }
-RExp6 : RExp7 { $1 } | RExp7 '^' RExp6 { AbsGarpezpp.Pow $1 $3 }
+RExp6 : RExp7 { $1 } | RExp7 '^' RExp6 { AST.Pow $1 $3 }
 RExp7 :: { RExp }
 RExp7 : RExp8 { $1 }
-      | SignOp RExp8 { AbsGarpezpp.Sign $1 $2 }
-      | '&' LExp { AbsGarpezpp.Ref $2 }
+      | SignOp RExp8 { AST.Sign $1 $2 }
+      | '&' LExp { AST.Ref $2 }
 RExp8 :: { RExp }
-RExp8 : RExp9 { $1 } | LExp { AbsGarpezpp.RLExp $1 }
+RExp8 : RExp9 { $1 } | LExp { AST.RLExp $1 }
 RExp9 :: { RExp }
 RExp9 : RExp10 { $1 }
-      | '[' ListRExp ']' { AbsGarpezpp.ArrList $2 }
-      | Ident '(' ListRExp ')' { AbsGarpezpp.FCall $1 $3 }
-      | PRead '(' ')' { AbsGarpezpp.PredR $1 }
+      | '[' ListRExp ']' { AST.ArrList $2 }
+      | Ident '(' ListRExp ')' { AST.FCall $1 $3 }
+      | PRead '(' ')' { AST.PredR $1 }
 RExp10 :: { RExp }
-RExp10 : '(' RExp ')' { $2 } | Literal { AbsGarpezpp.Lit $1 }
+RExp10 : '(' RExp ')' { $2 } | Literal { AST.Lit $1 }
 PRead :: { PRead }
-PRead : 'readChar' { AbsGarpezpp.ReadChar }
-      | 'readInt' { AbsGarpezpp.ReadInt }
-      | 'readFloat' { AbsGarpezpp.ReadFloat }
-      | 'readString' { AbsGarpezpp.ReadString }
+PRead : 'readChar' { AST.ReadChar }
+      | 'readInt' { AST.ReadInt }
+      | 'readFloat' { AST.ReadFloat }
+      | 'readString' { AST.ReadString }
 PWrite :: { PWrite }
-PWrite : 'writeChar' { AbsGarpezpp.WriteChar }
-       | 'writeInt' { AbsGarpezpp.WriteInt }
-       | 'writeFloat' { AbsGarpezpp.WriteFloat }
-       | 'writeString' { AbsGarpezpp.WriteString }
+PWrite : 'writeChar' { AST.WriteChar }
+       | 'writeInt' { AST.WriteInt }
+       | 'writeFloat' { AST.WriteFloat }
+       | 'writeString' { AST.WriteString }
 AssignOp :: { AssignOp }
-AssignOp : '=' { AbsGarpezpp.AssignEq }
-         | '+=' { AbsGarpezpp.AssignAdd }
-         | '-=' { AbsGarpezpp.AssignSub }
-         | '*=' { AbsGarpezpp.AssignMul }
-         | '/=' { AbsGarpezpp.AssignDiv }
-         | '%=' { AbsGarpezpp.AssignMod }
+AssignOp : '=' { AST.AssignEq }
+         | '+=' { AST.AssignAdd }
+         | '-=' { AST.AssignSub }
+         | '*=' { AST.AssignMul }
+         | '/=' { AST.AssignDiv }
+         | '%=' { AST.AssignMod }
 CompOp :: { CompOp }
-CompOp : '<' { AbsGarpezpp.Lt }
-       | '<=' { AbsGarpezpp.Leq }
-       | '==' { AbsGarpezpp.Eq }
-       | '!=' { AbsGarpezpp.Neq }
-       | '>=' { AbsGarpezpp.Geq }
-       | '>' { AbsGarpezpp.Gt }
+CompOp : '<' { AST.Lt }
+       | '<=' { AST.Leq }
+       | '==' { AST.Eq }
+       | '!=' { AST.Neq }
+       | '>=' { AST.Geq }
+       | '>' { AST.Gt }
 IncDecOp :: { IncDecOp }
-IncDecOp : '++' { AbsGarpezpp.Inc } | '--' { AbsGarpezpp.Dec }
+IncDecOp : '++' { AST.Inc } | '--' { AST.Dec }
 SignOp :: { SignOp }
-SignOp : '+' { AbsGarpezpp.Pos } | '-' { AbsGarpezpp.Neg }
+SignOp : '+' { AST.Pos } | '-' { AST.Neg }
 Literal :: { Literal }
-Literal : Boolean { AbsGarpezpp.LBool $1 }
-        | Char { AbsGarpezpp.LChar $1 }
-        | Integer { AbsGarpezpp.LInt $1 }
-        | Double { AbsGarpezpp.LFloat $1 }
-        | String { AbsGarpezpp.LString $1 }
+Literal : Boolean { AST.LBool $1 }
+        | Char { AST.LChar $1 }
+        | Integer { AST.LInt $1 }
+        | Double { AST.LFloat $1 }
+        | String { AST.LString $1 }
 Boolean :: { Boolean }
-Boolean : 'false' { AbsGarpezpp.BFalse }
-        | 'true' { AbsGarpezpp.BTrue }
+Boolean : 'false' { AST.BFalse }
+        | 'true' { AST.BTrue }
 ListParam :: { [Param] }
 ListParam : {- empty -} { [] }
           | Param { (:[]) $1 }
           | Param ',' ListParam { (:) $1 $3 }
-ListFDecl :: { [FDecl] }
-ListFDecl : FDecl { (:[]) $1 } | FDecl ListFDecl { (:) $1 $2 }
+
+ListFDecl :: { [Posn FDecl] }
+ListFDecl : FDecl { (:[]) $1 } 
+          | FDecl ListFDecl { (:) $1 $2 }
+
 ListVDecl :: { [VDecl] }
 ListVDecl : VDecl { (:[]) $1 } | VDecl ',' ListVDecl { (:) $1 $3 }
 ListCDecl :: { [CDecl] }

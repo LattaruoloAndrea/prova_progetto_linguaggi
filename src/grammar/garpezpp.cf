@@ -15,7 +15,7 @@ Prog.						Program ::= [FDecl] ;
 
 -- TyC: { F.type = (RType.type, [p1.type, ..., pn.type]) }
 -- TAC: { F.code = f.preamble ++ Block.code }
-FDecl.						FDecl ::= RType Ident "(" [Param] ")" Block ;		
+FDecl.						FDecl ::= RType Ident "(" [Param] ")" Block ;
 
 Param.						Param ::= Type PassBy Ident ;
 

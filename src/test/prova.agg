@@ -2,7 +2,7 @@ int main() {
 	string s = readString();
 	int [6]**[5] v;
 	writeString(s);
-
+	                              ? ;
 	for(i=0 upto 10) {
 		const s = "Franco";
 		x += 10;
