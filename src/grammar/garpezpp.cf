@@ -8,7 +8,7 @@ entrypoints Program ;
 
 -- TyC: { }
 -- TAC: { P.code = f1.code ++ f2.code ++ ... ++ fn.code }
-Prog.						Program ::= [FDecl] ;
+Prog.						Program ::= [DList] [FDecl] ;
 
 
 -- DECLARATION ////////////////////////////////////////////////////////////////
@@ -20,7 +20,11 @@ FDecl.						FDecl ::= RType Ident "(" [Param] ")" Block ;
 Param.						Param ::= Type PassBy Ident ;
 
 PassVal.					PassBy ::= "val" ;
-PassRef.					PassBy ::= "ref" ;
+PassRef.		 			PassBy ::= "ref" ;
+PassName.         PassBy ::= "name";
+PassRes.          PassBy ::= "res";
+PassValres.       PassBy ::= "valres";
+PassConst.        PassBy ::= "const";
 
 VList.						DList ::= Type [VDecl] ";" ;
 CList.						DList ::= "const" [CDecl] ";" ;
