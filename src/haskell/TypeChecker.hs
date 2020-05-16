@@ -22,7 +22,17 @@ data TCType
     | TPoint TCType                     -- Pointer to
     | TArr (Int, TCType)                -- Array (Dim, Type)
     | TFun (TCType, [(TCType, PassBy)]) -- Function (Return type, [Parameter Type, Parameter Modality])
-    deriving (Show, Eq)
+    deriving (Eq)
+
+instance Show TCType where
+    show (TVoid) = "void"
+    show (TBool) = "bool"
+    show (TString) = "string"
+    show (TInt) = "int"
+    show (TFloat) = "float"
+    show (TChar) = "char"
+    show (TPoint t) = "pointer"
+    show (TArr (i, t)) = "array"
 
 -- Class to have a "universal" converter to TCType
 class TCTypeable a where
@@ -73,5 +83,24 @@ instance TCTypeable FDecl where
 
 
 
--- TODO leastGeneral
--- leastGeneral :: TCType -> TCType -> ErrTC TCType
+-- qui EM.Err per import qualified ErrM as EM
+
+mostGeneral :: TCType -> TCType -> EM.Err TCType
+mostGeneral t1 t2 = case (t1,t2) of
+    (TBool, TBool) -> EM.Ok TBool
+    (TString, TString) -> EM.Ok TString
+    (TChar, TChar) -> EM.Ok TChar
+    (TChar, TInt) -> EM.Ok TInt
+    (TChar, TFloat) -> EM.Ok TFloat
+    (TInt, TChar) -> EM.Ok TInt
+    (TInt, TInt) -> EM.Ok TInt
+    (TInt, TFloat) -> EM.Ok TFloat
+    (TFloat, TChar) -> EM.Ok TFloat
+    (TFloat, TInt) -> EM.Ok TFloat
+    (TFloat, TFloat) -> EM.Ok TFloat
+    (TPoint t1', TPoint t2') -> mostGeneral t1' t2'
+    (TArr (i1, t1'), TArr (i2, t2')) -> if (i1 == i2) then
+            mostGeneral t1' t2'
+        else
+            EM.Bad "arrays have different lengths"
+    (_,_) -> EM.Bad ("Types " ++ (show t1) ++ " and " ++ (show t2) ++ " are not compatible")
