@@ -40,7 +40,7 @@ data CDecl = CDecl (Posn Ident) (Posn RExp)
 data Type = Type Basic Compound
   deriving (Eq, Ord, Show, Read)
 
-data Compound = Simple | Array Compound RExp | Pointer Compound
+data Compound = Simple | Array Compound (Posn RExp) | Pointer Compound
   deriving (Eq, Ord, Show, Read)
 
 data Basic = BBool | BChar | BInt | BFloat | BString
@@ -55,7 +55,7 @@ data Block = Block [DList] [Posn Stm]
 data Stm
     = StmBlock (Posn Block)
     | StmCall (Posn Ident) [Posn RExp]
-    | PredW PWrite (Posn RExp)
+    | PredW (Posn PWrite) (Posn RExp)
     | Assign (Posn LExp) AssignOp (Posn RExp)
     | StmL (Posn LExp)
     | If (Posn RExp) (Posn Stm)

@@ -115,51 +115,63 @@ DList : Type ListVDecl ';' { AST.VList $1 $2 }
       | 'const' ListCDecl ';' { AST.CList $2 }
 
 VDecl :: { AST.Posn AST.VDecl }
-VDecl : Ident { AST.VSolo $1 }
-      | Ident '=' RExp { AST.VInit $1 $3 }
-CDecl :: { CDecl }
-CDecl : Ident '=' RExp { AST.CDecl $1 $3 }
-Type :: { Type }
+VDecl : Ident { AST.Posn { pos = pos $1, value = AST.VSolo $1 } }
+      | Ident '=' RExp { AST.Posn { pos = pos $1, value = AST.VInit $1 $3 } }
+
+CDecl :: { AST.Posn AST.CDecl }
+CDecl : Ident '=' RExp { AST.Posn { pos = pos $1, value = AST.CDecl $1 $3 } }
+
+Type :: { AST.Type }
 Type : Basic Compound { AST.Type $1 $2 }
-Compound :: { Compound }
+
+Compound :: { AST.Compound }
 Compound : {- empty -} { AST.Simple }
          | Compound '[' RExp ']' { AST.Array $1 $3 }
          | Compound '*' { AST.Pointer $1 }
-Basic :: { Basic }
+
+Basic :: { AST.Basic }
 Basic : 'bool' { AST.BBool }
       | 'char' { AST.BChar }
       | 'int' { AST.BInt }
       | 'float' { AST.BFloat }
       | 'string' { AST.BString }
-RType :: { RType }
+
+RType :: { AST.RType }
 RType : 'void' { AST.RVoid }
       | Basic { AST.RBasic $1 }
       | Type '&' { AST.RRef $1 }
-Block :: { Block }
-Block : '{' ListDList ListStm '}' { AST.Block (reverse $2) (reverse $3) }
-Stm :: { Stm }
-Stm : Block { AST.StmBlock $1 }
-    | Ident '(' ListRExp ')' ';' { AST.StmCall $1 $3 }
-    | PWrite '(' RExp ')' ';' { AST.PredW $1 $3 }
-    | LExp AssignOp RExp ';' { AST.Assign $1 $2 $3 }
-    | LExp ';' { AST.StmL $1 }
-    | 'if' '(' RExp ')' Stm { AST.If $3 $5 }
-    | 'if' '(' RExp ')' Stm 'else' Stm { AST.IfElse $3 $5 $7 }
-    | 'while' '(' RExp ')' Stm { AST.While $3 $5 }
-    | 'do' Stm 'while' '(' RExp ')' ';' { AST.DoWhile $2 $5 }
-    | 'for' '(' Ident '=' RExp Dir RExp ')' Stm { AST.For $3 $5 $6 $7 $9 }
-    | Jump ';' { AST.JmpStm $1 }
-Dir :: { Dir }
+
+Block :: { AST.Posn AST.Block }
+Block : '{' ListDList ListStm '}' { AST.Posn { pos = tokenLineCol $1, value = AST.Block (reverse $2) (reverse $3) } }
+
+Stm :: { AST.Posn AST.Stm }
+Stm : Block { AST.Posn { pos = pos $1, value = AST.StmBlock $1 } }
+    | Ident '(' ListRExp ')' ';' { AST.Posn { pos = pos $1, value = AST.StmCall $1 $3 } }
+    | PWrite '(' RExp ')' ';' { AST.Posn { pos = pos $1, value = AST.PredW $1 $3 } }
+    | LExp AssignOp RExp ';' { AST.Posn { pos = pos $1, value = AST.Assign $1 $2 $3 } }
+    | LExp ';' { AST.Posn { pos = tokenLineCol $ 1, value = AST.StmL $1 } }
+    | 'if' '(' RExp ')' Stm { AST.Posn { pos = tokenLineCol $1, value = AST.If $3 $5 } }
+    | 'if' '(' RExp ')' Stm 'else' Stm { AST.Posn { pos = tokenLineCol $1, value = AST.IfElse $3 $5 $7 } }
+    | 'while' '(' RExp ')' Stm { AST.Posn { pos = tokenLineCol $1, value = AST.While $3 $5 } }
+    | 'do' Stm 'while' '(' RExp ')' ';' { AST.Posn { pos = tokenLineCol $1, value = AST.DoWhile $2 $5 } }
+    | 'for' '(' Ident '=' RExp Dir RExp ')' Stm { AST.Posn { pos = tokenLineCol $1, value = AST.For $3 $5 $6 $7 $9 } }
+    | Jump ';' { AST.Posn { pos = pos $1, value = AST.JmpStm $1 } }
+
+Dir :: { AST.Dir }
 Dir : 'upto' { AST.UpTo } | 'downto' { AST.DownTo }
-Jump :: { Jump }
-Jump : 'return' { AST.Return }
-     | 'return' RExp { AST.ReturnE $2 }
-     | 'break' { AST.Break }
-     | 'continue' { AST.Continue }
-LExp :: { LExp }
-LExp : LExp1 { $1 } | '*' LExp { AST.Deref $2 }
-LExp1 :: { LExp }
+
+Jump :: { AST.Posn AST.Jump }
+Jump : 'return' { AST.Posn { pos = tokenLineCol $1, value = AST.Return } }
+     | 'return' RExp { AST.Posn { pos = tokenLineCol $1, value = AST.ReturnE $2 } }
+     | 'break' { AST.Posn { pos = tokenLineCol $1, value = AST.Break } }
+     | 'continue' { AST.Posn { pos = tokenLineCol = $1, value = AST.Continue } }
+
+LExp :: { AST.Posn AST.LExp }
+LExp : LExp1 { $1 } | '*' LExp { AST.Posn { pos = tokenLineCol $ 1, value = AST.Deref $2 } }
+
+LExp1 :: { AST.Posn AST.LExp }
 LExp1 : LExp2 { $1 } | LExp2 IncDecOp { AST.Post $1 $2 }
+
 LExp2 :: { LExp }
 LExp2 : LExp3 { $1 } | IncDecOp LExp3 { AST.Pre $1 $2 }
 LExp3 :: { LExp }
