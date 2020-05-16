@@ -21,10 +21,10 @@ Param.						Param ::= Type PassBy Ident ;
 
 PassVal.					PassBy ::= "val" ;
 PassRef.		 			PassBy ::= "ref" ;
-PassName.         PassBy ::= "name";
-PassRes.          PassBy ::= "res";
-PassValres.       PassBy ::= "valres";
-PassConst.        PassBy ::= "const";
+PassName.                   PassBy ::= "name";
+PassRes.                    PassBy ::= "res";
+PassValRes.                 PassBy ::= "valres";
+PassConst.                  PassBy ::= "const";
 
 VList.						DList ::= Type [VDecl] ";" ;
 CList.						DList ::= "const" [CDecl] ";" ;
