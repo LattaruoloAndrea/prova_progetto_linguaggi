@@ -20,7 +20,7 @@ FDecl.						FDecl ::= RType Ident "(" [Param] ")" Block ;
 Param.						Param ::= Type PassBy Ident ;
 
 PassVal.					PassBy ::= "val" ;
-PassRef.					PassBy ::= "ref" ;
+PassRef.		 			PassBy ::= "ref" ;
 PassName.         PassBy ::= "name";
 PassRes.          PassBy ::= "res";
 PassValres.       PassBy ::= "valres";
