@@ -82,6 +82,7 @@ import ErrM
   L_doubl  { PT _ (TD $$) }
   L_quoted { PT _ (TL $$) }
 
+%left ';'
 %left '||'
 %left '&&'
 %nonassoc '<' '<=' '==' '!=' '>=' '>'
@@ -164,8 +165,8 @@ Block :: { Block }
 Block : '{' ListDList ListStm '}' { AST.Block (reverse $2) (reverse $3) (tokenLoc $1) }
 
 Stm :: { Stm }
-Stm : {- Stm ';' { $1 } -- Regola per "mangiare" i ;
-	| -} Block { AST.StmBlock $1 ($1^.loc) }
+Stm : ';' Stm { $2 } -- Regola per "mangiare" i ;
+    | Block { AST.StmBlock $1 ($1^.loc) }
     | Ident '(' ListRExp ')' ';' { AST.StmCall $1 $3 ($1.^loc) }
     | 'writeChar' '(' RExp ')' ';' { AST.WriteChar $3 (tokenLoc $1) }
     | 'writeInt' '(' RExp ')' ';' { AST.WriteInt $3 (tokenLoc $1) }
