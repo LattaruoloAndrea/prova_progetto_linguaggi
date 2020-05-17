@@ -93,7 +93,7 @@ instance Print AbsGarpezpp.Ident where
 
 instance Print AbsGarpezpp.Program where
   prt i e = case e of
-    AbsGarpezpp.Prog fdecls -> prPrec i 0 (concatD [prt 0 fdecls])
+    AbsGarpezpp.Prog dlists fdecls -> prPrec i 0 (concatD [prt 0 dlists, prt 0 fdecls])
 
 instance Print AbsGarpezpp.FDecl where
   prt i e = case e of
@@ -112,6 +112,10 @@ instance Print AbsGarpezpp.PassBy where
   prt i e = case e of
     AbsGarpezpp.PassVal -> prPrec i 0 (concatD [doc (showString "val")])
     AbsGarpezpp.PassRef -> prPrec i 0 (concatD [doc (showString "ref")])
+    AbsGarpezpp.PassName -> prPrec i 0 (concatD [doc (showString "name")])
+    AbsGarpezpp.PassRes -> prPrec i 0 (concatD [doc (showString "res")])
+    AbsGarpezpp.PassValRes -> prPrec i 0 (concatD [doc (showString "valres")])
+    AbsGarpezpp.PassConst -> prPrec i 0 (concatD [doc (showString "const")])
 
 instance Print AbsGarpezpp.DList where
   prt i e = case e of

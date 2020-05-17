@@ -44,11 +44,11 @@ The reserved words used in garpezpp are the following:
   | ``bool`` | ``break`` | ``char`` | ``const``
   | ``continue`` | ``do`` | ``downto`` | ``else``
   | ``false`` | ``float`` | ``for`` | ``if``
-  | ``int`` | ``readChar`` | ``readFloat`` | ``readInt``
-  | ``readString`` | ``ref`` | ``return`` | ``string``
-  | ``true`` | ``upto`` | ``val`` | ``void``
-  | ``while`` | ``writeChar`` | ``writeFloat`` | ``writeInt``
-  | ``writeString`` |  |  |
+  | ``int`` | ``name`` | ``readChar`` | ``readFloat``
+  | ``readInt`` | ``readString`` | ``ref`` | ``res``
+  | ``return`` | ``string`` | ``true`` | ``upto``
+  | ``val`` | ``valres`` | ``void`` | ``while``
+  | ``writeChar`` | ``writeFloat`` | ``writeInt`` | ``writeString``
 
 The symbols used in garpezpp are the following:
   | ( | ) | ; | =
@@ -69,11 +69,15 @@ The symbols -> (production),  **|**  (union)
 and **eps** (empty rule) belong to the BNF notation.
 All other symbols are terminals.
 
-  | //Program// | -> | //[FDecl]//
+  | //Program// | -> | //[DList]// //[FDecl]//
   | //FDecl// | -> | //RType// //Ident// ``(`` //[Param]// ``)`` //Block//
   | //Param// | -> | //Type// //PassBy// //Ident//
   | //PassBy// | -> | ``val``
   |  |  **|**  | ``ref``
+  |  |  **|**  | ``name``
+  |  |  **|**  | ``res``
+  |  |  **|**  | ``valres``
+  |  |  **|**  | ``const``
   | //DList// | -> | //Type// //[VDecl]// ``;``
   |  |  **|**  | ``const`` //[CDecl]// ``;``
   | //VDecl// | -> | //Ident//

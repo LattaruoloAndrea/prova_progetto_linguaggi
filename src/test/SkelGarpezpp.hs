@@ -14,7 +14,7 @@ transIdent x = case x of
   Ident string -> failure x
 transProgram :: Program -> Result
 transProgram x = case x of
-  Prog fdecls -> failure x
+  Prog dlists fdecls -> failure x
 transFDecl :: FDecl -> Result
 transFDecl x = case x of
   FDecl rtype ident params block -> failure x
@@ -25,6 +25,10 @@ transPassBy :: PassBy -> Result
 transPassBy x = case x of
   PassVal -> failure x
   PassRef -> failure x
+  PassName -> failure x
+  PassRes -> failure x
+  PassValRes -> failure x
+  PassConst -> failure x
 transDList :: DList -> Result
 transDList x = case x of
   VList type_ vdecls -> failure x

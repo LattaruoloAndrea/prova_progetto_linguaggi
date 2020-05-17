@@ -2,12 +2,22 @@ int main() {
 	string s = readString();
 	int [6]**[5] v;
 	writeString(s);
-	                              ? ;
+	                              
 	for(i=0 upto 10) {
 		const s = "Franco";
 		x += 10;
 		z = x*x + 12^2;
 	}
+
+	++(++(x++));
+
+	x = g(x++)+1;
+	++(x) = 5;
+	*(++x) = 5;
+	++(*x);
+	
+	x = ((5)) ;
+	y = *(5+x);
 
 	return 0;
 }
