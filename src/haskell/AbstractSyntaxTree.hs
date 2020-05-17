@@ -7,7 +7,22 @@
 
 module AbstractSyntaxTree where
 
-import Control.Lens -- For getters/setters
+import Control.Lens -- For getters
+
+{-
+
+Ex.
+
+data A = A { _aName :: String, _aAge :: Int }
+makeFields ''A
+
+translates into:
+varA = A "Pippo" 42
+varA^.name --------------------- get field _aName
+varA^.age  --------------------- get field _aAge
+
+
+-}
 
 data Loc 
   = Loc {
