@@ -9,10 +9,12 @@ module AbstractSyntaxTree where
 
 import Control.Lens -- For getters/setters
 
-data Loc = Loc {
-    _locLine
-  , _locColumn :: Int
-} deriving (Eq, Ord, Show, Read)
+data Loc 
+  = Loc {
+    _locLine :: Loc
+  , _locColumn :: Int }
+  | NoLoc
+  deriving (Eq, Ord, Show, Read)
 makeFields ''Loc
 
 data Ident = Ident {
