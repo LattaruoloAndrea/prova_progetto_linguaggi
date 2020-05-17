@@ -107,13 +107,13 @@ data Stm
     | WriteInt { _stmArg :: RExp, _stmLoc :: Loc }
     | WriteFloat { _stmArg :: RExp, _stmLoc :: Loc }
     | WriteString { _stmArg :: RExp, _stmLoc :: Loc }
-    | AssignEq { _stmLeft :: LExp, _stmRight :: RExp, _stmLoc :: Loc }
-    | AssignAdd { _stmLeft :: LExp, _stmRight :: RExp, _stmLoc :: Loc }
-    | AssignSub { _stmLeft :: LExp, _stmRight :: RExp, _stmLoc :: Loc }
-    | AssignMul { _stmLeft :: LExp, _stmRight :: RExp, _stmLoc :: Loc }
-    | AssignDiv { _stmLeft :: LExp, _stmRight :: RExp, _stmLoc :: Loc }
-    | AssignMod { _stmLeft :: LExp, _stmRight :: RExp, _stmLoc :: Loc }
-    | StmL { _stmLexp :: LExp, _stmLoc :: Loc }
+    | AssignEq { _stmTo :: LExp, _stmFrom :: RExp, _stmLoc :: Loc }
+    | AssignAdd { _stmTo :: LExp, _stmFrom :: RExp, _stmLoc :: Loc }
+    | AssignSub { _stmTo :: LExp, _stmFrom :: RExp, _stmLoc :: Loc }
+    | AssignMul { _stmTo :: LExp, _stmFrom :: RExp, _stmLoc :: Loc }
+    | AssignDiv { _stmTo :: LExp, _stmFrom :: RExp, _stmLoc :: Loc }
+    | AssignMod { _stmTo :: LExp, _stmFrom :: RExp, _stmLoc :: Loc }
+    | StmL { _stmWho :: LExp, _stmLoc :: Loc }
     | If { _stmCond :: RExp, _stmIftrue :: Stm, _stmLoc :: Loc }
     | IfElse { _stmCond :: RExp, _stmIftrue :: Stm, _stmIffalse :: Stm, _stmLoc :: Loc }
     | While { _stmCond :: RExp, _stmIftrue :: Stm, _stmLoc :: Loc }
@@ -141,7 +141,7 @@ makeFields ''LExp
 data RExp
     = Or { _rexpLeft :: RExp, _rexpRight :: RExp, _rexpLoc :: Loc }
     | And { _rexpLeft :: RExp, _rexpRight :: RExp, _rexpLoc :: Loc }
-    | Not { _rexpWho :: RExp, _rexpLoc :: Loc }
+    | Not { _rexpRight :: RExp, _rexpLoc :: Loc }
     | Lt { _rexpLeft :: RExp, _rexpRight :: RExp, _rexpLoc :: Loc }
     | Le { _rexpLeft :: RExp, _rexpRight :: RExp, _rexpLoc :: Loc }
     | Eq { _rexpLeft :: RExp, _rexpRight :: RExp, _rexpLoc :: Loc }
@@ -154,12 +154,12 @@ data RExp
     | Div { _rexpLeft :: RExp, _rexpRight :: RExp, _rexpLoc :: Loc }
     | Rem { _rexpLeft :: RExp, _rexpRight :: RExp, _rexpLoc :: Loc }
     | Pow { _rexpLeft :: RExp, _rexpRight :: RExp, _rexpLoc :: Loc }
-    | Plus { _rexpWho :: RExp, _rexpLoc :: Loc }
-    | Minus { _rexpWho :: RExp, _rexpLoc :: Loc }
+    | Plus { _rexpRight :: RExp, _rexpLoc :: Loc }
+    | Minus { _rexpRight :: RExp, _rexpLoc :: Loc }
     | Ref { _rexpWho :: LExp, _rexpLoc :: Loc }
     | RLExp { _rexpWho :: LExp, _rexpLoc :: Loc }
     | ArrList { _rexpArr :: [RExp], _rexpLoc :: Loc }
-    | FCall { _rexpWho :: Ident, _rexpArgs :: [RExp], _rexpLoc :: Loc }
+    | FCall { _rexpIdent :: Ident, _rexpArgs :: [RExp], _rexpLoc :: Loc }
     | ReadChar { _rexpLoc :: Loc }
     | ReadInt { _rexpLoc :: Loc }
     | ReadFloat { _rexpLoc :: Loc }
