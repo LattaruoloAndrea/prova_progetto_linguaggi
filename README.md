@@ -1,15 +1,23 @@
-# Progetto Linguaggi e Compilatori, GARPEZ++
+# Progetto Linguaggi e Compilatori, CHAPEL--
 
 ## Features
-- C-like syntax
-- Static scope, local visibility only of variables declared "above" 
+- Chapel like syntax
+- Static scope, visibility from declaration point
+- Statically typed
 
 ## TODO
-- [X] Grammar
+- [ ] Grammar
+
+- Optional syntactic features
+	- [ ] `do` notation for `for`, `while` and `if`
+	- [ ] no type specifier needed for initialized variable (type inference on initialization)
+	- [ ] no size required on array initialization (`var A: [ ] int = [1, 5, 25]`)
+
 - [ ] Type checker
-	- [ ] Need to set up data types in AST
+	- [ ] Set up data types in AST
 	- [ ] Construct parametric AST () for Parser
 	- [ ] Set the Err monad suitable for error concat and warning/fatal distinction
 	- [ ] Work on parametric AST Info for checkers and inferers
-	- [X] Build up a type system
+	- [ ] Type system
+
 - [ ] Three Address Code
