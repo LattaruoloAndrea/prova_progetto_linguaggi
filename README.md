@@ -6,12 +6,13 @@
 - Statically typed
 
 ## TODO
-- [ ] Grammar
+- [X] Grammar
 
 - Optional syntactic features
-	- [ ] `do` notation for `for`, `while` and `if`
+	- [X] `do` notation for `for`, `while` and `if`
 	- [ ] no type specifier needed for initialized variable (`var x = 5 // x is int`)
 	- [ ] no size required on array initialization (`var A: [ ] int = [1, 5, 25] // A has size 3`)
+	- [ ] multi-declaration with same type and initialization (`var x, y, z : int = 42`)
 
 - [ ] Type checker
 	- [ ] Set up data types in AST
