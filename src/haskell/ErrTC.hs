@@ -18,7 +18,7 @@ data Err a = Ok {msg :: Log, ans :: a} | Bad {msg :: Log, ans :: a}
   deriving (Read, Show, Eq, Ord)
 
 instance Monad Err where
-  return      = Ok (DL.fromList [""])
+  return      = Ok (DL.fromList [])
   Ok s a  >>= f = case f a of
     Ok s' a' -> Ok (s `mappend` s') a'
     Bad s' a' -> Bad (s `mappend` s') a'
@@ -32,6 +32,10 @@ instance Applicative Err where
 
 instance Functor Err where
   fmap = liftM
+
+
+bad :: String -> a -> Err a
+bad s a = Bad (DL.fromList [s]) a
 
 
 -- Cannot define suitable mzero/empty

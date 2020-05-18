@@ -38,7 +38,10 @@ data Ident = Ident {
 } deriving (Eq, Ord, Show, Read)
 makeFields ''Ident
 
-data Program = Prog [DList] [FDecl]
+data Program = Prog [FDecl]
+  deriving (Eq, Ord, Show, Read)
+
+data RType = RVoid | RBasic Basic | RRef Type
   deriving (Eq, Ord, Show, Read)
 
 data FDecl = FDecl {
