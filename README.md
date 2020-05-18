@@ -10,8 +10,8 @@
 
 - Optional syntactic features
 	- [ ] `do` notation for `for`, `while` and `if`
-	- [ ] no type specifier needed for initialized variable (type inference on initialization)
-	- [ ] no size required on array initialization (`var A: [ ] int = [1, 5, 25]`)
+	- [ ] no type specifier needed for initialized variable (`var x = 5 // x is int`)
+	- [ ] no size required on array initialization (`var A: [ ] int = [1, 5, 25] // A has size 3`)
 
 - [ ] Type checker
 	- [ ] Set up data types in AST
