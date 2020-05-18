@@ -6,38 +6,34 @@ entrypoints Program ;
 
 -- PROGRAM /////////////////////////////////////////////////////////////////////
 
--- TyC: { }
--- TAC: { P.code = f1.code ++ f2.code ++ ... ++ fn.code }
-Prog.						Program ::= [DList] [FDecl] ;
+Prog.                       Program ::= [Decl] ;
 
 
 -- DECLARATION ////////////////////////////////////////////////////////////////
 
--- TyC: { F.type = (RType.type, [p1.type, ..., pn.type]) }
--- TAC: { F.code = f.preamble ++ Block.code }
-FDecl.						FDecl ::= RType Ident "(" [Param] ")" Block ;
+FDecl.                      Decl ::= "proc" Ident "(" [Form] ")" Intent ":" Type Block ;
 
-Param.						Param ::= Type PassBy Ident ;
+Form.                       Form ::= Intent Ident ":" Type ;
 
-PassVal.					PassBy ::= "val" ;
-PassRef.		 			PassBy ::= "ref" ;
-PassName.                   PassBy ::= "name";
-PassRes.                    PassBy ::= "res";
-PassValRes.                 PassBy ::= "valres";
-PassConst.                  PassBy ::= "const";
+In.                         Intent ::= "in" ;
+Out.                        Intent ::= "out" ;
+InOut.                      Intent ::= "inout";
+Ref.                        Intent ::= "ref";
+ConstIn.                    Intent ::= "const in";
+ConstRef.                   Intent ::= "const ref";
 
-VList.						DList ::= Type [VDecl] ";" ;
-CList.						DList ::= "const" [CDecl] ";" ;
 
-VSolo.						VDecl ::= Ident ;
-VInit.						VDecl ::= Ident "=" RExp;
 
-CDecl.						CDecl ::= Ident "=" RExp;
+VList.                      Decl ::= "var" [VDecl] ";" ;
+CList.						Decl ::= "param" [CDecl] ";" ;
+
+Solo.						VDecl ::= Ident ":" Type ;
+Init.						VDecl ::= Ident ":" Type "=" RExp ;
 
 
 -- TYPES ///////////////////////////////////////////////////////////////////////
 
-Type.						Type ::= Basic Compound ;
+Type.						Type ::= Compound Basic ;
 
 Simple.						Compound ::= "" ;
 Array.						Compound ::= Compound "[" RExp "]" ;
@@ -46,125 +42,124 @@ Pointer.					Compound ::= Compound "*" ;
 BBool.						Basic ::= "bool" ;
 BChar.						Basic ::= "char" ;
 BInt.						Basic ::= "int" ;
-BFloat.						Basic ::= "float" ;
+BReal.						Basic ::= "real" ;
 BString.					Basic ::= "string" ;
+BVoid.                      Basic ::= "void" ;
 
-RVoid.						RType ::= "void" ;
-RBasic.						RType ::= Basic ;
-RRef.						RType ::= Type "&" ;
+
 
 -- STATEMENTS //////////////////////////////////////////////////////////////////
 
-Block.						Block ::= "{" [DList] [Stm] "}" ;
+Block.                      Block ::= "{" [Decl] [Stm] "}" ;
 
-StmBlock.					Stm ::= Block ;
-StmCall.					Stm ::= Ident "(" [RExp] ")" ";" ;
-PredW.						Stm ::= PWrite "(" RExp ")" ";" ;
-Assign.						Stm ::= LExp AssignOp RExp ";" ;
-StmL.						Stm ::= LExp ";" ;
+StmBlock.                   Stm ::= Block ;
+StmCall.                    Stm ::= Ident "(" [RExp] ")" ";" ;
+PredW.                      Stm ::= PWrite "(" RExp ")" ";" ;
+Assign.                     Stm ::= LExp AssignOp RExp ";" ;
+StmL.                       Stm ::= LExp ";" ;
 
-If.							Stm ::= "if" "(" RExp ")" Stm ;
-IfElse.						Stm ::= "if" "(" RExp ")" Stm "else" Stm ;
+If.                         Stm ::= "if" RExp "then" Stm ;
+_.                          Stm ::= "if" RExp Block ;
+IfElse.                     Stm ::= "if" RExp "then" Stm "else" Stm ;
+_.                          Stm ::= "if" RExp Block "else" Stm ;
 
-While.						Stm ::= "while" "(" RExp ")" Stm ;
-DoWhile.					Stm ::= "do" Stm "while" "(" RExp ")" ";" ;
-For.						Stm ::= "for" "(" Ident "=" RExp Dir RExp ")" Stm ;
+While.                      Stm ::= "while" RExp "do" Stm ;
+_.                          Stm ::= "while" RExp Block ;
+DoWhile.                    Stm ::= "do" Stm "while" RExp ";" ;
+For.                        Stm ::= "for" Ident "in" Range "do" Stm ;
+_.                          Stm ::= "for" Ident "in" Range Block ;
 
-JmpStm.						Stm ::= Jump ";" ;
+JmpStm.                     Stm ::= Jump ";" ;
 
-UpTo.						Dir ::= "upto" ;
-DownTo.						Dir ::= "downto" ;
-
-Return.						Jump ::= "return" ;
-ReturnE.					Jump ::= "return" RExp ;
-Break.						Jump ::= "break" ;
-Continue.					Jump ::= "continue" ;
+Return.                     Jump ::= "return" ;
+ReturnE.                    Jump ::= "return" RExp ;
+Break.                      Jump ::= "break" ;
+Continue.                   Jump ::= "continue" ;
 
 
 -- EXPRESSIONS /////////////////////////////////////////////////////////////////
 
-coercions LExp 4 ;
-coercions RExp 10 ;
 
-Deref.						LExp  ::= "*" LExp ;
-Post.						LExp1 ::= LExp2 IncDecOp ;
-Pre.						LExp2 ::= IncDecOp LExp3 ;
-Access.						LExp3 ::= LExp3 "[" RExp "]" ;
-Name.						LExp4 ::= Ident ;
+Deref.                      LExp ::= "*" LExp ;
+Post.                       LExp ::= LExp IncDecOp ;
+Pre.                        LExp ::= IncDecOp LExp ;
+Access.                     LExp ::= LExp "[" RExp "]" ;
+Name.                       LExp ::= Ident ;
 
 
-Or.							RExp ::=  RExp "||" RExp1 ;
-And.						RExp1 ::= RExp1 "&&" RExp2 ;
-Not.						RExp2 ::= "!" RExp3 ;
-Comp.						RExp3 ::= RExp3 CompOp RExp4 ;
-Add.						RExp4 ::= RExp4 "+" RExp5 ;
-Sub.						RExp4 ::= RExp4 "-" RExp5 ;
-Mul.						RExp5 ::= RExp5 "*" RExp6 ;
-Div.						RExp5 ::= RExp5 "/" RExp6 ;
-Rem.						RExp5 ::= RExp5 "%" RExp6 ;
-Pow.						RExp6 ::= RExp7 "^" RExp6 ;
-Sign.						RExp7 ::= SignOp RExp8 ;
-Ref.						RExp7 ::= "&" LExp ;
-RLExp.						RExp8 ::= LExp ;
-ArrList.					RExp9 ::= "[" [RExp] "]" ;
-FCall.						RExp9 ::= Ident "(" [RExp] ")" ;
-PredR.						RExp9 ::= PRead "(" ")" ;
-Lit.						RExp10 ::= Literal ;
+Or.                         RExp ::=  RExp "||" RExp ;
+And.                        RExp ::= RExp "&&" RExp ;
+Not.                        RExp ::= "!" RExp ;
+Comp.                       RExp ::= RExp CompOp RExp ;
+Arith.                      RExp ::= RExp ArithOp RExp ;
+Sign.                       RExp ::= SignOp RExp ;
+Ref.                        RExp ::= "&" LExp ;
+RLExp.                      RExp ::= LExp ;
+ArrList.                    RExp ::= "[" [RExp] "]" ;
+FCall.                      RExp ::= Ident "(" [RExp] ")" ;
+PredR.                      RExp ::= PRead "(" ")" ;
+Lit.                        RExp ::= Literal ;
 
 
 -- PREDEFINED FUNCTIONS ///////////////////////////////////////////////////////
 
-ReadChar.					PRead ::= "readChar" ;
-ReadInt.					PRead ::= "readInt" ;
-ReadFloat.					PRead ::= "readFloat" ;
-ReadString.					PRead ::= "readString" ;
+ReadChar.                   PRead ::= "readChar" ;
+ReadInt.                    PRead ::= "readInt" ;
+ReadFloat.                  PRead ::= "readFloat" ;
+ReadString.                 PRead ::= "readString" ;
 
-WriteChar.					PWrite ::= "writeChar" ;
-WriteInt.					PWrite ::= "writeInt" ;
-WriteFloat.					PWrite ::= "writeFloat" ;
-WriteString.				PWrite ::= "writeString" ;
+WriteChar.                  PWrite ::= "writeChar" ;
+WriteInt.                   PWrite ::= "writeInt" ;
+WriteFloat.                 PWrite ::= "writeFloat" ;
+WriteString.                PWrite ::= "writeString" ;
 
 
 -- OPERATORS /////////////////////////////////////////////////////////////////
 
-AssignEq.					AssignOp ::= "=" ;
-AssignAdd.					AssignOp ::= "+=" ;
-AssignSub.					AssignOp ::= "-=" ;
-AssignMul.					AssignOp ::= "*=" ;
-AssignDiv.					AssignOp ::= "/=" ;
-AssignMod.					AssignOp ::= "%=" ;
+Add.                        ArithOp ::= "+" ;
+Sub.                        ArithOp ::= "-" ;
+Mul.                        ArithOp ::= "*" ;
+Div.                        ArithOp ::= "/" ;
+Mod.                        ArithOp ::= "%" ;
+Pow.                        ArithOp ::= "**" ;
 
-Lt.							CompOp ::= "<" ;
-Leq.						CompOp ::= "<=" ;
-Eq.							CompOp ::= "==" ;
-Neq.						CompOp ::= "!=" ;
-Geq.						CompOp ::= ">=" ;
-Gt.							CompOp ::= ">" ;
+AssignEq.                   AssignOp ::= "=" ;
+AssignAdd.                  AssignOp ::= "+=" ;
+AssignSub.                  AssignOp ::= "-=" ;
+AssignMul.                  AssignOp ::= "*=" ;
+AssignDiv.                  AssignOp ::= "/=" ;
+AssignMod.                  AssignOp ::= "%=" ;
 
-Inc.						IncDecOp ::= "++" ;
-Dec.						IncDecOp ::= "--" ;
+Lt.                         CompOp ::= "<" ;
+Leq.                        CompOp ::= "<=" ;
+Eq.                         CompOp ::= "==" ;
+Neq.                        CompOp ::= "!=" ;
+Geq.                        CompOp ::= ">=" ;
+Gt.                         CompOp ::= ">" ;
 
-Pos.						SignOp ::= "+" ;
-Neg.						SignOp ::= "-" ;
+Inc.                        IncDecOp ::= "++" ;
+Dec.                        IncDecOp ::= "--" ;
+
+Pos.                        SignOp ::= "+" ;
+Neg.                        SignOp ::= "-" ;
 
 
 -- LITERALS //////////////////////////////////////////////////////////////////
 
-LBool.						Literal ::= Boolean ;
-LChar.						Literal ::= Char ;
-LInt.						Literal ::= Integer ;
-LFloat.						Literal ::= Double ;
-LString.					Literal ::= String ;
+LBool.                      Literal ::= Boolean ;
+LChar.                      Literal ::= Char ;
+LInt.                       Literal ::= Integer ;
+LReal.                      Literal ::= Double ;
+LString.                    Literal ::= String ;
 
-BFalse.						Boolean ::= "false" ;
-BTrue.						Boolean ::= "true" ;
+BFalse.                     Boolean ::= "false" ;
+BTrue.                      Boolean ::= "true" ;
 
 -- SEPARATORS ////////////////////////////////////////////////////////////////
 
-separator Param "," ;
-separator nonempty FDecl "" ;
+separator Form "," ;
+separator nonempty Decl "" ;
 separator nonempty VDecl "," ;
 separator nonempty CDecl "," ;
-separator DList "" ;
 separator Stm "" ;
-separator nonempty RExp "," ;
+separator RExp "," ;
