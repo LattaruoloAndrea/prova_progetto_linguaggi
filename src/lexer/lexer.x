@@ -3,7 +3,7 @@
 {
 {-# OPTIONS -fno-warn-incomplete-patterns #-}
 {-# OPTIONS_GHC -w #-}
-module LexChapel where
+module Lexer where
 
 
 
@@ -21,7 +21,7 @@ $i = [$l $d _ ']     -- identifier character
 $u = [. \n]          -- universal: any character
 
 @rsyms =    -- symbols and non-identifier-like reserved words
-   \( | \) | \: | \; | \= | \[ | \] | \* | \{ | \} | \. \. | \| \| | \& \& | \! | \& | \+ | \- | \/ | \% | \* \* | \+ \= | \- \= | \* \= | \/ \= | \% \= | \< | \< \= | \= \= | \! \= | \> \= | \> | \+ \+ | \- \- | \,
+   \( | \) | \: | \; | \= | \[ | \] | \* | \{ | \} | \. \. | \| \| | \& \& | \! | \& | \+ | \- | \/ | \% | \* \* | \+ \= | \- \= | \* \= | \/ \= | \% \= | \* \* \= | \< | \< \= | \= \= | \! \= | \> \= | \> | \+ \+ | \- \- | \,
 
 :-
 "//" [.]* ; -- Toss single line comments
@@ -107,7 +107,7 @@ eitherResIdent tv s = treeFind resWords
                               | s == a = t
 
 resWords :: BTree
-resWords = b "char" 34 (b "--" 17 (b "*" 9 (b "&" 5 (b "%" 3 (b "!=" 2 (b "!" 1 N N) N) (b "%=" 4 N N)) (b "(" 7 (b "&&" 6 N N) (b ")" 8 N N))) (b "++" 13 (b "*=" 11 (b "**" 10 N N) (b "+" 12 N N)) (b "," 15 (b "+=" 14 N N) (b "-" 16 N N)))) (b "=" 26 (b ":" 22 (b "/" 20 (b ".." 19 (b "-=" 18 N N) N) (b "/=" 21 N N)) (b "<" 24 (b ";" 23 N N) (b "<=" 25 N N))) (b "[" 30 (b ">" 28 (b "==" 27 N N) (b ">=" 29 N N)) (b "bool" 32 (b "]" 31 N N) (b "break" 33 N N))))) (b "readString" 51 (b "inout" 43 (b "false" 39 (b "do" 37 (b "continue" 36 (b "const" 35 N N) N) (b "else" 38 N N)) (b "if" 41 (b "for" 40 N N) (b "in" 42 N N))) (b "proc" 47 (b "out" 45 (b "int" 44 N N) (b "param" 46 N N)) (b "readFloat" 49 (b "readChar" 48 N N) (b "readInt" 50 N N)))) (b "while" 60 (b "then" 56 (b "return" 54 (b "ref" 53 (b "real" 52 N N) N) (b "string" 55 N N)) (b "var" 58 (b "true" 57 N N) (b "void" 59 N N))) (b "writeString" 64 (b "writeFloat" 62 (b "writeChar" 61 N N) (b "writeInt" 63 N N)) (b "||" 66 (b "{" 65 N N) (b "}" 67 N N)))))
+resWords = b "char" 35 (b "--" 18 (b "*" 9 (b "&" 5 (b "%" 3 (b "!=" 2 (b "!" 1 N N) N) (b "%=" 4 N N)) (b "(" 7 (b "&&" 6 N N) (b ")" 8 N N))) (b "++" 14 (b "*=" 12 (b "**=" 11 (b "**" 10 N N) N) (b "+" 13 N N)) (b "," 16 (b "+=" 15 N N) (b "-" 17 N N)))) (b "=" 27 (b ":" 23 (b "/" 21 (b ".." 20 (b "-=" 19 N N) N) (b "/=" 22 N N)) (b "<" 25 (b ";" 24 N N) (b "<=" 26 N N))) (b "[" 31 (b ">" 29 (b "==" 28 N N) (b ">=" 30 N N)) (b "bool" 33 (b "]" 32 N N) (b "break" 34 N N))))) (b "readString" 52 (b "inout" 44 (b "false" 40 (b "do" 38 (b "continue" 37 (b "const" 36 N N) N) (b "else" 39 N N)) (b "if" 42 (b "for" 41 N N) (b "in" 43 N N))) (b "proc" 48 (b "out" 46 (b "int" 45 N N) (b "param" 47 N N)) (b "readFloat" 50 (b "readChar" 49 N N) (b "readInt" 51 N N)))) (b "while" 61 (b "then" 57 (b "return" 55 (b "ref" 54 (b "real" 53 N N) N) (b "string" 56 N N)) (b "var" 59 (b "true" 58 N N) (b "void" 60 N N))) (b "writeString" 65 (b "writeFloat" 63 (b "writeChar" 62 N N) (b "writeInt" 64 N N)) (b "||" 67 (b "{" 66 N N) (b "}" 68 N N)))))
    where b s n = let bs = id s
                   in B bs (TS bs n)
 
