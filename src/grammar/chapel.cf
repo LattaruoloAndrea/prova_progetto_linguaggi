@@ -164,7 +164,7 @@ BTrue.                      Boolean ::= "true" ;
 -- SEPARATORS ////////////////////////////////////////////////////////////////
 
 separator Form "," ;
-separator nonempty Decl "" ;
+separator Decl "" ;
 separator nonempty VDecl "," ;
 separator nonempty CDecl "," ;
 separator Stm "" ;
