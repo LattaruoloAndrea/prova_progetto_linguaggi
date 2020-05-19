@@ -15,20 +15,23 @@ FDecl.                      Decl ::= "proc" Ident "(" [Form] ")" Intent ":" Type
 
 Form.                       Form ::= Intent Ident ":" Type ;
 
-In.                         Intent ::= "in" ;
-Out.                        Intent ::= "out" ;
-InOut.                      Intent ::= "inout";
-Ref.                        Intent ::= "ref";
-ConstIn.                    Intent ::= "const in";
-ConstRef.                   Intent ::= "const ref";
-
+                                                                -- type compatibility && other
+In.                         Intent ::= "in" ;                   -- actual <= formal
+Out.                        Intent ::= "out" ;                  -- formal <= actual && actual is LExp
+InOut.                      Intent ::= "inout";                 -- actual = formal && actual is LExp
+Ref.                        Intent ::= "ref";                   -- actual = formal && actual is LExp
+ConstIn.                    Intent ::= "const in";              -- actual <= formal && formal is immutable
+ConstRef.                   Intent ::= "const ref";             -- actual = formal && actual is LExp && formal is immutable 
+_.                          Intent ::= "" ;                     -- Empty intent is considered `in`
 
 
 VList.                      Decl ::= "var" [VDecl] ";" ;
 CList.						Decl ::= "param" [CDecl] ";" ;
 
-Solo.						VDecl ::= Ident ":" Type ;
-Init.						VDecl ::= Ident ":" Type "=" RExp ;
+Solo.                       VDecl ::= Ident ":" Type ;
+Init.                       VDecl ::= Ident ":" Type "=" RExp ;
+
+CDecl.                      CDecl ::= Ident ":" Type "=" RExp ;
 
 
 -- TYPES ///////////////////////////////////////////////////////////////////////
