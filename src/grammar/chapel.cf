@@ -22,7 +22,7 @@ InOut.                      Intent ::= "inout";                 -- actual = form
 Ref.                        Intent ::= "ref";                   -- actual = formal && actual is LExp
 ConstIn.                    Intent ::= "const in";              -- actual <= formal && formal is immutable
 ConstRef.                   Intent ::= "const ref";             -- actual = formal && actual is LExp && formal is immutable 
-_.                          Intent ::= "" ;                     -- Empty intent is considered `in`
+--_ .                       Intent ::= "" ;                     -- Empty intent is considered `in`
 
 
 VList.                      Decl ::= "var" [VDecl] ";" ;
@@ -62,15 +62,15 @@ Assign.                     Stm ::= LExp AssignOp RExp ";" ;
 StmL.                       Stm ::= LExp ";" ;
 
 If.                         Stm ::= "if" RExp "then" Stm ;
-_.                          Stm ::= "if" RExp Block ;
+--_ .                         Stm ::= "if" RExp Block ;
 IfElse.                     Stm ::= "if" RExp "then" Stm "else" Stm ;
-_.                          Stm ::= "if" RExp Block "else" Stm ;
+--_ .                         Stm ::= "if" RExp Block "else" Stm ;
 
 While.                      Stm ::= "while" RExp "do" Stm ;
-_.                          Stm ::= "while" RExp Block ;
+--_ .                         Stm ::= "while" RExp Block ;
 DoWhile.                    Stm ::= "do" Stm "while" RExp ";" ;
 For.                        Stm ::= "for" Ident "in" Range "do" Stm ;
-_.                          Stm ::= "for" Ident "in" Range Block ;
+--_ .                         Stm ::= "for" Ident "in" Range Block ;
 
 JmpStm.                     Stm ::= Jump ";" ;
 
@@ -78,6 +78,8 @@ Return.                     Jump ::= "return" ;
 ReturnE.                    Jump ::= "return" RExp ;
 Break.                      Jump ::= "break" ;
 Continue.                   Jump ::= "continue" ;
+
+Range.                      Range ::= "{" Integer ".." Integer "}" ;
 
 
 -- EXPRESSIONS /////////////////////////////////////////////////////////////////
@@ -96,7 +98,7 @@ Not.                        RExp ::= "!" RExp ;
 Comp.                       RExp ::= RExp CompOp RExp ;
 Arith.                      RExp ::= RExp ArithOp RExp ;
 Sign.                       RExp ::= SignOp RExp ;
-Ref.                        RExp ::= "&" LExp ;
+RefE.                       RExp ::= "&" LExp ;
 RLExp.                      RExp ::= LExp ;
 ArrList.                    RExp ::= "[" [RExp] "]" ;
 FCall.                      RExp ::= Ident "(" [RExp] ")" ;
