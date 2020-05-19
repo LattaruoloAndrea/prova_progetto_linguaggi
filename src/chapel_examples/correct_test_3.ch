@@ -13,6 +13,6 @@ proc doublePrint(inout thing:string) out: string {
   return thing + thing;
 }
 
-proc defaultsProc(in x: int,ref y: real = 1.2634): real {
+proc defaultsProc(in x: int,ref y: real): real {
   return x+y;
 }
