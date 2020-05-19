@@ -1,7 +1,8 @@
 // different arrays types and pointers
-var myInt: [5]int = -1000; 
-var myReal: [myInt]real = 9.876; 
-var myBool: [100]bool = false;
+param myConst: int = 3;
+var myInt: [5]int = [1,2,3,4,5]; 
+var myReal: [myConst]real = [9.876,9.876,9.876]; 
+var myBool: [2]bool = [true,false];
 var myyVoid: *void;
 var myyVoidTwo: ***void;
 var myInit: [1][2][3]real;
