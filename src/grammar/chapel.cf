@@ -79,7 +79,7 @@ ReturnE.                    Jump ::= "return" RExp ;
 Break.                      Jump ::= "break" ;
 Continue.                   Jump ::= "continue" ;
 
-Range.                      Range ::= "{" Integer ".." Integer "}" ;
+Range.                      Range ::= "{" RExp ".." RExp "}" ;
 
 
 -- EXPRESSIONS /////////////////////////////////////////////////////////////////
@@ -134,6 +134,7 @@ AssignSub.                  AssignOp ::= "-=" ;
 AssignMul.                  AssignOp ::= "*=" ;
 AssignDiv.                  AssignOp ::= "/=" ;
 AssignMod.                  AssignOp ::= "%=" ;
+AssignPow.                  AssignOp ::= "**=" ;
 
 Lt.                         CompOp ::= "<" ;
 Leq.                        CompOp ::= "<=" ;
