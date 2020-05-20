@@ -22,29 +22,29 @@ import ErrM
   '(' { PT _ (TS _ 7) }
   ')' { PT _ (TS _ 8) }
   '*' { PT _ (TS _ 9) }
-  '**' { PT _ (TS _ 10) }
-  '**=' { PT _ (TS _ 11) }
-  '*=' { PT _ (TS _ 12) }
-  '+' { PT _ (TS _ 13) }
-  '++' { PT _ (TS _ 14) }
-  '+=' { PT _ (TS _ 15) }
-  ',' { PT _ (TS _ 16) }
-  '-' { PT _ (TS _ 17) }
-  '--' { PT _ (TS _ 18) }
-  '-=' { PT _ (TS _ 19) }
-  '..' { PT _ (TS _ 20) }
-  '/' { PT _ (TS _ 21) }
-  '/=' { PT _ (TS _ 22) }
-  ':' { PT _ (TS _ 23) }
-  ';' { PT _ (TS _ 24) }
-  '<' { PT _ (TS _ 25) }
-  '<=' { PT _ (TS _ 26) }
-  '=' { PT _ (TS _ 27) }
-  '==' { PT _ (TS _ 28) }
-  '>' { PT _ (TS _ 29) }
-  '>=' { PT _ (TS _ 30) }
-  '[' { PT _ (TS _ 31) }
-  ']' { PT _ (TS _ 32) }
+  '*=' { PT _ (TS _ 10) }
+  '+' { PT _ (TS _ 11) }
+  '++' { PT _ (TS _ 12) }
+  '+=' { PT _ (TS _ 13) }
+  ',' { PT _ (TS _ 14) }
+  '-' { PT _ (TS _ 15) }
+  '--' { PT _ (TS _ 16) }
+  '-=' { PT _ (TS _ 17) }
+  '..' { PT _ (TS _ 18) }
+  '/' { PT _ (TS _ 19) }
+  '/=' { PT _ (TS _ 20) }
+  ':' { PT _ (TS _ 21) }
+  ';' { PT _ (TS _ 22) }
+  '<' { PT _ (TS _ 23) }
+  '<=' { PT _ (TS _ 24) }
+  '=' { PT _ (TS _ 25) }
+  '==' { PT _ (TS _ 26) }
+  '>' { PT _ (TS _ 27) }
+  '>=' { PT _ (TS _ 28) }
+  '[' { PT _ (TS _ 29) }
+  ']' { PT _ (TS _ 30) }
+  '^' { PT _ (TS _ 31) }
+  '^=' { PT _ (TS _ 32) }
   'bool' { PT _ (TS _ 33) }
   'break' { PT _ (TS _ 34) }
   'char' { PT _ (TS _ 35) }
@@ -87,7 +87,6 @@ import ErrM
   L_doubl  { PT _ (TD $$) }
   L_quoted { PT _ (TL $$) }
 
-
   %left ';'
   %left '||'
   %left '&&'
@@ -96,7 +95,7 @@ import ErrM
   %left '+' '-'
   %left '*' '/' '%'
   %right '!' SIGN
-  %right '**'
+  %right '^'
   %nonassoc '++' '--'
   %nonassoc PREINCDEC
   %left '[' ']'
@@ -180,7 +179,7 @@ Stm : ';' Stm { $2 }
     | LExp '*=' RExp ';' { AbsChapel.Assign $1 AbsChapel.AssignMul $3 }
     | LExp '/=' RExp ';' { AbsChapel.Assign $1 AbsChapel.AssignDiv $3 }
     | LExp '%=' RExp ';' { AbsChapel.Assign $1 AbsChapel.AssignMod $3 }
-    | LExp '**=' RExp ';' { AbsChapel.Assign $1 AbsChapel.AssignPow $3 }
+    | LExp '^=' RExp ';' { AbsChapel.Assign $1 AbsChapel.AssignPow $3 }
 
     | LExp ';' { AbsChapel.StmL $1 }
 
@@ -228,7 +227,7 @@ RExp : RExp '||' RExp { AbsChapel.Or $1 $3 }
      | RExp '*' RExp { AbsChapel.Arith $1 AbsChapel.Mul $3 }
      | RExp '/' RExp { AbsChapel.Arith $1 AbsChapel.Div $3 }
      | RExp '%' RExp { AbsChapel.Arith $1 AbsChapel.Mod $3 }
-     | RExp '**' RExp { AbsChapel.Arith $1 AbsChapel.Pow $3 }
+     | RExp '^' RExp { AbsChapel.Arith $1 AbsChapel.Pow $3 }
      
      | '+' RExp %prec SIGN { AbsChapel.Sign AbsChapel.Pos $2 }
      | '-' RExp %prec SIGN { AbsChapel.Sign AbsChapel.Neg $2 }

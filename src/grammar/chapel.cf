@@ -126,7 +126,7 @@ Sub.                        ArithOp ::= "-" ;
 Mul.                        ArithOp ::= "*" ;
 Div.                        ArithOp ::= "/" ;
 Mod.                        ArithOp ::= "%" ;
-Pow.                        ArithOp ::= "**" ;
+Pow.                        ArithOp ::= "^" ;
 
 AssignEq.                   AssignOp ::= "=" ;
 AssignAdd.                  AssignOp ::= "+=" ;
@@ -134,7 +134,7 @@ AssignSub.                  AssignOp ::= "-=" ;
 AssignMul.                  AssignOp ::= "*=" ;
 AssignDiv.                  AssignOp ::= "/=" ;
 AssignMod.                  AssignOp ::= "%=" ;
-AssignPow.                  AssignOp ::= "**=" ;
+AssignPow.                  AssignOp ::= "^=" ;
 
 Lt.                         CompOp ::= "<" ;
 Leq.                        CompOp ::= "<=" ;
