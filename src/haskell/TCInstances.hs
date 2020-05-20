@@ -25,6 +25,28 @@ instance TCTypeable Type where
             _           -> TError
 
 
+-- Literals have TCType
+instance TCTypeable Literal where
+    tctypeOf x = case x of
+        LBool _     -> TBool
+        LChar _     -> TChar
+        LInt _      -> TInt
+        LReal _     -> TReal
+        LString _   -> TString
+
+-- Predefined reading functions have TCType
+instance TCTypeable PRead where
+    tctypeOf x = case x of
+        ReadChar    -> TChar
+        ReadInt     -> TInt
+        ReadReal    -> TReal
+        ReadString  -> TString
+
+-- Predefind writing functions have TCType
+instance TCTypeable PWrite where
+    tctypeOf _ = TVoid
+
+
 -- Entry have TCType
 instance TCTypeable Entry where
     tctypeOf x = case x of

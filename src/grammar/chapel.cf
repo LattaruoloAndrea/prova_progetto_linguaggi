@@ -110,12 +110,12 @@ Lit.                        RExp ::= Literal ;
 
 ReadChar.                   PRead ::= "readChar" ;
 ReadInt.                    PRead ::= "readInt" ;
-ReadFloat.                  PRead ::= "readFloat" ;
+ReadReal.                  PRead ::= "readReal" ;
 ReadString.                 PRead ::= "readString" ;
 
 WriteChar.                  PWrite ::= "writeChar" ;
 WriteInt.                   PWrite ::= "writeInt" ;
-WriteFloat.                 PWrite ::= "writeFloat" ;
+WriteReal.                 PWrite ::= "writeReal" ;
 WriteString.                PWrite ::= "writeString" ;
 
 

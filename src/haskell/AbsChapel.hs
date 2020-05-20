@@ -84,10 +84,10 @@ data RExp
     | Lit Literal
   deriving (Eq, Ord, Show, Read)
 
-data PRead = ReadChar | ReadInt | ReadFloat | ReadString
+data PRead = ReadChar | ReadInt | ReadReal | ReadString
   deriving (Eq, Ord, Show, Read)
 
-data PWrite = WriteChar | WriteInt | WriteFloat | WriteString
+data PWrite = WriteChar | WriteInt | WriteReal | WriteString
   deriving (Eq, Ord, Show, Read)
 
 data ArithOp = Add | Sub | Mul | Div | Mod | Pow

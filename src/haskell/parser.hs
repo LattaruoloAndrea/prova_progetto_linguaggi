@@ -232,7 +232,7 @@ happyExpList = HappyA# "\x00\x00\x00\x00\x00\x00\x00\x00\x00\x60\x00\x02\x00\x00
 {-# NOINLINE happyExpListPerState #-}
 happyExpListPerState st =
     token_strs_expected
-  where token_strs = ["error","%dummy","%start_pProgram","Ident","Char","Integer","Double","String","Program","Decl","Form","Intent","VDecl","CDecl","Type","Compound","Basic","Block","Stm","Range","LExp","RExp","PRead","PWrite","Literal","ListForm","ListDecl","ListVDecl","ListCDecl","ListStm","ListRExp","'!'","'!='","'%'","'%='","'&'","'&&'","'('","')'","'*'","'*='","'+'","'++'","'+='","','","'-'","'--'","'-='","'..'","'/'","'/='","':'","';'","'<'","'<='","'='","'=='","'>'","'>='","'['","']'","'^'","'^='","'bool'","'break'","'char'","'const'","'continue'","'do'","'else'","'false'","'for'","'if'","'in'","'inout'","'int'","'out'","'param'","'proc'","'readChar'","'readFloat'","'readInt'","'readString'","'real'","'ref'","'return'","'string'","'then'","'true'","'var'","'void'","'while'","'writeChar'","'writeFloat'","'writeInt'","'writeString'","'{'","'||'","'}'","L_ident","L_charac","L_integ","L_doubl","L_quoted","%eof"]
+  where token_strs = ["error","%dummy","%start_pProgram","Ident","Char","Integer","Double","String","Program","Decl","Form","Intent","VDecl","CDecl","Type","Compound","Basic","Block","Stm","Range","LExp","RExp","PRead","PWrite","Literal","ListForm","ListDecl","ListVDecl","ListCDecl","ListStm","ListRExp","'!'","'!='","'%'","'%='","'&'","'&&'","'('","')'","'*'","'*='","'+'","'++'","'+='","','","'-'","'--'","'-='","'..'","'/'","'/='","':'","';'","'<'","'<='","'='","'=='","'>'","'>='","'['","']'","'^'","'^='","'bool'","'break'","'char'","'const'","'continue'","'do'","'else'","'false'","'for'","'if'","'in'","'inout'","'int'","'out'","'param'","'proc'","'readChar'","'readReal'","'readInt'","'readString'","'real'","'ref'","'return'","'string'","'then'","'true'","'var'","'void'","'while'","'writeChar'","'writeReal'","'writeInt'","'writeString'","'{'","'||'","'}'","L_ident","L_charac","L_integ","L_doubl","L_quoted","%eof"]
         bit_start = st * 105
         bit_end = (st + 1) * 105
         read_bit = readArrayBit happyExpList
@@ -1230,7 +1230,7 @@ happyReduction_90 happy_x_1
 happyReduce_91 = happySpecReduce_1  19# happyReduction_91
 happyReduction_91 happy_x_1
 	 =  happyIn23
-		 (AbsChapel.ReadFloat
+		 (AbsChapel.ReadReal
 	)
 
 happyReduce_92 = happySpecReduce_1  19# happyReduction_92
@@ -1254,7 +1254,7 @@ happyReduction_94 happy_x_1
 happyReduce_95 = happySpecReduce_1  20# happyReduction_95
 happyReduction_95 happy_x_1
 	 =  happyIn24
-		 (AbsChapel.WriteFloat
+		 (AbsChapel.WriteReal
 	)
 
 happyReduce_96 = happySpecReduce_1  20# happyReduction_96

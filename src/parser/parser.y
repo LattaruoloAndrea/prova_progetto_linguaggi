@@ -62,7 +62,7 @@ import ErrM
   'param' { PT _ (TS _ 47) }
   'proc' { PT _ (TS _ 48) }
   'readChar' { PT _ (TS _ 49) }
-  'readFloat' { PT _ (TS _ 50) }
+  'readReal' { PT _ (TS _ 50) }
   'readInt' { PT _ (TS _ 51) }
   'readString' { PT _ (TS _ 52) }
   'real' { PT _ (TS _ 53) }
@@ -75,7 +75,7 @@ import ErrM
   'void' { PT _ (TS _ 60) }
   'while' { PT _ (TS _ 61) }
   'writeChar' { PT _ (TS _ 62) }
-  'writeFloat' { PT _ (TS _ 63) }
+  'writeReal' { PT _ (TS _ 63) }
   'writeInt' { PT _ (TS _ 64) }
   'writeString' { PT _ (TS _ 65) }
   '{' { PT _ (TS _ 66) }
@@ -244,13 +244,13 @@ RExp : RExp '||' RExp { AbsChapel.Or $1 $3 }
 PRead :: { PRead }
 PRead : 'readChar' { AbsChapel.ReadChar }
       | 'readInt' { AbsChapel.ReadInt }
-      | 'readFloat' { AbsChapel.ReadFloat }
+      | 'readReal' { AbsChapel.ReadReal }
       | 'readString' { AbsChapel.ReadString }
 
 PWrite :: { PWrite }
 PWrite : 'writeChar' { AbsChapel.WriteChar }
        | 'writeInt' { AbsChapel.WriteInt }
-       | 'writeFloat' { AbsChapel.WriteFloat }
+       | 'writeReal' { AbsChapel.WriteReal }
        | 'writeString' { AbsChapel.WriteString }
 
 -- IncDecOp :: { IncDecOp }

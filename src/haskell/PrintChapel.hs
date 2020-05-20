@@ -216,14 +216,14 @@ instance Print AbsChapel.PRead where
   prt i e = case e of
     AbsChapel.ReadChar -> prPrec i 0 (concatD [doc (showString "readChar")])
     AbsChapel.ReadInt -> prPrec i 0 (concatD [doc (showString "readInt")])
-    AbsChapel.ReadFloat -> prPrec i 0 (concatD [doc (showString "readFloat")])
+    AbsChapel.ReadReal -> prPrec i 0 (concatD [doc (showString "readReal")])
     AbsChapel.ReadString -> prPrec i 0 (concatD [doc (showString "readString")])
 
 instance Print AbsChapel.PWrite where
   prt i e = case e of
     AbsChapel.WriteChar -> prPrec i 0 (concatD [doc (showString "writeChar")])
     AbsChapel.WriteInt -> prPrec i 0 (concatD [doc (showString "writeInt")])
-    AbsChapel.WriteFloat -> prPrec i 0 (concatD [doc (showString "writeFloat")])
+    AbsChapel.WriteReal -> prPrec i 0 (concatD [doc (showString "writeReal")])
     AbsChapel.WriteString -> prPrec i 0 (concatD [doc (showString "writeString")])
 
 instance Print AbsChapel.ArithOp where

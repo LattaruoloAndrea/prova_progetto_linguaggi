@@ -104,13 +104,13 @@ transPRead :: PRead -> Result
 transPRead x = case x of
   ReadChar -> failure x
   ReadInt -> failure x
-  ReadFloat -> failure x
+  ReadReal -> failure x
   ReadString -> failure x
 transPWrite :: PWrite -> Result
 transPWrite x = case x of
   WriteChar -> failure x
   WriteInt -> failure x
-  WriteFloat -> failure x
+  WriteReal -> failure x
   WriteString -> failure x
 transArithOp :: ArithOp -> Result
 transArithOp x = case x of
