@@ -17,12 +17,11 @@ instance TCTypeable Basic where
 -- Type have TCType
 -- it is required that an Array has already an integer literal for size
 instance TCTypeable Type where
-    tctypeOf (Type c b) = helper c b
-    where
-        helper c = case c of
-            Simple      -> tctypeOf
-            Pointer c'  -> TPoint $ helper c'
-            Array c' (Lit (LInt d)) -> TArr d $ helper c'
+    tctypeOf (Type c b) = helper c b where
+        helper c b = case c of
+            Simple      -> tctypeOf b
+            Pointer c'  -> TPoint $ helper c' b
+            Array c' (Lit (LInt d)) -> TArr (fromInteger d :: Int) $ helper c' b
             _           -> TError
 
 

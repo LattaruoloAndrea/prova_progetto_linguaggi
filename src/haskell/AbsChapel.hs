@@ -3,6 +3,8 @@
 
 module AbsChapel where
 
+data Loc = Loc { line, column :: Int }
+
 newtype Ident = Ident String
   deriving (Eq, Ord, Show, Read)
 
