@@ -4,9 +4,9 @@
 module AbsChapel where
 
 data Loc = Loc { line, column :: Int }
-  deriving (Eq, Ord, Show)
+  deriving (Eq, Ord, Show, Read)
 
-newtype Ident = Ident {idLoc :: Loc, idName :: String}
+data Ident = Ident {idLoc :: Loc, idName :: String}
   deriving (Eq, Ord, Show, Read)
 
 data Program = Prog [Decl]
@@ -78,7 +78,7 @@ data RExp
     = Or      {reLoc :: Loc, lhs :: RExp, rhs :: RExp}
     | And     {reLoc :: Loc, lhs :: RExp, rhs :: RExp}
     | Not     {reLoc :: Loc, rhs :: RExp}
-    | Comp    {reLoc :: Loc, lhs :: RExp, comp :: CompOp rhs :: RExp}
+    | Comp    {reLoc :: Loc, lhs :: RExp, comp :: CompOp, rhs :: RExp}
     | Arith   {reLoc :: Loc, lhs :: RExp, arith :: ArithOp, rhs :: RExp}
     | Sign    {reLoc :: Loc, sgn :: SignOp, rhs :: RExp}
     | RefE    {reLoc :: Loc, rhsL :: LExp}
