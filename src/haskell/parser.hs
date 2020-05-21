@@ -648,7 +648,7 @@ happyReduction_33 happy_x_3
 	happy_x_1
 	 =  case happyOut30 happy_x_2 of { (HappyWrap30 happy_var_2) -> 
 	happyIn18
-		 (AbsChapel.Block [] (reverse happy_var_2)
+		 (AbsChapel.Block [] happy_var_2
 	)}
 
 happyReduce_34 = happyReduce 4# 14# happyReduction_34
@@ -660,7 +660,7 @@ happyReduction_34 (happy_x_4 `HappyStk`
 	 = case happyOut27 happy_x_2 of { (HappyWrap27 happy_var_2) -> 
 	case happyOut30 happy_x_3 of { (HappyWrap30 happy_var_3) -> 
 	happyIn18
-		 (AbsChapel.Block happy_var_2 (reverse happy_var_3)
+		 (AbsChapel.Block happy_var_2 happy_var_3
 	) `HappyStk` happyRest}}
 
 happyReduce_35 = happySpecReduce_2  15# happyReduction_35
