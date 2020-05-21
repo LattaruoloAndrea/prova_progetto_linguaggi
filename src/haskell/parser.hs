@@ -8,6 +8,7 @@ module ParChapel where
 import AbsChapel
 import LexChapel
 import ErrM
+import Locatable
 import qualified Data.Array as Happy_Data_Array
 import qualified Data.Bits as Bits
 import qualified GHC.Exts as Happy_GHC_Exts
@@ -169,8 +170,8 @@ happyIn24 x = Happy_GHC_Exts.unsafeCoerce# (HappyWrap24 x)
 happyOut24 :: (HappyAbsSyn ) -> HappyWrap24
 happyOut24 x = Happy_GHC_Exts.unsafeCoerce# x
 {-# INLINE happyOut24 #-}
-newtype HappyWrap25 = HappyWrap25 (Literal)
-happyIn25 :: (Literal) -> (HappyAbsSyn )
+newtype HappyWrap25 = HappyWrap25 ((Loc, Literal))
+happyIn25 :: ((Loc, Literal)) -> (HappyAbsSyn )
 happyIn25 x = Happy_GHC_Exts.unsafeCoerce# (HappyWrap25 x)
 {-# INLINE happyIn25 #-}
 happyOut25 :: (HappyAbsSyn ) -> HappyWrap25
@@ -393,21 +394,21 @@ happyReduce_2 = happySpecReduce_1  1# happyReduction_2
 happyReduction_2 happy_x_1
 	 =  case happyOutTok happy_x_1 of { happy_var_1 -> 
 	happyIn5
-		 ((tokenLoc happy_var_1, (read . tokenValue happy_var_1) :: Char)
+		 ((tokenLoc happy_var_1, ((read . tokenValue) happy_var_1) :: Char)
 	)}
 
 happyReduce_3 = happySpecReduce_1  2# happyReduction_3
 happyReduction_3 happy_x_1
 	 =  case happyOutTok happy_x_1 of { happy_var_1 -> 
 	happyIn6
-		 ((tokenLoc happy_var_1, (read . tokenValue happy_var_1) :: Integer)
+		 ((tokenLoc happy_var_1, ((read . tokenValue) happy_var_1) :: Integer)
 	)}
 
 happyReduce_4 = happySpecReduce_1  3# happyReduction_4
 happyReduction_4 happy_x_1
 	 =  case happyOutTok happy_x_1 of { happy_var_1 -> 
 	happyIn7
-		 ((tokenLoc happy_var_1, (read . tokenValue happy_var_1) :: Double)
+		 ((tokenLoc happy_var_1, ((read . tokenValue) happy_var_1) :: Double)
 	)}
 
 happyReduce_5 = happySpecReduce_1  4# happyReduction_5
@@ -629,27 +630,30 @@ happyReduction_30 happy_x_1
 happyReduce_31 = happySpecReduce_2  14# happyReduction_31
 happyReduction_31 happy_x_2
 	happy_x_1
-	 =  happyIn18
-		 (AbsChapel.Block [] []
-	)
+	 =  case happyOutTok happy_x_1 of { happy_var_1 -> 
+	happyIn18
+		 (AbsChapel.Block (tokenLoc happy_var_1) [] []
+	)}
 
 happyReduce_32 = happySpecReduce_3  14# happyReduction_32
 happyReduction_32 happy_x_3
 	happy_x_2
 	happy_x_1
-	 =  case happyOut27 happy_x_2 of { (HappyWrap27 happy_var_2) -> 
+	 =  case happyOutTok happy_x_1 of { happy_var_1 -> 
+	case happyOut27 happy_x_2 of { (HappyWrap27 happy_var_2) -> 
 	happyIn18
-		 (AbsChapel.Block happy_var_2 []
-	)}
+		 (AbsChapel.Block (tokenLoc happy_var_1) happy_var_2 []
+	)}}
 
 happyReduce_33 = happySpecReduce_3  14# happyReduction_33
 happyReduction_33 happy_x_3
 	happy_x_2
 	happy_x_1
-	 =  case happyOut30 happy_x_2 of { (HappyWrap30 happy_var_2) -> 
+	 =  case happyOutTok happy_x_1 of { happy_var_1 -> 
+	case happyOut30 happy_x_2 of { (HappyWrap30 happy_var_2) -> 
 	happyIn18
-		 (AbsChapel.Block [] happy_var_2
-	)}
+		 (AbsChapel.Block (tokenLoc happy_var_1) [] happy_var_2
+	)}}
 
 happyReduce_34 = happyReduce 4# 14# happyReduction_34
 happyReduction_34 (happy_x_4 `HappyStk`
@@ -657,11 +661,12 @@ happyReduction_34 (happy_x_4 `HappyStk`
 	happy_x_2 `HappyStk`
 	happy_x_1 `HappyStk`
 	happyRest)
-	 = case happyOut27 happy_x_2 of { (HappyWrap27 happy_var_2) -> 
+	 = case happyOutTok happy_x_1 of { happy_var_1 -> 
+	case happyOut27 happy_x_2 of { (HappyWrap27 happy_var_2) -> 
 	case happyOut30 happy_x_3 of { (HappyWrap30 happy_var_3) -> 
 	happyIn18
-		 (AbsChapel.Block happy_var_2 happy_var_3
-	) `HappyStk` happyRest}}
+		 (AbsChapel.Block (tokenLoc happy_var_1) happy_var_2 happy_var_3
+	) `HappyStk` happyRest}}}
 
 happyReduce_35 = happySpecReduce_2  15# happyReduction_35
 happyReduction_35 happy_x_2
@@ -711,10 +716,11 @@ happyReduction_39 (happy_x_4 `HappyStk`
 	happy_x_1 `HappyStk`
 	happyRest)
 	 = case happyOut21 happy_x_1 of { (HappyWrap21 happy_var_1) -> 
+	case happyOutTok happy_x_2 of { happy_var_2 -> 
 	case happyOut22 happy_x_3 of { (HappyWrap22 happy_var_3) -> 
 	happyIn19
-		 (AbsChapel.Assign happy_var_1 AbsChapel.AssignEq happy_var_3
-	) `HappyStk` happyRest}}
+		 (AbsChapel.Assign happy_var_1 (AbsChapel.AssignEq (tokenLoc happy_var_2)) happy_var_3
+	) `HappyStk` happyRest}}}
 
 happyReduce_40 = happyReduce 4# 15# happyReduction_40
 happyReduction_40 (happy_x_4 `HappyStk`
@@ -723,10 +729,11 @@ happyReduction_40 (happy_x_4 `HappyStk`
 	happy_x_1 `HappyStk`
 	happyRest)
 	 = case happyOut21 happy_x_1 of { (HappyWrap21 happy_var_1) -> 
+	case happyOutTok happy_x_2 of { happy_var_2 -> 
 	case happyOut22 happy_x_3 of { (HappyWrap22 happy_var_3) -> 
 	happyIn19
-		 (AbsChapel.Assign happy_var_1 AbsChapel.AssignAdd happy_var_3
-	) `HappyStk` happyRest}}
+		 (AbsChapel.Assign happy_var_1 (AbsChapel.AssignAdd (tokenLoc happy_var_2)) happy_var_3
+	) `HappyStk` happyRest}}}
 
 happyReduce_41 = happyReduce 4# 15# happyReduction_41
 happyReduction_41 (happy_x_4 `HappyStk`
@@ -735,10 +742,11 @@ happyReduction_41 (happy_x_4 `HappyStk`
 	happy_x_1 `HappyStk`
 	happyRest)
 	 = case happyOut21 happy_x_1 of { (HappyWrap21 happy_var_1) -> 
+	case happyOutTok happy_x_2 of { happy_var_2 -> 
 	case happyOut22 happy_x_3 of { (HappyWrap22 happy_var_3) -> 
 	happyIn19
-		 (AbsChapel.Assign happy_var_1 AbsChapel.AssignSub happy_var_3
-	) `HappyStk` happyRest}}
+		 (AbsChapel.Assign happy_var_1 (AbsChapel.AssignSub (tokenLoc happy_var_2)) happy_var_3
+	) `HappyStk` happyRest}}}
 
 happyReduce_42 = happyReduce 4# 15# happyReduction_42
 happyReduction_42 (happy_x_4 `HappyStk`
@@ -747,10 +755,11 @@ happyReduction_42 (happy_x_4 `HappyStk`
 	happy_x_1 `HappyStk`
 	happyRest)
 	 = case happyOut21 happy_x_1 of { (HappyWrap21 happy_var_1) -> 
+	case happyOutTok happy_x_2 of { happy_var_2 -> 
 	case happyOut22 happy_x_3 of { (HappyWrap22 happy_var_3) -> 
 	happyIn19
-		 (AbsChapel.Assign happy_var_1 AbsChapel.AssignMul happy_var_3
-	) `HappyStk` happyRest}}
+		 (AbsChapel.Assign happy_var_1 (AbsChapel.AssignMul (tokenLoc happy_var_2)) happy_var_3
+	) `HappyStk` happyRest}}}
 
 happyReduce_43 = happyReduce 4# 15# happyReduction_43
 happyReduction_43 (happy_x_4 `HappyStk`
@@ -759,10 +768,11 @@ happyReduction_43 (happy_x_4 `HappyStk`
 	happy_x_1 `HappyStk`
 	happyRest)
 	 = case happyOut21 happy_x_1 of { (HappyWrap21 happy_var_1) -> 
+	case happyOutTok happy_x_2 of { happy_var_2 -> 
 	case happyOut22 happy_x_3 of { (HappyWrap22 happy_var_3) -> 
 	happyIn19
-		 (AbsChapel.Assign happy_var_1 AbsChapel.AssignDiv happy_var_3
-	) `HappyStk` happyRest}}
+		 (AbsChapel.Assign happy_var_1 (AbsChapel.AssignDiv (tokenLoc happy_var_2)) happy_var_3
+	) `HappyStk` happyRest}}}
 
 happyReduce_44 = happyReduce 4# 15# happyReduction_44
 happyReduction_44 (happy_x_4 `HappyStk`
@@ -771,10 +781,11 @@ happyReduction_44 (happy_x_4 `HappyStk`
 	happy_x_1 `HappyStk`
 	happyRest)
 	 = case happyOut21 happy_x_1 of { (HappyWrap21 happy_var_1) -> 
+	case happyOutTok happy_x_2 of { happy_var_2 -> 
 	case happyOut22 happy_x_3 of { (HappyWrap22 happy_var_3) -> 
 	happyIn19
-		 (AbsChapel.Assign happy_var_1 AbsChapel.AssignMod happy_var_3
-	) `HappyStk` happyRest}}
+		 (AbsChapel.Assign happy_var_1 (AbsChapel.AssignMod (tokenLoc happy_var_2)) happy_var_3
+	) `HappyStk` happyRest}}}
 
 happyReduce_45 = happyReduce 4# 15# happyReduction_45
 happyReduction_45 (happy_x_4 `HappyStk`
@@ -783,10 +794,11 @@ happyReduction_45 (happy_x_4 `HappyStk`
 	happy_x_1 `HappyStk`
 	happyRest)
 	 = case happyOut21 happy_x_1 of { (HappyWrap21 happy_var_1) -> 
+	case happyOutTok happy_x_2 of { happy_var_2 -> 
 	case happyOut22 happy_x_3 of { (HappyWrap22 happy_var_3) -> 
 	happyIn19
-		 (AbsChapel.Assign happy_var_1 AbsChapel.AssignPow happy_var_3
-	) `HappyStk` happyRest}}
+		 (AbsChapel.Assign happy_var_1 (AbsChapel.AssignPow (tokenLoc happy_var_2)) happy_var_3
+	) `HappyStk` happyRest}}}
 
 happyReduce_46 = happySpecReduce_2  15# happyReduction_46
 happyReduction_46 happy_x_2
@@ -914,32 +926,36 @@ happyReduction_55 (happy_x_5 `HappyStk`
 happyReduce_56 = happySpecReduce_2  15# happyReduction_56
 happyReduction_56 happy_x_2
 	happy_x_1
-	 =  happyIn19
-		 (AbsChapel.JmpStm AbsChapel.Return
-	)
+	 =  case happyOutTok happy_x_1 of { happy_var_1 -> 
+	happyIn19
+		 (AbsChapel.JmpStm (AbsChapel.Return (tokenLoc happy_var_1))
+	)}
 
 happyReduce_57 = happySpecReduce_3  15# happyReduction_57
 happyReduction_57 happy_x_3
 	happy_x_2
 	happy_x_1
-	 =  case happyOut22 happy_x_2 of { (HappyWrap22 happy_var_2) -> 
+	 =  case happyOutTok happy_x_1 of { happy_var_1 -> 
+	case happyOut22 happy_x_2 of { (HappyWrap22 happy_var_2) -> 
 	happyIn19
-		 (AbsChapel.JmpStm (AbsChapel.ReturnE happy_var_2)
-	)}
+		 (AbsChapel.JmpStm (AbsChapel.ReturnE (tokenLoc happy_var_1) happy_var_2)
+	)}}
 
 happyReduce_58 = happySpecReduce_2  15# happyReduction_58
 happyReduction_58 happy_x_2
 	happy_x_1
-	 =  happyIn19
-		 (AbsChapel.JmpStm AbsChapel.Break
-	)
+	 =  case happyOutTok happy_x_1 of { happy_var_1 -> 
+	happyIn19
+		 (AbsChapel.JmpStm (AbsChapel.Break (tokenLoc happy_var_1))
+	)}
 
 happyReduce_59 = happySpecReduce_2  15# happyReduction_59
 happyReduction_59 happy_x_2
 	happy_x_1
-	 =  happyIn19
-		 (AbsChapel.JmpStm AbsChapel.Continue
-	)
+	 =  case happyOutTok happy_x_1 of { happy_var_1 -> 
+	happyIn19
+		 (AbsChapel.JmpStm (AbsChapel.Continue (tokenLoc happy_var_1))
+	)}
 
 happyReduce_60 = happyReduce 5# 16# happyReduction_60
 happyReduction_60 (happy_x_5 `HappyStk`
@@ -949,10 +965,11 @@ happyReduction_60 (happy_x_5 `HappyStk`
 	happy_x_1 `HappyStk`
 	happyRest)
 	 = case happyOut22 happy_x_2 of { (HappyWrap22 happy_var_2) -> 
+	case happyOutTok happy_x_3 of { happy_var_3 -> 
 	case happyOut22 happy_x_4 of { (HappyWrap22 happy_var_4) -> 
 	happyIn20
-		 (AbsChapel.Range happy_var_2 happy_var_4
-	) `HappyStk` happyRest}}
+		 (AbsChapel.Range (tokenLoc happy_var_3) happy_var_2 happy_var_4
+	) `HappyStk` happyRest}}}
 
 happyReduce_61 = happySpecReduce_2  17# happyReduction_61
 happyReduction_61 happy_x_2
@@ -995,188 +1012,207 @@ happyReduction_65 happy_x_3
 	happy_x_2
 	happy_x_1
 	 =  case happyOut22 happy_x_1 of { (HappyWrap22 happy_var_1) -> 
+	case happyOutTok happy_x_2 of { happy_var_2 -> 
 	case happyOut22 happy_x_3 of { (HappyWrap22 happy_var_3) -> 
 	happyIn22
-		 (AbsChapel.Or happy_var_1 happy_var_3
-	)}}
+		 (AbsChapel.Or (tokenLoc happy_var_2) happy_var_1 happy_var_3
+	)}}}
 
 happyReduce_66 = happySpecReduce_3  18# happyReduction_66
 happyReduction_66 happy_x_3
 	happy_x_2
 	happy_x_1
 	 =  case happyOut22 happy_x_1 of { (HappyWrap22 happy_var_1) -> 
+	case happyOutTok happy_x_2 of { happy_var_2 -> 
 	case happyOut22 happy_x_3 of { (HappyWrap22 happy_var_3) -> 
 	happyIn22
-		 (AbsChapel.And happy_var_1 happy_var_3
-	)}}
+		 (AbsChapel.And (tokenLoc happy_var_2) happy_var_1 happy_var_3
+	)}}}
 
 happyReduce_67 = happySpecReduce_2  18# happyReduction_67
 happyReduction_67 happy_x_2
 	happy_x_1
-	 =  case happyOut22 happy_x_2 of { (HappyWrap22 happy_var_2) -> 
+	 =  case happyOutTok happy_x_1 of { happy_var_1 -> 
+	case happyOut22 happy_x_2 of { (HappyWrap22 happy_var_2) -> 
 	happyIn22
-		 (AbsChapel.Not happy_var_2
-	)}
+		 (AbsChapel.Not (tokenLoc happy_var_1) happy_var_2
+	)}}
 
 happyReduce_68 = happySpecReduce_3  18# happyReduction_68
 happyReduction_68 happy_x_3
 	happy_x_2
 	happy_x_1
 	 =  case happyOut22 happy_x_1 of { (HappyWrap22 happy_var_1) -> 
+	case happyOutTok happy_x_2 of { happy_var_2 -> 
 	case happyOut22 happy_x_3 of { (HappyWrap22 happy_var_3) -> 
 	happyIn22
-		 (AbsChapel.Comp happy_var_1 AbsChapel.Lt happy_var_3
-	)}}
+		 (AbsChapel.Comp (tokenLoc happy_var_2) happy_var_1 AbsChapel.Lt happy_var_3
+	)}}}
 
 happyReduce_69 = happySpecReduce_3  18# happyReduction_69
 happyReduction_69 happy_x_3
 	happy_x_2
 	happy_x_1
 	 =  case happyOut22 happy_x_1 of { (HappyWrap22 happy_var_1) -> 
+	case happyOutTok happy_x_2 of { happy_var_2 -> 
 	case happyOut22 happy_x_3 of { (HappyWrap22 happy_var_3) -> 
 	happyIn22
-		 (AbsChapel.Comp happy_var_1 AbsChapel.Leq happy_var_3
-	)}}
+		 (AbsChapel.Comp (tokenLoc happy_var_2) happy_var_1 AbsChapel.Leq happy_var_3
+	)}}}
 
 happyReduce_70 = happySpecReduce_3  18# happyReduction_70
 happyReduction_70 happy_x_3
 	happy_x_2
 	happy_x_1
 	 =  case happyOut22 happy_x_1 of { (HappyWrap22 happy_var_1) -> 
+	case happyOutTok happy_x_2 of { happy_var_2 -> 
 	case happyOut22 happy_x_3 of { (HappyWrap22 happy_var_3) -> 
 	happyIn22
-		 (AbsChapel.Comp happy_var_1 AbsChapel.Eq happy_var_3
-	)}}
+		 (AbsChapel.Comp (tokenLoc happy_var_2) happy_var_1 AbsChapel.Eq happy_var_3
+	)}}}
 
 happyReduce_71 = happySpecReduce_3  18# happyReduction_71
 happyReduction_71 happy_x_3
 	happy_x_2
 	happy_x_1
 	 =  case happyOut22 happy_x_1 of { (HappyWrap22 happy_var_1) -> 
+	case happyOutTok happy_x_2 of { happy_var_2 -> 
 	case happyOut22 happy_x_3 of { (HappyWrap22 happy_var_3) -> 
 	happyIn22
-		 (AbsChapel.Comp happy_var_1 AbsChapel.Neq happy_var_3
-	)}}
+		 (AbsChapel.Comp (tokenLoc happy_var_2) happy_var_1 AbsChapel.Neq happy_var_3
+	)}}}
 
 happyReduce_72 = happySpecReduce_3  18# happyReduction_72
 happyReduction_72 happy_x_3
 	happy_x_2
 	happy_x_1
 	 =  case happyOut22 happy_x_1 of { (HappyWrap22 happy_var_1) -> 
+	case happyOutTok happy_x_2 of { happy_var_2 -> 
 	case happyOut22 happy_x_3 of { (HappyWrap22 happy_var_3) -> 
 	happyIn22
-		 (AbsChapel.Comp happy_var_1 AbsChapel.Geq happy_var_3
-	)}}
+		 (AbsChapel.Comp (tokenLoc happy_var_2) happy_var_1 AbsChapel.Geq happy_var_3
+	)}}}
 
 happyReduce_73 = happySpecReduce_3  18# happyReduction_73
 happyReduction_73 happy_x_3
 	happy_x_2
 	happy_x_1
 	 =  case happyOut22 happy_x_1 of { (HappyWrap22 happy_var_1) -> 
+	case happyOutTok happy_x_2 of { happy_var_2 -> 
 	case happyOut22 happy_x_3 of { (HappyWrap22 happy_var_3) -> 
 	happyIn22
-		 (AbsChapel.Comp happy_var_1 AbsChapel.Gt happy_var_3
-	)}}
+		 (AbsChapel.Comp (tokenLoc happy_var_2) happy_var_1 AbsChapel.Gt happy_var_3
+	)}}}
 
 happyReduce_74 = happySpecReduce_3  18# happyReduction_74
 happyReduction_74 happy_x_3
 	happy_x_2
 	happy_x_1
 	 =  case happyOut22 happy_x_1 of { (HappyWrap22 happy_var_1) -> 
+	case happyOutTok happy_x_2 of { happy_var_2 -> 
 	case happyOut22 happy_x_3 of { (HappyWrap22 happy_var_3) -> 
 	happyIn22
-		 (AbsChapel.Arith happy_var_1 AbsChapel.Add happy_var_3
-	)}}
+		 (AbsChapel.Arith (tokenLoc happy_var_2) happy_var_1 AbsChapel.Add happy_var_3
+	)}}}
 
 happyReduce_75 = happySpecReduce_3  18# happyReduction_75
 happyReduction_75 happy_x_3
 	happy_x_2
 	happy_x_1
 	 =  case happyOut22 happy_x_1 of { (HappyWrap22 happy_var_1) -> 
+	case happyOutTok happy_x_2 of { happy_var_2 -> 
 	case happyOut22 happy_x_3 of { (HappyWrap22 happy_var_3) -> 
 	happyIn22
-		 (AbsChapel.Arith happy_var_1 AbsChapel.Sub happy_var_3
-	)}}
+		 (AbsChapel.Arith (tokenLoc happy_var_2) happy_var_1 AbsChapel.Sub happy_var_3
+	)}}}
 
 happyReduce_76 = happySpecReduce_3  18# happyReduction_76
 happyReduction_76 happy_x_3
 	happy_x_2
 	happy_x_1
 	 =  case happyOut22 happy_x_1 of { (HappyWrap22 happy_var_1) -> 
+	case happyOutTok happy_x_2 of { happy_var_2 -> 
 	case happyOut22 happy_x_3 of { (HappyWrap22 happy_var_3) -> 
 	happyIn22
-		 (AbsChapel.Arith happy_var_1 AbsChapel.Mul happy_var_3
-	)}}
+		 (AbsChapel.Arith (tokenLoc happy_var_2) happy_var_1 AbsChapel.Mul happy_var_3
+	)}}}
 
 happyReduce_77 = happySpecReduce_3  18# happyReduction_77
 happyReduction_77 happy_x_3
 	happy_x_2
 	happy_x_1
 	 =  case happyOut22 happy_x_1 of { (HappyWrap22 happy_var_1) -> 
+	case happyOutTok happy_x_2 of { happy_var_2 -> 
 	case happyOut22 happy_x_3 of { (HappyWrap22 happy_var_3) -> 
 	happyIn22
-		 (AbsChapel.Arith happy_var_1 AbsChapel.Div happy_var_3
-	)}}
+		 (AbsChapel.Arith (tokenLoc happy_var_2) happy_var_1 AbsChapel.Div happy_var_3
+	)}}}
 
 happyReduce_78 = happySpecReduce_3  18# happyReduction_78
 happyReduction_78 happy_x_3
 	happy_x_2
 	happy_x_1
 	 =  case happyOut22 happy_x_1 of { (HappyWrap22 happy_var_1) -> 
+	case happyOutTok happy_x_2 of { happy_var_2 -> 
 	case happyOut22 happy_x_3 of { (HappyWrap22 happy_var_3) -> 
 	happyIn22
-		 (AbsChapel.Arith happy_var_1 AbsChapel.Mod happy_var_3
-	)}}
+		 (AbsChapel.Arith (tokenLoc happy_var_2) happy_var_1 AbsChapel.Mod happy_var_3
+	)}}}
 
 happyReduce_79 = happySpecReduce_3  18# happyReduction_79
 happyReduction_79 happy_x_3
 	happy_x_2
 	happy_x_1
 	 =  case happyOut22 happy_x_1 of { (HappyWrap22 happy_var_1) -> 
+	case happyOutTok happy_x_2 of { happy_var_2 -> 
 	case happyOut22 happy_x_3 of { (HappyWrap22 happy_var_3) -> 
 	happyIn22
-		 (AbsChapel.Arith happy_var_1 AbsChapel.Pow happy_var_3
-	)}}
+		 (AbsChapel.Arith (tokenLoc happy_var_2) happy_var_1 AbsChapel.Pow happy_var_3
+	)}}}
 
 happyReduce_80 = happySpecReduce_2  18# happyReduction_80
 happyReduction_80 happy_x_2
 	happy_x_1
-	 =  case happyOut22 happy_x_2 of { (HappyWrap22 happy_var_2) -> 
+	 =  case happyOutTok happy_x_1 of { happy_var_1 -> 
+	case happyOut22 happy_x_2 of { (HappyWrap22 happy_var_2) -> 
 	happyIn22
-		 (AbsChapel.Sign AbsChapel.Pos happy_var_2
-	)}
+		 (AbsChapel.Sign (tokenLoc happy_var_1) AbsChapel.Pos happy_var_2
+	)}}
 
 happyReduce_81 = happySpecReduce_2  18# happyReduction_81
 happyReduction_81 happy_x_2
 	happy_x_1
-	 =  case happyOut22 happy_x_2 of { (HappyWrap22 happy_var_2) -> 
+	 =  case happyOutTok happy_x_1 of { happy_var_1 -> 
+	case happyOut22 happy_x_2 of { (HappyWrap22 happy_var_2) -> 
 	happyIn22
-		 (AbsChapel.Sign AbsChapel.Neg happy_var_2
-	)}
+		 (AbsChapel.Sign (tokenLoc happy_var_1) AbsChapel.Neg happy_var_2
+	)}}
 
 happyReduce_82 = happySpecReduce_2  18# happyReduction_82
 happyReduction_82 happy_x_2
 	happy_x_1
-	 =  case happyOut21 happy_x_2 of { (HappyWrap21 happy_var_2) -> 
+	 =  case happyOutTok happy_x_1 of { happy_var_1 -> 
+	case happyOut21 happy_x_2 of { (HappyWrap21 happy_var_2) -> 
 	happyIn22
-		 (AbsChapel.RefE happy_var_2
-	)}
+		 (AbsChapel.RefE (tokenLoc happy_var_1) happy_var_2
+	)}}
 
 happyReduce_83 = happySpecReduce_1  18# happyReduction_83
 happyReduction_83 happy_x_1
 	 =  case happyOut21 happy_x_1 of { (HappyWrap21 happy_var_1) -> 
 	happyIn22
-		 (AbsChapel.RLExp happy_var_1
+		 (AbsChapel.RLExp (locOf happy_var_1) happy_var_1
 	)}
 
 happyReduce_84 = happySpecReduce_3  18# happyReduction_84
 happyReduction_84 happy_x_3
 	happy_x_2
 	happy_x_1
-	 =  case happyOut31 happy_x_2 of { (HappyWrap31 happy_var_2) -> 
+	 =  case happyOutTok happy_x_1 of { happy_var_1 -> 
+	case happyOut31 happy_x_2 of { (HappyWrap31 happy_var_2) -> 
 	happyIn22
-		 (AbsChapel.ArrList happy_var_2
-	)}
+		 (AbsChapel.ArrList (tokenLoc happy_var_1) happy_var_2
+	)}}
 
 happyReduce_85 = happyReduce 4# 18# happyReduction_85
 happyReduction_85 (happy_x_4 `HappyStk`
@@ -1187,7 +1223,7 @@ happyReduction_85 (happy_x_4 `HappyStk`
 	 = case happyOut4 happy_x_1 of { (HappyWrap4 happy_var_1) -> 
 	case happyOut31 happy_x_3 of { (HappyWrap31 happy_var_3) -> 
 	happyIn22
-		 (AbsChapel.FCall happy_var_1 happy_var_3
+		 (AbsChapel.FCall (locOf happy_var_1) happy_var_1 happy_var_3
 	) `HappyStk` happyRest}}
 
 happyReduce_86 = happySpecReduce_3  18# happyReduction_86
@@ -1196,14 +1232,14 @@ happyReduction_86 happy_x_3
 	happy_x_1
 	 =  case happyOut23 happy_x_1 of { (HappyWrap23 happy_var_1) -> 
 	happyIn22
-		 (AbsChapel.PredR happy_var_1
+		 (AbsChapel.PredR (locOf happy_var_1) happy_var_1
 	)}
 
 happyReduce_87 = happySpecReduce_1  18# happyReduction_87
 happyReduction_87 happy_x_1
 	 =  case happyOut25 happy_x_1 of { (HappyWrap25 happy_var_1) -> 
 	happyIn22
-		 (AbsChapel.Lit happy_var_1
+		 (AbsChapel.Lit (fst happy_var_1) (snd happy_var_1)
 	)}
 
 happyReduce_88 = happySpecReduce_3  18# happyReduction_88
@@ -1217,90 +1253,100 @@ happyReduction_88 happy_x_3
 
 happyReduce_89 = happySpecReduce_1  19# happyReduction_89
 happyReduction_89 happy_x_1
-	 =  happyIn23
-		 (AbsChapel.ReadChar
-	)
+	 =  case happyOutTok happy_x_1 of { happy_var_1 -> 
+	happyIn23
+		 (AbsChapel.ReadChar (tokenLoc happy_var_1)
+	)}
 
 happyReduce_90 = happySpecReduce_1  19# happyReduction_90
 happyReduction_90 happy_x_1
-	 =  happyIn23
-		 (AbsChapel.ReadInt
-	)
+	 =  case happyOutTok happy_x_1 of { happy_var_1 -> 
+	happyIn23
+		 (AbsChapel.ReadInt (tokenLoc happy_var_1)
+	)}
 
 happyReduce_91 = happySpecReduce_1  19# happyReduction_91
 happyReduction_91 happy_x_1
-	 =  happyIn23
-		 (AbsChapel.ReadReal
-	)
+	 =  case happyOutTok happy_x_1 of { happy_var_1 -> 
+	happyIn23
+		 (AbsChapel.ReadReal (tokenLoc happy_var_1)
+	)}
 
 happyReduce_92 = happySpecReduce_1  19# happyReduction_92
 happyReduction_92 happy_x_1
-	 =  happyIn23
-		 (AbsChapel.ReadString
-	)
+	 =  case happyOutTok happy_x_1 of { happy_var_1 -> 
+	happyIn23
+		 (AbsChapel.ReadString (tokenLoc happy_var_1)
+	)}
 
 happyReduce_93 = happySpecReduce_1  20# happyReduction_93
 happyReduction_93 happy_x_1
-	 =  happyIn24
-		 (AbsChapel.WriteChar
-	)
+	 =  case happyOutTok happy_x_1 of { happy_var_1 -> 
+	happyIn24
+		 (AbsChapel.WriteChar (tokenLoc happy_var_1)
+	)}
 
 happyReduce_94 = happySpecReduce_1  20# happyReduction_94
 happyReduction_94 happy_x_1
-	 =  happyIn24
-		 (AbsChapel.WriteInt
-	)
+	 =  case happyOutTok happy_x_1 of { happy_var_1 -> 
+	happyIn24
+		 (AbsChapel.WriteInt (tokenLoc happy_var_1)
+	)}
 
 happyReduce_95 = happySpecReduce_1  20# happyReduction_95
 happyReduction_95 happy_x_1
-	 =  happyIn24
-		 (AbsChapel.WriteReal
-	)
+	 =  case happyOutTok happy_x_1 of { happy_var_1 -> 
+	happyIn24
+		 (AbsChapel.WriteReal (tokenLoc happy_var_1)
+	)}
 
 happyReduce_96 = happySpecReduce_1  20# happyReduction_96
 happyReduction_96 happy_x_1
-	 =  happyIn24
-		 (AbsChapel.WriteString
-	)
+	 =  case happyOutTok happy_x_1 of { happy_var_1 -> 
+	happyIn24
+		 (AbsChapel.WriteString (tokenLoc happy_var_1)
+	)}
 
 happyReduce_97 = happySpecReduce_1  21# happyReduction_97
 happyReduction_97 happy_x_1
-	 =  happyIn25
-		 (AbsChapel.LBool False
-	)
+	 =  case happyOutTok happy_x_1 of { happy_var_1 -> 
+	happyIn25
+		 ((tokenLoc happy_var_1, AbsChapel.LBool False)
+	)}
 
 happyReduce_98 = happySpecReduce_1  21# happyReduction_98
 happyReduction_98 happy_x_1
-	 =  happyIn25
-		 (AbsChapel.LBool True
-	)
+	 =  case happyOutTok happy_x_1 of { happy_var_1 -> 
+	happyIn25
+		 ((tokenLoc happy_var_1, AbsChapel.LBool True)
+	)}
 
 happyReduce_99 = happySpecReduce_1  21# happyReduction_99
 happyReduction_99 happy_x_1
 	 =  case happyOut5 happy_x_1 of { (HappyWrap5 happy_var_1) -> 
 	happyIn25
-		 (AbsChapel.LChar (fst happy_var_1) (snd happy_var_1)
+		 ((fst happy_var_1, AbsChapel.LChar (snd happy_var_1))
 	)}
 
 happyReduce_100 = happySpecReduce_1  21# happyReduction_100
 happyReduction_100 happy_x_1
 	 =  case happyOut6 happy_x_1 of { (HappyWrap6 happy_var_1) -> 
 	happyIn25
-		 (AbsChapel.LInt (fst happy_var_1) (snd happy_var_1)
+		 ((fst happy_var_1, AbsChapel.LInt (snd happy_var_1))
 	)}
 
 happyReduce_101 = happySpecReduce_1  21# happyReduction_101
 happyReduction_101 happy_x_1
 	 =  case happyOut7 happy_x_1 of { (HappyWrap7 happy_var_1) -> 
 	happyIn25
-		 (AbsChapel.LReal (fst happy_var_1) (snd happy_var_1)
+		 ((fst happy_var_1, AbsChapel.LReal (snd happy_var_1))
 	)}
 
 happyReduce_102 = happySpecReduce_1  21# happyReduction_102
 happyReduction_102 happy_x_1
 	 =  case happyOut8 happy_x_1 of { (HappyWrap8 happy_var_1) -> 
 	happyIn25
-		 (AbsChapel.LString (fst happy_var_1) (snd happy_var_1)
+		 ((fst happy_var_1, AbsChapel.LString (snd happy_var_1))
 	)}
 
 happyReduce_103 = happySpecReduce_0  22# happyReduction_103
@@ -1520,10 +1566,10 @@ thenM :: Err a -> (a -> Err b) -> Err b
 thenM = (>>=)
 
 tokenLoc :: Token -> Loc
-tokenLoc tk = let (l, c) = tokenLineCol in (Loc l c)
+tokenLoc tk = let (l, c) = tokenLineCol tk in (Loc l c)
 
 tokenTok :: Token -> Tok
-tokenTok PT _ t = t
+tokenTok (PT _ t) = t
 
 tokenValue :: Token -> String
 tokenValue = strOf . tokenTok

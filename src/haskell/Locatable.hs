@@ -42,17 +42,8 @@ instance Locatable Jump where
 instance Locatable Range where
     locOf = rngLoc
 
-instance Locatable ArithOp where
-    locOf = arLoc
-
 instance Locatable AssignOp where
     locOf = asLoc
-    
-instance Locatable CompOp where
-    locOf = coLoc
-
-instance Locatable SignOp where
-    locOf = sgnLoc
 
 instance Locatable LExp where
     locOf x = case x of

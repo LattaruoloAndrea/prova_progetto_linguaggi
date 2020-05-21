@@ -104,12 +104,12 @@ data PWrite
   deriving (Eq, Ord, Show, Read)
 
 data ArithOp 
-  = Add {arLoc :: Loc}
-  | Sub {arLoc :: Loc}
-  | Mul {arLoc :: Loc}
-  | Div {arLoc :: Loc}
-  | Mod {arLoc :: Loc}
-  | Pow {arLoc :: Loc}
+  = Add
+  | Sub
+  | Mul
+  | Div
+  | Mod
+  | Pow
   deriving (Eq, Ord, Show, Read)
 
 data AssignOp
@@ -123,20 +123,20 @@ data AssignOp
   deriving (Eq, Ord, Show, Read)
 
 data CompOp
-    = Lt  {coLoc :: Loc}
-    | Leq {coLoc :: Loc}
-    | Eq  {coLoc :: Loc}
-    | Neq {coLoc :: Loc}
-    | Geq {coLoc :: Loc}
-    | Gt  {coLoc :: Loc}
+    = Lt
+    | Leq
+    | Eq
+    | Neq
+    | Geq
+    | Gt
   deriving (Eq, Ord, Show, Read)
 
 -- data IncDecOp = Inc | Dec
 --   deriving (Eq, Ord, Show, Read)
 
 data SignOp 
-  = Pos {sgnLoc :: Loc}
-  | Neg {sgnLoc :: Loc}
+  = Pos
+  | Neg
   deriving (Eq, Ord, Show, Read)
 
 data Literal

@@ -82,8 +82,8 @@ transRange x = case x of
 transLExp :: LExp -> Result
 transLExp x = case x of
   Deref lexp -> failure x
-  Post lexp incdecop -> failure x
-  Pre incdecop lexp -> failure x
+  -- Post lexp incdecop -> failure x
+  -- Pre incdecop lexp -> failure x
   Access lexp rexp -> failure x
   Name ident -> failure x
 transRExp :: RExp -> Result
@@ -137,10 +137,10 @@ transCompOp x = case x of
   Neq -> failure x
   Geq -> failure x
   Gt -> failure x
-transIncDecOp :: IncDecOp -> Result
-transIncDecOp x = case x of
-  Inc -> failure x
-  Dec -> failure x
+-- transIncDecOp :: IncDecOp -> Result
+-- transIncDecOp x = case x of
+--   Inc -> failure x
+--   Dec -> failure x
 transSignOp :: SignOp -> Result
 transSignOp x = case x of
   Pos -> failure x

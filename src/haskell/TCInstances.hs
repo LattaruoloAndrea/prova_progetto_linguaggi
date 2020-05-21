@@ -21,7 +21,7 @@ instance TCTypeable Type where
         helper c b = case c of
             Simple      -> tctypeOf b
             Pointer c'  -> TPoint $ helper c' b
-            Array c' (Lit (LInt d)) -> TArr (fromInteger d :: Int) $ helper c' b
+            Array c' (Lit _ (LInt d)) -> TArr (fromInteger d :: Int) $ helper c' b
             _           -> TError
 
 
@@ -37,10 +37,10 @@ instance TCTypeable Literal where
 -- Predefined reading functions have TCType
 instance TCTypeable PRead where
     tctypeOf x = case x of
-        ReadChar    -> TChar
-        ReadInt     -> TInt
-        ReadReal    -> TReal
-        ReadString  -> TString
+        ReadChar _   -> TChar
+        ReadInt _    -> TInt
+        ReadReal _   -> TReal
+        ReadString _ -> TString
 
 -- Predefind writing functions have TCType
 instance TCTypeable PWrite where
