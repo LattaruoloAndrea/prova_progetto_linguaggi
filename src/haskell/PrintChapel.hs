@@ -29,8 +29,10 @@ render d = rend 0 (map ($ "") $ d []) "" where
     "["      :ts -> showChar '[' . rend i ts
     "("      :ts -> showChar '(' . rend i ts
     "{"      :ts -> showChar '{' . new (i+1) . rend (i+1) ts
+    "{-"     :ts -> showChar '{'. showChar ' ' . rend (i+1) ts
     "}" : ";":ts -> new (i-1) . space "}" . showChar ';' . new (i-1) . rend (i-1) ts
     "}"      :ts -> new (i-1) . showChar '}' . new (i-1) . rend (i-1) ts
+    "-}"     :ts -> showChar '}' . showChar ' ' . rend (i-1) ts
     ";"      :ts -> showChar ';' . new i . rend i ts
     t  : ts@(p:_) | closingOrPunctuation p -> showString t . rend i ts
     t        :ts -> space t . rend i ts
@@ -182,9 +184,10 @@ instance Print AbsChapel.Jump where
     AbsChapel.Break -> prPrec i 0 (concatD [doc (showString "break")])
     AbsChapel.Continue -> prPrec i 0 (concatD [doc (showString "continue")])
 
+--AbsChapel.If rexp stm -> prPrec i 0 (concatD [doc (showString "if"), prt 0 rexp, doc (showString "then"), prt 0 stm])
 instance Print AbsChapel.Range where
   prt i e = case e of
-    AbsChapel.Range rexp1 rexp2 -> prPrec i 0 (concatD [doc (showString "{"), prt 0 rexp1, doc (showString ".."), prt 0 rexp2, doc (showString "}")])
+    AbsChapel.Range rexp1 rexp2 -> prPrec i 0 (concatD [doc (showString "{-"), prt 0 rexp1, doc (showString ".."), prt 0 rexp2, doc (showString "-}")])
 
 instance Print AbsChapel.LExp where
   prt i e = case e of
