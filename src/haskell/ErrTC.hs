@@ -2,7 +2,7 @@
 -- Copyright (C) 2004  Author:  Aarne Ranta
 
 -- This file comes with NO WARRANTY and may be used FOR ANY PURPOSE.
-module ErrM where
+module ErrTC where
 
 -- the Error monad: like Maybe type with error msgs
 
@@ -20,7 +20,7 @@ instance Monad Err where
   Ok a  >>= f = f a
   Bad s a >>= f = case f a of
       Ok a'     -> Bad s a'
-      Bad a' s' -> Bad (s `mappend` s') a'
+      Bad s' a' -> Bad (s `mappend` s') a'
 
 instance Applicative Err where
   pure = Ok
@@ -29,11 +29,11 @@ instance Applicative Err where
 instance Functor Err where
   fmap = liftM
 
-instance MonadPlus Err where
-  mzero = Bad "Err.mzero"
-  mplus (Bad _) y = y
-  mplus x       _ = x
+-- instance MonadPlus Err where
+--   mzero = Bad "Err.mzero"
+--   mplus (Bad _) y = y
+--   mplus x       _ = x
 
-instance Alternative Err where
-  empty = mzero
-  (<|>) = mplus
+-- instance Alternative Err where
+--   empty = mzero
+--   (<|>) = mplus
