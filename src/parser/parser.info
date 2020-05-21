@@ -201,11 +201,11 @@ Terminals
 	'{'            { PT _ (TS _ 66) }
 	'||'           { PT _ (TS _ 67) }
 	'}'            { PT _ (TS _ 68) }
-	L_ident        { PT _ (TV $$) }
-	L_charac       { PT _ (TC $$) }
-	L_integ        { PT _ (TI $$) }
-	L_doubl        { PT _ (TD $$) }
-	L_quoted       { PT _ (TL $$) }
+	L_ident        { PT _ (TV _) }
+	L_charac       { PT _ (TC _) }
+	L_integ        { PT _ (TI _) }
+	L_doubl        { PT _ (TD _) }
+	L_quoted       { PT _ (TL _) }
 
 -----------------------------------------------------------------------------
 Non-terminals

@@ -138,13 +138,14 @@ tok f p s = f p s
 share :: String -> String
 share = id
 
+-- added fieldnames to retrieve informations in the parser
 data Tok =
-   TS !String !Int    -- reserved words and symbols
- | TL !String         -- string literals
- | TI !String         -- integer literals
- | TV !String         -- identifiers
- | TD !String         -- double precision float literals
- | TC !String         -- character literals
+   TS {strOf :: !String, intOf :: !Int}    -- reserved words and symbols
+ | TL {strOf :: !String}                   -- string literals
+ | TI {strOf :: !String}                   -- integer literals
+ | TV {strOf :: !String}                   -- identifiers
+ | TD {strOf :: !String}                   -- double precision float literals
+ | TC {strOf :: !String}                   -- character literals
 
  deriving (Eq,Show,Ord)
 

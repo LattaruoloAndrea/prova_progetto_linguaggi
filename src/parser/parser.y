@@ -81,11 +81,11 @@ import ErrM
   '{' { PT _ (TS _ 66) }
   '||' { PT _ (TS _ 67) }
   '}' { PT _ (TS _ 68) }
-  L_ident  { PT _ (TV $$) }
-  L_charac { PT _ (TC $$) }
-  L_integ  { PT _ (TI $$) }
-  L_doubl  { PT _ (TD $$) }
-  L_quoted { PT _ (TL $$) }
+  L_ident  { PT _ (TV _) }
+  L_charac { PT _ (TC _) }
+  L_integ  { PT _ (TI _) }
+  L_doubl  { PT _ (TD _) }
+  L_quoted { PT _ (TL _) }
 
   %left ';'
   %left '||'
@@ -104,19 +104,19 @@ import ErrM
 %%
 
 Ident   :: { Ident }
-Ident    : L_ident  { Ident $1 }
+Ident    : L_ident  { Ident (tokenLoc $1) (tokenValue $1) }
 
-Char    :: { Char }
-Char     : L_charac { (read ( $1)) :: Char }
+Char    :: { (Loc, Char) }
+Char     : L_charac { (tokenLoc $1, (read . tokenValue $1) :: Char) }
 
-Integer :: { Integer }
-Integer  : L_integ  { (read ( $1)) :: Integer }
+Integer :: { (Loc, Integer) }
+Integer  : L_integ  { (tokenLoc $1, (read . tokenValue $1) :: Integer) }
 
-Double  :: { Double }
-Double   : L_doubl  { (read ( $1)) :: Double }
+Double  :: { (Loc, Double) }
+Double   : L_doubl  { (tokenLoc $1, (read . tokenValue $1) :: Double) }
 
-String  :: { String }
-String   : L_quoted {  $1 }
+String  :: { (Loc, String) }
+String   : L_quoted { (tokenLoc $1, tokenValue $1) }
 
 Program :: { Program }
 Program : ListDecl { AbsChapel.Prog $1 }
@@ -259,10 +259,10 @@ PWrite : 'writeChar' { AbsChapel.WriteChar }
 Literal :: { Literal }
 Literal : 'false' { AbsChapel.LBool False }
         | 'true' { AbsChapel.LBool True }
-        | Char { AbsChapel.LChar $1 }
-        | Integer { AbsChapel.LInt $1 }
-        | Double { AbsChapel.LReal $1 }
-        | String { AbsChapel.LString $1 }
+        | Char { AbsChapel.LChar (fst $1) (snd $1) }
+        | Integer { AbsChapel.LInt (fst $1) (snd $1) }
+        | Double { AbsChapel.LReal (fst $1) (snd $1) }
+        | String { AbsChapel.LString (fst $1) (snd $1) }
 
 ListForm :: { [Form] }
 ListForm : {- empty -} { [] }
@@ -294,6 +294,15 @@ returnM = return
 
 thenM :: Err a -> (a -> Err b) -> Err b
 thenM = (>>=)
+
+tokenLoc :: Token -> Loc
+tokenLoc tk = let (l, c) = tokenLineCol in (Loc l c)
+
+tokenTok :: Token -> Tok
+tokenTok PT _ t = t
+
+tokenValue :: Token -> String
+tokenValue = strOf . tokenTok
 
 happyError :: [Token] -> Err a
 happyError ts =

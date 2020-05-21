@@ -29,29 +29,29 @@ happyIn4 x = Happy_GHC_Exts.unsafeCoerce# (HappyWrap4 x)
 happyOut4 :: (HappyAbsSyn ) -> HappyWrap4
 happyOut4 x = Happy_GHC_Exts.unsafeCoerce# x
 {-# INLINE happyOut4 #-}
-newtype HappyWrap5 = HappyWrap5 (Char)
-happyIn5 :: (Char) -> (HappyAbsSyn )
+newtype HappyWrap5 = HappyWrap5 ((Loc, Char))
+happyIn5 :: ((Loc, Char)) -> (HappyAbsSyn )
 happyIn5 x = Happy_GHC_Exts.unsafeCoerce# (HappyWrap5 x)
 {-# INLINE happyIn5 #-}
 happyOut5 :: (HappyAbsSyn ) -> HappyWrap5
 happyOut5 x = Happy_GHC_Exts.unsafeCoerce# x
 {-# INLINE happyOut5 #-}
-newtype HappyWrap6 = HappyWrap6 (Integer)
-happyIn6 :: (Integer) -> (HappyAbsSyn )
+newtype HappyWrap6 = HappyWrap6 ((Loc, Integer))
+happyIn6 :: ((Loc, Integer)) -> (HappyAbsSyn )
 happyIn6 x = Happy_GHC_Exts.unsafeCoerce# (HappyWrap6 x)
 {-# INLINE happyIn6 #-}
 happyOut6 :: (HappyAbsSyn ) -> HappyWrap6
 happyOut6 x = Happy_GHC_Exts.unsafeCoerce# x
 {-# INLINE happyOut6 #-}
-newtype HappyWrap7 = HappyWrap7 (Double)
-happyIn7 :: (Double) -> (HappyAbsSyn )
+newtype HappyWrap7 = HappyWrap7 ((Loc, Double))
+happyIn7 :: ((Loc, Double)) -> (HappyAbsSyn )
 happyIn7 x = Happy_GHC_Exts.unsafeCoerce# (HappyWrap7 x)
 {-# INLINE happyIn7 #-}
 happyOut7 :: (HappyAbsSyn ) -> HappyWrap7
 happyOut7 x = Happy_GHC_Exts.unsafeCoerce# x
 {-# INLINE happyOut7 #-}
-newtype HappyWrap8 = HappyWrap8 (String)
-happyIn8 :: (String) -> (HappyAbsSyn )
+newtype HappyWrap8 = HappyWrap8 ((Loc, String))
+happyIn8 :: ((Loc, String)) -> (HappyAbsSyn )
 happyIn8 x = Happy_GHC_Exts.unsafeCoerce# (HappyWrap8 x)
 {-# INLINE happyIn8 #-}
 happyOut8 :: (HappyAbsSyn ) -> HappyWrap8
@@ -384,37 +384,37 @@ happy_n_nonterms = 28 :: Int
 
 happyReduce_1 = happySpecReduce_1  0# happyReduction_1
 happyReduction_1 happy_x_1
-	 =  case happyOutTok happy_x_1 of { (PT _ (TV happy_var_1)) -> 
+	 =  case happyOutTok happy_x_1 of { happy_var_1 -> 
 	happyIn4
-		 (Ident happy_var_1
+		 (Ident (tokenLoc happy_var_1) (tokenValue happy_var_1)
 	)}
 
 happyReduce_2 = happySpecReduce_1  1# happyReduction_2
 happyReduction_2 happy_x_1
-	 =  case happyOutTok happy_x_1 of { (PT _ (TC happy_var_1)) -> 
+	 =  case happyOutTok happy_x_1 of { happy_var_1 -> 
 	happyIn5
-		 ((read ( happy_var_1)) :: Char
+		 ((tokenLoc happy_var_1, (read . tokenValue happy_var_1) :: Char)
 	)}
 
 happyReduce_3 = happySpecReduce_1  2# happyReduction_3
 happyReduction_3 happy_x_1
-	 =  case happyOutTok happy_x_1 of { (PT _ (TI happy_var_1)) -> 
+	 =  case happyOutTok happy_x_1 of { happy_var_1 -> 
 	happyIn6
-		 ((read ( happy_var_1)) :: Integer
+		 ((tokenLoc happy_var_1, (read . tokenValue happy_var_1) :: Integer)
 	)}
 
 happyReduce_4 = happySpecReduce_1  3# happyReduction_4
 happyReduction_4 happy_x_1
-	 =  case happyOutTok happy_x_1 of { (PT _ (TD happy_var_1)) -> 
+	 =  case happyOutTok happy_x_1 of { happy_var_1 -> 
 	happyIn7
-		 ((read ( happy_var_1)) :: Double
+		 ((tokenLoc happy_var_1, (read . tokenValue happy_var_1) :: Double)
 	)}
 
 happyReduce_5 = happySpecReduce_1  4# happyReduction_5
 happyReduction_5 happy_x_1
-	 =  case happyOutTok happy_x_1 of { (PT _ (TL happy_var_1)) -> 
+	 =  case happyOutTok happy_x_1 of { happy_var_1 -> 
 	happyIn8
-		 (happy_var_1
+		 ((tokenLoc happy_var_1, tokenValue happy_var_1)
 	)}
 
 happyReduce_6 = happySpecReduce_1  5# happyReduction_6
@@ -1279,28 +1279,28 @@ happyReduce_99 = happySpecReduce_1  21# happyReduction_99
 happyReduction_99 happy_x_1
 	 =  case happyOut5 happy_x_1 of { (HappyWrap5 happy_var_1) -> 
 	happyIn25
-		 (AbsChapel.LChar happy_var_1
+		 (AbsChapel.LChar (fst happy_var_1) (snd happy_var_1)
 	)}
 
 happyReduce_100 = happySpecReduce_1  21# happyReduction_100
 happyReduction_100 happy_x_1
 	 =  case happyOut6 happy_x_1 of { (HappyWrap6 happy_var_1) -> 
 	happyIn25
-		 (AbsChapel.LInt happy_var_1
+		 (AbsChapel.LInt (fst happy_var_1) (snd happy_var_1)
 	)}
 
 happyReduce_101 = happySpecReduce_1  21# happyReduction_101
 happyReduction_101 happy_x_1
 	 =  case happyOut7 happy_x_1 of { (HappyWrap7 happy_var_1) -> 
 	happyIn25
-		 (AbsChapel.LReal happy_var_1
+		 (AbsChapel.LReal (fst happy_var_1) (snd happy_var_1)
 	)}
 
 happyReduce_102 = happySpecReduce_1  21# happyReduction_102
 happyReduction_102 happy_x_1
 	 =  case happyOut8 happy_x_1 of { (HappyWrap8 happy_var_1) -> 
 	happyIn25
-		 (AbsChapel.LString happy_var_1
+		 (AbsChapel.LString (fst happy_var_1) (snd happy_var_1)
 	)}
 
 happyReduce_103 = happySpecReduce_0  22# happyReduction_103
@@ -1487,11 +1487,11 @@ happyNewToken action sts stk (tk:tks) =
 	PT _ (TS _ 66) -> cont 66#;
 	PT _ (TS _ 67) -> cont 67#;
 	PT _ (TS _ 68) -> cont 68#;
-	PT _ (TV happy_dollar_dollar) -> cont 69#;
-	PT _ (TC happy_dollar_dollar) -> cont 70#;
-	PT _ (TI happy_dollar_dollar) -> cont 71#;
-	PT _ (TD happy_dollar_dollar) -> cont 72#;
-	PT _ (TL happy_dollar_dollar) -> cont 73#;
+	PT _ (TV _) -> cont 69#;
+	PT _ (TC _) -> cont 70#;
+	PT _ (TI _) -> cont 71#;
+	PT _ (TD _) -> cont 72#;
+	PT _ (TL _) -> cont 73#;
 	_ -> happyError' ((tk:tks), [])
 	}
 
@@ -1518,6 +1518,15 @@ returnM = return
 
 thenM :: Err a -> (a -> Err b) -> Err b
 thenM = (>>=)
+
+tokenLoc :: Token -> Loc
+tokenLoc tk = let (l, c) = tokenLineCol in (Loc l c)
+
+tokenTok :: Token -> Tok
+tokenTok PT _ t = t
+
+tokenValue :: Token -> String
+tokenValue = strOf . tokenTok
 
 happyError :: [Token] -> Err a
 happyError ts =

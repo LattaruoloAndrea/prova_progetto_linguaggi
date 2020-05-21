@@ -4,8 +4,9 @@
 module AbsChapel where
 
 data Loc = Loc { line, column :: Int }
+  deriving (Eq, Ord, Show)
 
-newtype Ident = Ident String
+newtype Ident = Ident {idLoc :: Loc, idName :: String}
   deriving (Eq, Ord, Show, Read)
 
 data Program = Prog [Decl]
@@ -38,7 +39,7 @@ data Compound = Simple | Array Compound RExp | Pointer Compound
 data Basic = BBool | BChar | BInt | BReal | BString | BVoid
   deriving (Eq, Ord, Show, Read)
 
-data Block = Block [Decl] [Stm]
+data Block = Block {bLoc :: Loc, decls :: [Decl], stms :: [Stm]}
   deriving (Eq, Ord, Show, Read)
 
 data Stm
@@ -55,61 +56,87 @@ data Stm
     | JmpStm Jump
   deriving (Eq, Ord, Show, Read)
 
-data Jump = Return | ReturnE RExp | Break | Continue
+data Jump
+  = Return    {jmpLoc :: Loc}
+  | ReturnE   {jmpLoc :: Loc, retE :: RExp}
+  | Break     {jmpLoc :: Loc}
+  | Continue  {jmpLoc :: Loc}
   deriving (Eq, Ord, Show, Read)
 
-data Range = Range RExp RExp
+data Range = Range {rngLoc :: Loc, start :: RExp, end :: RExp}
   deriving (Eq, Ord, Show, Read)
 
 data LExp
-    = Deref LExp
-    | Post LExp IncDecOp
-    | Pre IncDecOp LExp
-    | Access LExp RExp
-    | Name Ident
+    = Deref   LExp
+    -- | Post LExp IncDecOp
+    -- | Pre IncDecOp LExp
+    | Access  LExp RExp
+    | Name    Ident
   deriving (Eq, Ord, Show, Read)
 
 data RExp
-    = Or RExp RExp
-    | And RExp RExp
-    | Not RExp
-    | Comp RExp CompOp RExp
-    | Arith RExp ArithOp RExp
-    | Sign SignOp RExp
-    | RefE LExp
-    | RLExp LExp
-    | ArrList [RExp]
-    | FCall Ident [RExp]
-    | PredR PRead
-    | Lit Literal
+    = Or      {reLoc :: Loc, lhs :: RExp, rhs :: RExp}
+    | And     {reLoc :: Loc, lhs :: RExp, rhs :: RExp}
+    | Not     {reLoc :: Loc, rhs :: RExp}
+    | Comp    {reLoc :: Loc, lhs :: RExp, comp :: CompOp rhs :: RExp}
+    | Arith   {reLoc :: Loc, lhs :: RExp, arith :: ArithOp, rhs :: RExp}
+    | Sign    {reLoc :: Loc, sgn :: SignOp, rhs :: RExp}
+    | RefE    {reLoc :: Loc, rhsL :: LExp}
+    | RLExp   {reLoc :: Loc, rhsL :: LExp}
+    | ArrList {reLoc :: Loc, rList :: [RExp]}
+    | FCall   {reLoc :: Loc, fName :: Ident, rList :: [RExp]}
+    | PredR   {reLoc :: Loc, pr :: PRead}
+    | Lit     {reLoc :: Loc, lit :: Literal}
   deriving (Eq, Ord, Show, Read)
 
-data PRead = ReadChar | ReadInt | ReadReal | ReadString
+data PRead
+  = ReadChar    {prLoc :: Loc} 
+  | ReadInt     {prLoc :: Loc}
+  | ReadReal    {prLoc :: Loc}
+  | ReadString  {prLoc :: Loc}
   deriving (Eq, Ord, Show, Read)
 
-data PWrite = WriteChar | WriteInt | WriteReal | WriteString
+data PWrite 
+  = WriteChar   {pwLoc :: Loc}
+  | WriteInt    {pwLoc :: Loc}
+  | WriteReal   {pwLoc :: Loc}
+  | WriteString {pwLoc :: Loc}
   deriving (Eq, Ord, Show, Read)
 
-data ArithOp = Add | Sub | Mul | Div | Mod | Pow
+data ArithOp 
+  = Add {arLoc :: Loc}
+  | Sub {arLoc :: Loc}
+  | Mul {arLoc :: Loc}
+  | Div {arLoc :: Loc}
+  | Mod {arLoc :: Loc}
+  | Pow {arLoc :: Loc}
   deriving (Eq, Ord, Show, Read)
 
 data AssignOp
-    = AssignEq
-    | AssignAdd
-    | AssignSub
-    | AssignMul
-    | AssignDiv
-    | AssignMod
-    | AssignPow
+    = AssignEq  {asLoc :: Loc}
+    | AssignAdd {asLoc :: Loc}
+    | AssignSub {asLoc :: Loc}
+    | AssignMul {asLoc :: Loc}
+    | AssignDiv {asLoc :: Loc}
+    | AssignMod {asLoc :: Loc}
+    | AssignPow {asLoc :: Loc}
   deriving (Eq, Ord, Show, Read)
 
-data CompOp = Lt | Leq | Eq | Neq | Geq | Gt
+data CompOp
+    = Lt  {coLoc :: Loc}
+    | Leq {coLoc :: Loc}
+    | Eq  {coLoc :: Loc}
+    | Neq {coLoc :: Loc}
+    | Geq {coLoc :: Loc}
+    | Gt  {coLoc :: Loc}
   deriving (Eq, Ord, Show, Read)
 
-data IncDecOp = Inc | Dec
-  deriving (Eq, Ord, Show, Read)
+-- data IncDecOp = Inc | Dec
+--   deriving (Eq, Ord, Show, Read)
 
-data SignOp = Pos | Neg
+data SignOp 
+  = Pos {sgnLoc :: Loc}
+  | Neg {sgnLoc :: Loc}
   deriving (Eq, Ord, Show, Read)
 
 data Literal
