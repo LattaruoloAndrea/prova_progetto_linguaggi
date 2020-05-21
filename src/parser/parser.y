@@ -164,8 +164,8 @@ Basic : 'bool' { AbsChapel.BBool }
 Block :: { Block }
 Block : '{' {- empty -} '}' { AbsChapel.Block [] [] }
       | '{' ListDecl '}' { AbsChapel.Block $2 [] }
-      | '{' ListStm '}' { AbsChapel.Block [] (reverse $2) }
-      | '{' ListDecl ListStm '}' { AbsChapel.Block $2 (reverse $3) }
+      | '{' ListStm '}' { AbsChapel.Block [] $2 }
+      | '{' ListDecl ListStm '}' { AbsChapel.Block $2 $3 }
 
 Stm :: { Stm }
 Stm : ';' Stm { $2 }
