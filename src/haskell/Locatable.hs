@@ -2,6 +2,8 @@ module Locatable where
 
 import AbsChapel
 
+-- Class to retrieve the location information (AbsChapel.Loc) from a
+
 class Locatable a where -- Minimal complete definition => locOf
     locOf :: a -> Loc
     linOf :: a -> Int
@@ -13,14 +15,19 @@ class Locatable a where -- Minimal complete definition => locOf
     linColOf x = (linOf x, colOf x)  -- linColOf = (,) <$> linOf <*> colOf
                                      -- for the braves with point-free style
 
+
+-- INSTANCES ///////////////////////////////////////////////////////////////
+--
+-- Most of them are based on fieldname in AbsChapel
+
 instance Locatable Ident where
     locOf = idLoc
 
 instance Locatable Decl where
     locOf x = case x of
         FDecl id _ _ _ _ -> locOf id
-        VList vs         -> locOf $ head vs
-        CList cs         -> locOf $ head cs
+        VList vs         -> locOf $ head vs -- list should be non-empty
+        CList cs         -> locOf $ head cs -- list should be non-empty
 
 instance Locatable VDecl where
     locOf x = case x of
@@ -47,7 +54,7 @@ instance Locatable AssignOp where
 
 instance Locatable LExp where
     locOf x = case x of
-        Deref lexp      -> locOf x
+        Deref lexp      -> locOf lexp
         Access lexp _   -> locOf lexp
         Name id         -> locOf id
 
