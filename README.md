@@ -15,10 +15,14 @@
 	- [ ] multi-declaration with same type and initialization (`var x, y, z : int = 42 // all int and =42`)
 
 - [ ] Type checker
-	- [ ] Set up data types in AST
+	- [ ] Improve error messages (maybe with a family of functions)
+	- [X] Set up data types in AST
 	- [ ] Construct parametric AST () for Parser
-	- [ ] Set the Err monad suitable for error concat and warning/fatal distinction
+	- [X] Set the Err monad suitable for error concat and warning/fatal distinction
 	- [ ] Work on parametric AST Info for checkers and inferers
-	- [ ] Type system
+	- [X] Type system
 
 - [ ] Three Address Code
+
+- [ ] Testing
+	- [ ] Write functions to simplify construction of data types (e.g. with dummy location)
