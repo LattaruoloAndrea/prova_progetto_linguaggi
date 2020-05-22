@@ -45,11 +45,3 @@ instance TCTypeable PRead where
 -- Predefind writing functions have TCType
 instance TCTypeable PWrite where
     tctypeOf _ = TVoid
-
-
--- Entry have TCType
-instance TCTypeable Entry where
-    tctypeOf x = case x of
-        Var _ t     -> t
-        Const _ t _ -> t
-        Fun _ t     -> t
