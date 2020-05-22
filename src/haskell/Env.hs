@@ -9,7 +9,11 @@ import Control.Monad (join)
 
 type Id = String
 type Env = [Context]
-type Context = M.Map Id Entry
+data Context = Context { 
+      entryMap  :: M.Map Id Entry
+    , returns   :: TCType
+    , inWhile   :: Bool
+}  
 
 data Entry
     = Var Loc TCType
@@ -27,7 +31,7 @@ instance TCTypeable Entry where
 
 -- Take Just the deepest entry mapped from id (if it exists), otherwise Nothing
 lookEntry :: Id -> Env -> Maybe Entry
-lookEntry id env = join $ head' $ dropWhile isNothing $ map (M.lookup id) env
+lookEntry id env = join $ head' $ dropWhile isNothing $ map (M.lookup id . entryMap) env
 
 head' :: [a] -> Maybe a
 head' []        = Nothing
@@ -38,3 +42,12 @@ lookType :: Id -> Env -> EM.Err TCType
 lookType id env = case lookEntry id env of
     Nothing -> EM.Bad "Variable not declared."
     Just x  -> EM.Ok $ tctypeOf x
+
+
+-- Push an empty context on top of the stack
+pushContext :: Env -> Env
+pushContext (c:cs) = (Context mempty (returns c) (inWhile c)) : (c : cs)
+
+-- Pop context on top of the stack
+popContext :: Env -> Env
+popContext (c:cs) = cs 
