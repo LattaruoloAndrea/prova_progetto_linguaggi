@@ -7,11 +7,10 @@ import Locatable
 import Env
 import Control.Monad (unless, when)
 import qualified ErrM as EM
-
-import Control.Monad (when)
+import qualified ErrT as ET
 
 -- Copied from Skel --------------------------------------
-type Result = EM.Err TCType
+type Result = EM.Err ()
 
 failure :: Show a => a -> Result
 failure x = EM.Bad $ "Undefined case: " ++ show x
@@ -63,14 +62,14 @@ inferRExp env rexp = case rexp of
 
     RLExp _ l -> inferLExp env l
     
-    ArrList _ rexps -> case rexps of
+    ArrList _ rs -> case rs of
         [] -> EM.Bad "Error: empty array initializer."
         _  -> do
-            t <- foldl1 supremumM $ map (inferRExp env) rexps
+            t <- foldl1 supremumM $ map (inferRExp env) rs
             when (t == TError) (EM.Bad "Error: types in an array initializer are not compatible.")
-            return $ TArr (length rexps) t
+            return $ TArr (length rs) t
     
-    FCall _ ident rexps -> lookType (idName ident) env
+    FCall _ ident rs -> lookType (idName ident) env -- @TODO: check right numbers and types of rs
 
     PredR _ pread -> return $ tctypeOf pread
 
@@ -96,3 +95,45 @@ inferLExp env lexp = case lexp of
             _        -> EM.Bad $ "Error: left expression is not an array in an ARRAY ACCESS."
 
     Name ident  -> lookType (idName ident) env
+
+
+-- CHECK VALIDITY OF STATEMENTS /////////////////////////////////////////////////////////////////////////
+
+checkStm :: Env -> Stm -> EM.Err () -- To be changed to ET.Err ()
+checkStm env stm = let x = "Dummy" in case stm of -- Dummy x to be deleted once completed all patterns
+    StmBlock block -> failure x
+    StmCall ident rs -> failure x
+    PredW pwrite r -> failure x
+    Assign l _ r -> failure x
+    StmL l -> failure x
+    If r stm -> failure x
+    IfElse r s1 s2 -> failure x
+    While r s -> failure x
+    DoWhile s r -> failure x
+    For ident rng s -> failure x
+    
+    JmpStm jmp -> checkJmp env jmp
+
+
+
+
+-- checkBlock :: Env -> Block -> EM.Err ()
+-- checkBlock env block = do
+--     let env' = pushContext env
+
+
+
+-- CHECK VALIDITY OF JUMP STATEMENTS ///////////////////////////////////////////////////////////////////
+
+checkJmp :: Env -> Jump -> EM.Err () -- To be changed to ET.Err ()
+checkJmp env jmp = case jmp of
+    Return _    -> unless ((returns . head) env == TVoid) (EM.Bad "Error: wrong return type.")
+
+    ReturnE _ r -> do
+        t <- inferRExp env r
+        let t' = (returns . head) env
+        unless (t == t') (EM.Bad "Error: wrong return type.")
+
+    Break _     -> unless ((inWhile . head) env) (EM.Bad "Error: cannot use break in a non-(do-)while statement.")
+    
+    Continue _  -> unless ((inWhile . head) env) (EM.Bad "Error: cannot use continue in a non-(do-)while statement.")
