@@ -57,9 +57,11 @@ inferRExp env rexp = case rexp of
 
     Sign _ _ r -> inferRExp env r
 
-    -- RefE _ lexp -> failure x    @TODO: infer for LEXP
+    RefE _ l -> do
+        t <- inferLExp env l
+        return $ TPoint t
 
-    -- RLExp _ lexp -> failure x   @TODO: infer for LEXP
+    RLExp _ l -> inferLExp env l
     
     ArrList _ rexps -> case rexps of
         [] -> EM.Bad "Error: empty array initializer."
@@ -73,9 +75,6 @@ inferRExp env rexp = case rexp of
     PredR _ pread -> return $ tctypeOf pread
 
     Lit _ literal -> return $ tctypeOf literal
-
-    _             -> EM.Bad "INFER OF A NON-COVERED RIGHT EXPRESSION."
-
 
 
 -- INFER LEFT EXPRESSIONS //////////////////////////////////////////////////////////////////////////////
