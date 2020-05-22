@@ -18,40 +18,44 @@ failure x = EM.Bad $ "Undefined case: " ++ show x
 ----------------------------------------------------------
 
 
+
+
+-- INFER RIGHT EXPRESSIONS //////////////////////////////////////////////////////////////////////////////
+
 inferRExp :: Env -> RExp -> EM.Err TCType
-inferRExp env rexp = case rexp of -- Let to be deleted when all cases are completed
-    Or _ rexp1 rexp2 -> do
-        t1 <- inferRExp env rexp1
-        t2 <- inferRExp env rexp2
+inferRExp env rexp = case rexp of
+    Or _ r1 r2 -> do
+        t1 <- inferRExp env r1
+        t2 <- inferRExp env r2
         unless (t1 == TBool && t2 == TBool) (EM.Bad "Operands are not of type bool in a OR expression.")
         return TBool
 
-    And _ rexp1 rexp2 -> do
-        t1 <- inferRExp env rexp1
-        t2 <- inferRExp env rexp2
+    And _ r1 r2 -> do
+        t1 <- inferRExp env r1
+        t2 <- inferRExp env r2
         unless (t1 == TBool && t2 == TBool) (EM.Bad "Operands are not of type bool in a AND expression.")
         return TBool
     
-    Not _ rexp -> do
-        t <- inferRExp env rexp
+    Not _ r -> do
+        t <- inferRExp env r
         unless (t == TBool) (EM.Bad "Operand is not of type bool in a NOT expression.")
         return TBool
         
-    Comp _ rexp1 compop rexp2 -> do
-        t1 <- inferRExp env rexp1
-        t2 <- inferRExp env rexp2
+    Comp _ r1 _ r2 -> do
+        t1 <- inferRExp env r1
+        t2 <- inferRExp env r2
         let t = supremum t1 t2
         when (t == TError) (EM.Bad "Operands are not compatible in a COMPARISON expression.")
         return TBool
 
-    Arith _ rexp1 arithop rexp2 -> do
-        t1 <- inferRExp env rexp1
-        t2 <- inferRExp env rexp2
+    Arith _ r1 _ r2 -> do
+        t1 <- inferRExp env r1
+        t2 <- inferRExp env r2
         let t = supremum t1 t2
         when (t == TError) (EM.Bad "Operands are not compatible in an ARITHMETIC expression.")
         return t
 
-    Sign _ signop rexp -> inferRExp env rexp
+    Sign _ _ r -> inferRExp env r
 
     -- RefE _ lexp -> failure x    @TODO: infer for LEXP
 
@@ -70,4 +74,26 @@ inferRExp env rexp = case rexp of -- Let to be deleted when all cases are comple
 
     Lit _ literal -> return $ tctypeOf literal
 
-    _             -> EM.Bad "INFER OF A NON-COVERED REXP."
+    _             -> EM.Bad "INFER OF A NON-COVERED RIGHT EXPRESSION."
+
+
+
+-- INFER LEFT EXPRESSIONS //////////////////////////////////////////////////////////////////////////////
+
+inferLExp :: Env -> LExp -> EM.Err TCType
+inferLExp env lexp = case lexp of
+    Deref l     -> do
+        t <- inferLExp env l
+        case t of
+            TPoint t' -> return t'
+            _         -> EM.Bad $ "Error: trying to dereference a non-pointer variable."
+
+    Access l r  -> do
+        ta <- inferLExp env l
+        ti <- inferRExp env r
+        when (ti `supremum` TInt /= TInt) (EM.Bad "Error: array index is not an integer in an ARRAY ACCESS.")
+        case ta of
+            TArr _ t -> return t
+            _        -> EM.Bad $ "Error: left expression is not an array in an ARRAY ACCESS."
+
+    Name ident  -> lookType (idName ident) env
