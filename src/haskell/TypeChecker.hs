@@ -91,7 +91,7 @@ inferLExp env lexp = case lexp of
     Access l r  -> do
         ta <- inferLExp env l
         ti <- inferRExp env r
-        when (ti `supremum` TInt /= TInt) (EM.Bad ("array index " ++ (show r) ++ " should have tipe integer in an ARRAY ACCESS")
+        when (ti `supremum` TInt /= TInt) (EM.Bad ("array index " ++ (show r) ++ " should have tipe integer in an ARRAY ACCESS"))
         case ta of
             TArr _ t -> return t
             _        -> EM.Bad $ "left expression " ++ (show l) ++ " is not an array in an ARRAY ACCESS"
@@ -134,7 +134,7 @@ checkJmp env jmp = case jmp of
     ReturnE _ r -> do
         t <- inferRExp env r
         let t' = (returns . head) env
-        unless (t == t') (EM.Bad ("the return type should be " ++ (show t'))
+        unless (t == t') (EM.Bad ("the return type should be " ++ (show t')))
 
     Break _     -> unless ((inWhile . head) env) (EM.Bad "cannot use break in a non-(do-)while statement")
     
