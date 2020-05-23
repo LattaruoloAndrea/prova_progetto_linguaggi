@@ -22,7 +22,6 @@ import Locatable
 %name pRExp RExp
 %name pPRead PRead
 %name pPWrite PWrite
-%name pCompOp CompOp
 -- %name pIncDecOp IncDecOp
 %name pLiteral Literal
 %name pListForm ListForm
