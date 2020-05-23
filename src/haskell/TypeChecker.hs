@@ -192,14 +192,21 @@ checkBlock env block = do
 -- CHECK VALIDITY OF JUMP STATEMENTS ///////////////////////////////////////////////////////////////////
 
 checkJmp :: Env -> Jump -> EM.Err () -- To be changed to ET.Err ()
-checkJmp env jmp = case jmp of
-    Return _    -> unless ((returns . head) env == TVoid) (EM.Bad "cannot return a type different from void in a PROCEDURE")
+checkJmp env@(c:cs) jmp = case jmp of
+    Return _    -> do
+        when (inFor c || inWhile c) (EM.Bad "Cannot return inside a loop.")
+        unless (returns c == TVoid) (EM.Bad "cannot return a type different from void in a PROCEDURE")
 
     ReturnE _ r -> do
         t <- inferRExp env r
-        let t' = (returns . head) env
-        unless (t == t') (EM.Bad ("the return type should be " ++ (show t')))
+        let t' = returns c
+        when (inFor c || inWhile c) (EM.Bad "Cannot return inside a loop.")
+        unless (t `subtypeOf` t') (EM.Bad ("the return type should be " ++ (show t')))
 
-    Break _     -> unless ((inWhile . head) env) (EM.Bad "cannot use break in a non-(do-)while statement")
+    Break _     -> do
+        when (inFor c) (EM.Bad "Cannot use break inside a for statement.")
+        unless (inWhile c) (EM.Bad "cannot use break outside a (do-)while statement.")
     
-    Continue _  -> unless ((inWhile . head) env) (EM.Bad "cannot use continue in a non-(do-)while statement")
+    Continue _  -> do
+        when (inFor c) (EM.Bad "Cannot use continue inside a for-statement.")
+        unless (inWhile c) (EM.Bad "cannot use continue outside a (do-)while statement.")
