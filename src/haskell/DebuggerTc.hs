@@ -69,3 +69,9 @@ debugRExp :: Env -> String -> EM.Err TCType
 debugRExp env s = case pRExp $ myLexer s of
     EM.Ok rexp -> inferRExp env rexp
     EM.Bad m   -> EM.Bad "Parse error."
+
+
+debugStm :: Env -> String -> EM.Err Env
+debugStm env s = case pStm $ myLexer s of
+    EM.Ok stm -> checkStm env stm
+    EM.Bad m  -> EM.Bad "Parse error."
