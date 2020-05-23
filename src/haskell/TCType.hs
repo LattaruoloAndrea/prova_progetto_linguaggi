@@ -55,6 +55,11 @@ x `compare'` y = if x == y
     else                  TNotComparable
 
 
+-- S `subtypeOf` T means that S can be coerced to T
+subtypeOf :: TCType -> TCType -> Bool
+s `subtypeOf` t = s `compare'` t == TLess
+
+
 -- Name from lattice-theory (perché fa figo ovviamente)
 -- If types are comparable, then return the max
 -- else TError

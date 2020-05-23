@@ -2,7 +2,6 @@ module TCInstances where
 
 import TCType
 import AbsChapel
-import Env
 
 -- Basic type have TCType
 instance TCTypeable Basic where
