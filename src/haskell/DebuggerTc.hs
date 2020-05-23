@@ -4,7 +4,7 @@ import AbsChapel
 import TypeChecker
 import TCType
 import LexChapel
-import ParChapel
+import ParDebug
 import AbsChapel
 import TCType
 import TCInstances
@@ -51,3 +51,21 @@ takeRexp3 p = case p of
 profRExp :: String -> EM.Err TCType
 profRExp expr = inferRExp [] (takeRexp (easyRexp "int" expr))
 --profRExp "5+6"
+
+
+
+-- ///////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+-- Parser for non-terminal `X` has name pX
+
+
+debugLExp :: Env -> String -> EM.Err TCType
+debugLExp env s = case pLExp $ myLexer s of
+    EM.Ok lexp -> inferLExp env lexp
+    EM.Bad m   -> EM.Bad "Parse error."
+
+debugRExp :: Env -> String -> EM.Err TCType
+debugRExp env s = case pRExp $ myLexer s of
+    EM.Ok rexp -> inferRExp env rexp
+    EM.Bad m   -> EM.Bad "Parse error."

@@ -4,7 +4,7 @@
 {-# OPTIONS_GHC -XPartialTypeSignatures #-}
 #endif
 {-# OPTIONS_GHC -fno-warn-incomplete-patterns -fno-warn-overlapping-patterns #-}
-module ParDebugger where
+module ParDebug where
 import AbsChapel
 import LexChapel
 import ErrM
