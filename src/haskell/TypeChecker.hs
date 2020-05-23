@@ -5,14 +5,14 @@ import TCType
 import TCInstances
 import Locatable
 import Env
-import Control.Monad (unless, when)
+import Control.Monad (unless, when, foldM)
 import qualified ErrM as EM
 import qualified ErrT as ET
 
 -- Copied from Skel --------------------------------------
-type Result = EM.Err ()
+type Result a = EM.Err a
 
-failure :: Show a => a -> Result
+failure :: Show a => a -> Result b
 failure x = EM.Bad $ "Undefined case: " ++ show x
 ----------------------------------------------------------
 
@@ -101,27 +101,91 @@ inferLExp env lexp = case lexp of
 
 -- CHECK VALIDITY OF STATEMENTS /////////////////////////////////////////////////////////////////////////
 
-checkStm :: Env -> Stm -> EM.Err () -- To be changed to ET.Err ()
+checkStm :: Env -> Stm -> EM.Err Env -- To be changed to ET.Err ()
 checkStm env stm = let x = "Dummy" in case stm of -- Dummy x to be deleted once completed all patterns
-    StmBlock block -> failure x
-    StmCall ident rs -> failure x
-    PredW pwrite r -> failure x
-    Assign l _ r -> failure x
-    StmL l -> failure x
-    If r stm -> failure x
-    IfElse r s1 s2 -> failure x
-    While r s -> failure x
-    DoWhile s r -> failure x
-    For ident rng s -> failure x
+    StmBlock block -> checkBlock env block
+
+    StmCall ident rs -> do
+        f <- lookFun (idName ident) env -- @TODO: check that arguments are ok with function definition
+        return env
+
+    PredW pwrite r -> do
+        let t = tctypeOf pwrite
+        t' <- inferRExp env r    
+        unless (t' `subtypeOf` t) (EM.Bad $ "Error: type mismatch in a FUNCTION CALL.")
+        return env
     
-    JmpStm jmp -> checkJmp env jmp
+    Assign l _ r -> do -- @TODO: check that l is non-constant
+        tl <- inferLExp env l
+        tr <- inferRExp env r
+        unless (tr `subtypeOf` tl) (EM.Bad $ "Error: type mismatch in an ASSIGNMENT.")
+        return env
+
+    StmL l -> do
+        inferLExp env l
+        return env
+
+    If r stm -> do
+        tr <- inferRExp env r
+        unless (tr == TBool) (EM.Bad $ "Error: expression is not of type bool in the guard of an IF STATEMENT.")
+        let thenEnv = pushContext env                   -- Entering the scope of true
+        thenEnv' <- checkStm thenEnv stm
+        return $ popContext thenEnv'                    -- Exiting the scope of true and return the new env
+
+    IfElse r s1 s2 -> do
+        tr <- inferRExp env r
+        unless (tr == TBool) (EM.Bad $ "Error: expression is not of type bool in the guard of an IF STATEMENT.")
+        let thenEnv = pushContext env                   -- Entering the scope of true
+        thenEnv' <- checkStm thenEnv s1
+        let elseEnv = pushContext $ popContext thenEnv' -- Exiting the scope of true and entering the scope of false
+        elseEnv' <- checkStm elseEnv s2
+        return $ popContext elseEnv'                    -- Exiting the scope of false and return the new env
+
+    While r s -> do
+        tr <- inferRExp env r
+        unless (tr == TBool) (EM.Bad $ "Error: expression is not of type bool in the guard of a WHILE STATEMENT.")
+        let loopEnv = pushWhile env
+        exitEnv <- checkStm loopEnv s
+        return $ popContext exitEnv
+
+    DoWhile s r -> do
+        tr <- inferRExp env r
+        unless (tr == TBool) (EM.Bad $ "Error: expression is not of type bool in the guard of a WHILE STATEMENT.")
+        let loopEnv = pushWhile env
+        exitEnv <- checkStm loopEnv s
+        return $ popContext exitEnv
 
 
+    For ident rng s -> do
+        checkRange env rng
+        let loopEnv  = pushFor env
+        let loopEnv' = makeForCounter loopEnv ident
+        exitEnv <- checkStm loopEnv s
+        return $ popContext exitEnv
+
+    
+    JmpStm jmp -> do
+        checkJmp env jmp
+        return env
 
 
--- checkBlock :: Env -> Block -> EM.Err ()
--- checkBlock env block = do
---     let env' = pushContext env
+checkRange :: Env -> Range -> EM.Err Env
+checkRange env rng = do
+    ts <- inferRExp env $ start rng
+    te <- inferRExp env $ end   rng
+    unless (ts `subtypeOf` TInt) (EM.Bad "Error: START of a RANGE is not subtype of int.")
+    unless (ts `subtypeOf` TInt) (EM.Bad "Error: END of a RANGE is not subtype of int.")
+    return env
+
+checkDecl :: Env -> Decl -> EM.Err Env
+checkDecl env decl = EM.Bad $ "Error: CHECK for a Declaration not implemented yet."
+
+checkBlock :: Env -> Block -> EM.Err Env
+checkBlock env block = do
+    let env1 = pushContext env
+    env2 <- foldM checkDecl env1 (decls block)
+    env3 <- foldM checkStm  env2 (stms  block)
+    return $ popContext env3
 
 
 
