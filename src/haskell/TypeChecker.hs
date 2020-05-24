@@ -189,9 +189,11 @@ checkDecl env decl = case decl of
 
 
 checkCDecl :: Env -> CDecl -> EM.Err Env
-checkCDecl env c@(id, t, r) = case constexpr env r of
-    Nothing -> EM.Bad "Error: the expression is not a const-expression in a CONST DECLARATION."
-    Just x  -> makeConst env id x
+checkCDecl env c@(id, t, r) = do
+    inferRExp env r                 -- Error purpose: check that r is well-typed
+    case constexpr env r of
+        Nothing -> EM.Bad "Error: the expression is not a const-expression in a CONST DECLARATION."
+        Just x  -> makeConst env id x
 
 
 checkVDecl :: Env -> VDecl -> EM.Err Env
@@ -205,10 +207,55 @@ checkVDecl env v = case v of
         makeVar env id tc
 
 
+-- Returns a literal if r is a compile-time constant expression,
+-- Nothing otherwise.
+-- (Precondition): expected r to be well-typed
 constexpr :: Env -> RExp -> Maybe Literal
 constexpr env r = case r of
-    Lit _ lit -> Just lit
+    Or _ r1 r2 -> do
+        (LBool l1) <- constexpr env r1
+        (LBool l2) <- constexpr env r2
+        return $ l1 || l2
+
+    And _ r1 r2 -> do
+        (LBool l1) <- constexpr env r1
+        (LBool l2) <- constexpr env r2
+        return $ l1 && l2
     
+    Not _ r -> do
+        (LBool l) <- constexpr env r
+        return $ not l
+        
+    Comp _ r1 _ r2 -> do
+        (LBool l1) <- constexpr env r1
+        () <- constexpr env r2
+
+    Arith _ r1 _ r2 -> do
+        t1 <- inferRExp env r1
+        t2 <- inferRExp env r2
+        let t = supremum t1 t2
+        when (t == TError) (EM.Bad ("operands " ++ (show r1) ++ " (type: " ++ (show t1) ++ ") and " ++ (show r2) ++ " (type: " ++ (show t2) ++ ") are not compatible in an ARITHMETIC expression"))
+        return t
+
+    Sign _ _ r -> inferRExp env r
+
+    RefE _ l -> do
+        t <- inferLExp env l
+        return $ TPoint t
+
+    RLExp _ l -> inferLExp env l
+    
+    ArrList _ rs -> case rs of
+        [] -> EM.Bad "empty array initializer"
+        _  -> do
+            t <- foldl1 supremumM $ map (inferRExp env) rs
+            when (t == TError) (EM.Bad ("types in the array initializer " ++ (show rs) ++ " are not compatible"))
+            return $ TArr (length rs) t
+    
+    FCall _ ident rs -> lookType (idName ident) env -- @TODO: check right numbers and types of rs
+
+    PredR _ pread -> return $ tctypeOf pread
+    Lit _ lit   -> Just lit
 
 
 
