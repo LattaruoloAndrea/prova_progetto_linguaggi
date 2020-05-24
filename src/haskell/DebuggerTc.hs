@@ -59,19 +59,18 @@ profRExp expr = inferRExp [] (takeRexp (easyRexp "int" expr))
 
 -- Parser for non-terminal `X` has name pX
 
+-- Generic debugger that abstracts the pipeline
+debugWith :: ([Token] -> EM.Err a) -> (Env -> a -> EM.Err b) -> (Env -> String -> EM.Err b)
+debugWith p f = \env s -> case p $ myLexer s of
+    EM.Ok x  -> f env x
+    EM.Bad m -> EM.Bad m
 
 debugLExp :: Env -> String -> EM.Err TCType
-debugLExp env s = case pLExp $ myLexer s of
-    EM.Ok lexp -> inferLExp env lexp
-    EM.Bad m   -> EM.Bad "Parse error."
+debugLExp = debugWith pLExp inferLExp
 
 debugRExp :: Env -> String -> EM.Err TCType
-debugRExp env s = case pRExp $ myLexer s of
-    EM.Ok rexp -> inferRExp env rexp
-    EM.Bad m   -> EM.Bad "Parse error."
+debugRExp = debugWith pRExp inferRExp
 
 
 debugStm :: Env -> String -> EM.Err Env
-debugStm env s = case pStm $ myLexer s of
-    EM.Ok stm -> checkStm env stm
-    EM.Bad m  -> EM.Bad "Parse error."
+debugStm = debugWith pStm checkStm
