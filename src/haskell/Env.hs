@@ -53,13 +53,25 @@ lookFun id env = case lookEntry id env of
     _                -> EM.Bad "Function not declared."
 
 
--- Add constant to the deepest context given Ident and value
--- (WARNING) If the name is already the context the entry will be overwritten:
---           check the existence first!
-makeConst :: Env -> Ident -> Literal -> Env
-makeConst env@(c:cs) (Ident l n) lit =
-    let m = M.insert n (Const l (tctypeOf lit) lit) (entryMap c)
-    in (Context m (returns c) (inWhile c) (inFor c)) : cs
+-- Add constant to the deepest context given Ident and value.
+-- The existance is checked before insertion.
+makeConst :: Env -> Ident -> Literal -> EM.Err Env
+makeConst env@(c:cs) (Ident l n) lit = let cmap = entryMap c in case M.lookup n cmap of
+    Nothing -> return $
+        let cmap' = M.insert n (Const (tctypeOf lit) lit) cmap
+        in (Context cmap' (returns c) (inWhile c) (inFor c)) : cs
+    
+    Just x  -> EM.Bad "Error: local name already declared at this scope."
+
+-- Add variable to the deepest context given Ident and TCType.
+-- The existance is checked before insertion.
+makeVar :: Env -> Ident -> TCType -> EM.Err Env
+makeVar env@(c:cs) (Ident l n) t = let cmap = entryMap c in case M.lookup n cmap of
+    Nothing -> return $
+        let cmap' = M.insert n (Var l t) cmap
+        in (Context cmap' (returns c) (inWhile c) (inFor c)) : cs
+    
+    Just x  -> EM.Bad "Error: local name already declared at this scope."
 
 
 -- Push an empty context on top of the stack
@@ -79,5 +91,5 @@ popContext :: Env -> Env
 popContext (c:cs) = cs
 
 -- Add a for-loop counter (as constant with dummy int value) to the deepest context given Ident
-makeForCounter :: Env -> Ident -> Env
+makeForCounter :: Env -> Ident -> EM.Err Env
 makeForCounter env@(c:cs) ident = makeConst env ident (LInt 0)
