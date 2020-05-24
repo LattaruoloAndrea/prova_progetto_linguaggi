@@ -159,7 +159,7 @@ checkStm env stm = let x = "Dummy" in case stm of -- Dummy x to be deleted once 
     For ident rng s -> do
         checkRange env rng
         let loopEnv  = pushFor env
-        let loopEnv' = makeForCounter loopEnv ident
+        loopEnv' <- makeForCounter loopEnv ident
         exitEnv <- checkStm loopEnv s
         return $ popContext exitEnv
 
@@ -178,7 +178,40 @@ checkRange env rng = do
     return env
 
 checkDecl :: Env -> Decl -> EM.Err Env
-checkDecl env decl = EM.Bad $ "Error: CHECK for a Declaration not implemented yet."
+checkDecl env decl = case decl of
+    FDecl ident forms intent type block -> EM.Bad "Error: function declaration is not supported yet."
+    
+    CList cs -> do
+        foldM checkCDecl env cs
+
+    VList vs -> do
+        foldM checkVDecl env cs
+
+
+checkCDecl :: Env -> CDecl -> EM.Err Env
+checkCDecl env c@(id, t, r) = case constexpr env r of
+    Nothing -> EM.Bad "Error: the expression is not a const-expression in a CONST DECLARATION."
+    Just x  -> makeConst env id x
+
+
+checkVDecl :: Env -> VDecl -> EM.Err Env
+checkVDecl env v = case v of
+    Solo id t   -> makeVar env id (tctypeOf t)
+
+    Init id t r -> do
+        let tc = tctypeOf t
+        tr <- inferRExp env r
+        unless (tr `subtypeOf` tc) (EM.Err "Error: type mismatch in a VAR DECLARATION.")
+        makeVar env id tc
+
+
+constexpr :: Env -> RExp -> Maybe Literal
+constexpr env r = case r of
+    Lit _ lit -> Just lit
+    
+
+
+
 
 checkBlock :: Env -> Block -> EM.Err Env
 checkBlock env block = do
