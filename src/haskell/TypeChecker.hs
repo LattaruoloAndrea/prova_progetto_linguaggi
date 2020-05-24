@@ -26,55 +26,51 @@ inferRExp env rexp = case rexp of
     Or _ r1 r2 -> do
         t1 <- inferRExp env r1
         t2 <- inferRExp env r2
-        unless (t1 == TBool) (EM.Bad ("Error at line " ++ (show (linOf r1)) ++ ": the operand " ++ (show r1) ++ " in an OR expression should have type bool, instead has type " ++ (show t1) ++ ", in the expression " ++ (show rexp)))
-        unless (t2 == TBool) (EM.Bad ("Error at line " ++ (show (linOf r2)) ++ ": the operand " ++ (show r2) ++ " in an OR expression should have type bool, instead has type " ++ (show t2) ++ ", in the expression " ++ (show rexp)))
+        unless (t1 == TBool) (EM.Bad ("Error at line " ++ (show (linOf r1)) ++ ": the operand " ++ (show r1) ++ " in an OR expression should have type bool, instead has type " ++ (show t1)))
+        unless (t2 == TBool) (EM.Bad ("Error at line " ++ (show (linOf r2)) ++ ": the operand " ++ (show r2) ++ " in an OR expression should have type bool, instead has type " ++ (show t2)))
         return TBool
 
     And _ r1 r2 -> do
         t1 <- inferRExp env r1
         t2 <- inferRExp env r2
-        unless (t1 == TBool) (EM.Bad ("Error at line " ++ (show (linOf r1)) ++ ": the operand " ++ (show r1) ++ " in an AND expression should have type bool, instead has type " ++ (show t1) ++ ", in the expression " ++ (show rexp)))
-        unless (t2 == TBool) (EM.Bad ("Error at line " ++ (show (linOf r2)) ++ ": the operand " ++ (show r2) ++ " in an AND expression should have type bool, instead has type " ++ (show t2) ++ ", in the expression " ++ (show rexp)))
+        unless (t1 == TBool) (EM.Bad ("Error at line " ++ (show (linOf r1)) ++ ": the operand " ++ (show r1) ++ " in an AND expression should have type bool, instead has type " ++ (show t1)))
+        unless (t2 == TBool) (EM.Bad ("Error at line " ++ (show (linOf r2)) ++ ": the operand " ++ (show r2) ++ " in an AND expression should have type bool, instead has type " ++ (show t2)))
         return TBool
     
     Not _ r -> do
         t <- inferRExp env r
-        unless (t == TBool) (EM.Bad ("Error at line " ++ (show (linOf r)) ++ ": the operand " ++ (show r) ++ " in a NOT expression should have type bool, instead has type " ++ (show t) ++ ", in the expression " ++ (show rexp)))
+        unless (t == TBool) (EM.Bad ("Error at line " ++ (show (linOf r)) ++ ": the operand " ++ (show r) ++ " in a NOT expression should have type bool, instead has type " ++ (show t)))
         return TBool
         
     Comp _ r1 _ r2 -> do
         t1 <- inferRExp env r1
         t2 <- inferRExp env r2
         let t = supremum t1 t2
-        when (t == TError) (EM.Bad ("Error at line " ++ (show (linOf r)) ++ "operands " ++ (show r1) ++ " (type: " ++ (show t1) ++ ") and " ++ (show r2) ++ " (type: " ++ (show t2) ++ ") are not compatible in a COMPARISON expression, in the expression " ++ (show rexp)))
+        when (t == TError) (EM.Bad ("Error at line " ++ (show (linOf r)) ++ "operands " ++ (show r1) ++ " (type: " ++ (show t1) ++ ") and " ++ (show r2) ++ " (type: " ++ (show t2) ++ ") are not compatible in a COMPARISON expression"))
         return TBool
 
     Arith _ r1 _ r2 -> do
         t1 <- inferRExp env r1
         t2 <- inferRExp env r2
         let t = supremum t1 t2
-        when (t == TError) (EM.Bad ("Error at line " ++ (show (linOf r)) ++ "operands " ++ (show r1) ++ " (type: " ++ (show t1) ++ ") and " ++ (show r2) ++ " (type: " ++ (show t2) ++ ") are not compatible in an ARITHMETIC expression, in the expression " ++ (show rexp)))
+        when (t == TError) (EM.Bad ("Error at line " ++ (show (linOf r)) ++ "operands " ++ (show r1) ++ " (type: " ++ (show t1) ++ ") and " ++ (show r2) ++ " (type: " ++ (show t2) ++ ") are not compatible in an ARITHMETIC expression"))
         return t
 
     Sign _ _ r -> inferRExp env r
 
     RefE _ l -> do
         t <- inferLExp env l
-        case t of
-            Bad s -> EM.Bad ("Error at line " ++ (show (linOf l)) ++ s ++ ", in the expression " ++ (show rexp))
-            Ok t -> return $ TPoint t
+        return $ TPoint t
 
     RLExp _ l -> do
         t <- inferLExp env l
-        case t of
-            Bad s -> EM.Bad ("Error at line " ++ (show (linOf l)) ++ s ++ ", in the expression " ++ (show rexp))
-            Ok t -> return t
+        return t
     
     ArrList _ rs -> case rs of
-        [] -> EM.Bad ("Error at line " ++ (show (linOf rs)) ++ ": empty array initializer, in the expression " ++ (show rexp))
+        [] -> EM.Bad ("Error at line " ++ (show (linOf rs)) ++ ": empty array initializer")
         _  -> do
             t <- foldl1 supremumM $ map (inferRExp env) rs
-            when (t == TError) (EM.Bad ("Error at line " ++ (show (linOf rs)) ++ ": types in the array initializer " ++ (show rs) ++ " are not compatible, in the expression " ++ (show rexp)))
+            when (t == TError) (EM.Bad ("Error at line " ++ (show (linOf rs)) ++ ": types in the array initializer " ++ (show rs) ++ " are not compatible"))
             return $ TArr (length rs) t
     
     FCall _ ident rs -> lookType (idName ident) env -- @TODO: check right numbers and types of rs
@@ -92,15 +88,15 @@ inferLExp env lexp = case lexp of
         t <- inferLExp env l
         case t of
             TPoint t' -> return t'
-            _         -> EM.Bad $ (": trying to dereference the non-pointer variable " ++ (show l))
+            _         -> EM.Bad $ ("Error at line " ++ (show (linOf l)) ++ ": trying to dereference the non-pointer variable " ++ (show l))
 
     Access l r  -> do
         ta <- inferLExp env l
         ti <- inferRExp env r
-        when (ti `supremum` TInt /= TInt) (EM.Bad (": array index " ++ (show r) ++ " should have tipe integer in an ARRAY ACCESS"))
+        when (ti `supremum` TInt /= TInt) (EM.Bad ("Error at line " ++ (show (linOf r)) ++ ": array index " ++ (show r) ++ " should have tipe integer in an ARRAY ACCESS"))
         case ta of
             TArr _ t -> return t
-            _        -> EM.Bad $ ": left expression " ++ (show l) ++ " is not an array in an ARRAY ACCESS"
+            _        -> EM.Bad $ ("Error at line " ++ (show (linOf l)) ++ ": left expression " ++ (show l) ++ " is not an array in an ARRAY ACCESS"
 
     Name ident  -> lookType (idName ident) env
 
