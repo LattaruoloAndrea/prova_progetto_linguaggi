@@ -8,6 +8,7 @@ import Env
 import Control.Monad (unless, when, foldM)
 import qualified ErrM as EM
 import qualified ErrT as ET
+import CompileTime
 
 -- Copied from Skel --------------------------------------
 type Result a = EM.Err a
@@ -49,14 +50,17 @@ inferRExp env rexp = case rexp of
         when (t == TError) (EM.Bad ("Error at line " ++ (show (linOf r)) ++ "operands " ++ (show r1) ++ " (type: " ++ (show t1) ++ ") and " ++ (show r2) ++ " (type: " ++ (show t2) ++ ") are not compatible in a COMPARISON expression"))
         return TBool
 
-    Arith _ r1 _ r2 -> do
+    Arith _ r1 op r2 -> do
         t1 <- inferRExp env r1
         t2 <- inferRExp env r2
         let t = supremum t1 t2
         when (t == TError) (EM.Bad ("Error at line " ++ (show (linOf r)) ++ "operands " ++ (show r1) ++ " (type: " ++ (show t1) ++ ") and " ++ (show r2) ++ " (type: " ++ (show t2) ++ ") are not compatible in an ARITHMETIC expression"))
+        unless (t `subtypeOf` TReal) (EM.Bad "Error: ARITHMETIC EXPRESSION between non-valid types.")
         return t
 
-    Sign _ _ r -> inferRExp env r
+    Sign _ _ r -> do
+        t <- inferRExp env r
+        unless (t `subtypeOf` TReal) (EM.Bad "Error: cannot SIGN a non-arithmetic expression.")
 
     RefE _ l -> do
         t <- inferLExp env l
@@ -180,7 +184,6 @@ checkRange env rng = do
     return env
 
 checkDecl :: Env -> Decl -> EM.Err Env
-<<<<<<< HEAD
 checkDecl env decl = case decl of
     FDecl ident forms intent type block -> EM.Bad "Error: function declaration is not supported yet."
     
@@ -209,6 +212,10 @@ checkVDecl env v = case v of
         unless (tr `subtypeOf` tc) (EM.Err "Error: type mismatch in a VAR DECLARATION.")
         makeVar env id tc
 
+
+arithLit :: Literal -> ArithOp -> Literal -> Maybe Literal
+arithLit r1 op r2 = case op of
+    Add     -> r1 `litAdd` r2
 
 -- Returns a literal if r is a compile-time constant expression,
 -- Nothing otherwise.
