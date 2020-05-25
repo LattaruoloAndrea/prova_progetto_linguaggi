@@ -317,7 +317,7 @@ checkBlock env block = do
     env2 <- foldM loadFunction env1 (decls block)
     env3 <- foldM checkDecl env2 (decls block)
     env4 <- foldM checkStm  env3 (stms  block)
-    return $ popContext env3
+    return $ popContext env4
 
 
 
