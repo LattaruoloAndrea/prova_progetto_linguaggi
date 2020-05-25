@@ -8,7 +8,6 @@ import Env
 import Control.Monad (unless, when, foldM)
 import qualified ErrM as EM
 import qualified ErrT as ET
-import CompileTime
 
 -- Copied from Skel --------------------------------------
 type Result a = EM.Err a
@@ -50,17 +49,14 @@ inferRExp env rexp = case rexp of
         when (t == TError) (EM.Bad ("Error at line " ++ (show (linOf r)) ++ "operands " ++ (show r1) ++ " (type: " ++ (show t1) ++ ") and " ++ (show r2) ++ " (type: " ++ (show t2) ++ ") are not compatible in a COMPARISON expression"))
         return TBool
 
-    Arith _ r1 op r2 -> do
+    Arith _ r1 _ r2 -> do
         t1 <- inferRExp env r1
         t2 <- inferRExp env r2
         let t = supremum t1 t2
         when (t == TError) (EM.Bad ("Error at line " ++ (show (linOf r)) ++ "operands " ++ (show r1) ++ " (type: " ++ (show t1) ++ ") and " ++ (show r2) ++ " (type: " ++ (show t2) ++ ") are not compatible in an ARITHMETIC expression"))
-        unless (t `subtypeOf` TReal) (EM.Bad "Error: ARITHMETIC EXPRESSION between non-valid types.")
         return t
 
-    Sign _ _ r -> do
-        t <- inferRExp env r
-        unless (t `subtypeOf` TReal) (EM.Bad "Error: cannot SIGN a non-arithmetic expression.")
+    Sign _ _ r -> inferRExp env r
 
     RefE _ l -> do
         t <- inferLExp env l
@@ -100,7 +96,7 @@ inferLExp env lexp = case lexp of
         when (ti `supremum` TInt /= TInt) (EM.Bad ("Error at line " ++ (show (linOf r)) ++ ": array index " ++ (show r) ++ " should have tipe integer in an ARRAY ACCESS"))
         case ta of
             TArr _ t -> return t
-            _        -> EM.Bad $ ("Error at line " ++ (show (linOf l)) ++ ": left expression " ++ (show l) ++ " is not an array in an ARRAY ACCESS"
+            _        -> EM.Bad $ ("Error at line " ++ (show (linOf l)) ++ ": left expression " ++ (show l) ++ " is not an array in an ARRAY ACCESS")
 
     Name ident  -> lookType (idName ident) env
 
@@ -109,13 +105,13 @@ inferLExp env lexp = case lexp of
 
 checkRExpError :: Env -> RExp -> EM.Err TCType
 checkRExpError env rexp = let t = inferRExp env rexp in case t of
-    (OK t') -> return t'
-    (Bad s) -> (EM.Bad (s ++ ", in the expression " ++ (show rexp)))
+    (EM.Ok t') -> return t'
+    (EM.Bad s) -> (EM.Bad (s ++ ", in the expression " ++ (show rexp)))
     
 checkLExpError :: Env -> LExp -> EM.Err TCType
 checkLExpError env lexp = let t = inferLExp env lexp in case t of
-    (OK t') -> return t'
-    (Bad s) -> (EM.Bad (s ++ ", in the expression " ++ (show lexp)))
+    (EM.Ok t') -> return t'
+    (EM.Bad s) -> (EM.Bad (s ++ ", in the expression " ++ (show lexp)))
 
 -- CHECK VALIDITY OF STATEMENTS /////////////////////////////////////////////////////////////////////////
 
@@ -197,20 +193,19 @@ checkRange env rng = do
 
 checkDecl :: Env -> Decl -> EM.Err Env
 checkDecl env decl = case decl of
-    FDecl ident forms intent type block -> EM.Bad "Error: function declaration is not supported yet."
-    
+    FDecl ident forms intent typee block -> checkFDecl decl
     CList cs -> do
         foldM checkCDecl env cs
 
     VList vs -> do
-        foldM checkVDecl env cs
+        foldM checkVDecl env vs
 
 
 checkCDecl :: Env -> CDecl -> EM.Err Env
 checkCDecl env c@(id, t, r) = do
     inferRExp env r                 -- Error purpose: check that r is well-typed
     case constexpr env r of
-        Nothing -> EM.Bad "Error: the expression is not a const-expression in a CONST DECLARATION."
+        Nothing -> (EM.Bad "Error: the expression is not a const-expression in a CONST DECLARATION.")
         Just x  -> makeConst env id x
 
 
@@ -221,13 +216,63 @@ checkVDecl env v = case v of
     Init id t r -> do
         let tc = tctypeOf t
         tr <- inferRExp env r
-        unless (tr `subtypeOf` tc) (EM.Err "Error: type mismatch in a VAR DECLARATION.")
+        unless (tr `subtypeOf` tc) (EM.Bad "Error: type mismatch in a VAR DECLARATION.")
         makeVar env id tc
 
+-- ///////////////////////////start  made by latta could be bugged as fuck //////
+checkFDecl:: Env -> Decl -> EM.Err Env
+checkFDecl env f = case f of
+    -- TODO cehck if id is a function predefinited then error else ->
+    FDecl id forms i t b -> do
+        let tc = tctypeOf t
+        let tform = fromFormToDecl forms -- create a list with of triple (intent,ident,type) of the form
+        let env1 = pushContext env
+        envGood <- checkDecl env1 tform
+        envGood' <- checkBlock envGood b
+        tr  <- inferBlock envGood' b
+        unless (tr `subtypeOf` tc) (EM.Bad "Error prova.")--(EM.Bad "Error: type mismatch between FUNCTION "++ show(id)++" with type: "++show(tc) ++"and Return type: "++show(tr) ++".")
+        makeFun env id tform tc
 
-arithLit :: Literal -> ArithOp -> Literal -> Maybe Literal
-arithLit r1 op r2 = case op of
-    Add     -> r1 `litAdd` r2
+takeEnv :: EM.Err Env -> Env
+takeEnv env = case env of
+    EM.Ok e -> e
+
+takeType :: EM.Err TCType -> TCType
+takeType tr = case tr of
+            EM.Ok t -> t
+
+fromFormToDecl :: [Form] -> Decl
+-- function needed for the constructor in front
+fromFormToDecl xs = VList (fromFormToDecl2 xs)
+
+fromFormToDecl2 :: [Form] -> [VDecl]
+fromFormToDecl2 [] = []
+fromFormToDecl2 (x:xs) = 
+    case x of
+    Form intent id t -> do
+        let vd = Solo id t 
+        vd:(fromFormToDecl2 xs)
+
+inferBlock:: Env ->Block -> EM.Err TCType
+inferBlock env b = startInferStatements env (stms  b) TError
+
+startInferStatements :: Env ->[Stm] -> TCType -> EM.Err TCType
+startInferStatements env [] t = (EM.Ok t)
+startInferStatements env (x:xs) t = case x of
+    JmpStm p -> do
+        case p of
+            ReturnE _ exp-> do
+                ti <- inferRExp env exp
+                let tp = (if t == TError then ti else t) --first return encounter
+                unless (ti `subtypeOf` tp) (EM.Bad "Error: Returning type") --(EM.Bad "Error: Returning type:"++show(ti) ++" in line"++ show((reLoc exp))++ "is not the one excpected")
+                startInferStatements env xs ti
+            Return _ -> do 
+                let ti = TVoid
+                let tp = (if t == TError then ti else t) --first return encounter
+                unless (ti `subtypeOf` tp) (EM.Bad "Error: Returning type") --(EM.Bad "Error: Returning type:"++show(ti) ++" in line"++ show((reLoc exp))++ "is not the one excpected")
+                startInferStatements env xs ti
+-- ///////////////////////////end  made by latta could be bugged as fuck //////
+
 
 -- Returns a literal if r is a compile-time constant expression,
 -- Nothing otherwise.
@@ -250,7 +295,8 @@ constexpr env r = case r of
         
     Comp _ r1 _ r2 -> do
         (LBool l1) <- constexpr env r1
-        () <- constexpr env r2
+        return $ not l1
+        --() <- constexpr env r2
 
     Arith _ r1 _ r2 -> do
         t1 <- inferRExp env r1
