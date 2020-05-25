@@ -2,6 +2,7 @@ module TCInstances where
 
 import TCType
 import AbsChapel
+import Data.Maybe
 
 -- Basic type have TCType
 instance TCTypeable Basic where
@@ -32,6 +33,16 @@ instance TCTypeable Literal where
         LInt _      -> TInt
         LReal _     -> TReal
         LString _   -> TString
+        LArr lits   ->
+            if null lits
+            then TError
+            else let
+                litsT = map tctypeOf lits
+                t = foldl1 (supremum) litsT
+                in case t of
+                    TError  -> TError
+                    _       -> TArr (length lits) t
+            
 
 -- Predefined reading functions have TCType
 instance TCTypeable PRead where
@@ -44,3 +55,8 @@ instance TCTypeable PRead where
 -- Predefind writing functions have TCType
 instance TCTypeable PWrite where
     tctypeOf _ = TVoid
+
+-- Maybe have TCType
+instance (TCTypeable a) => TCTypeable (Maybe a) where
+    tctypeOf (Just x) = tctypeOf x
+    tctypeOf Nothing  = TError
