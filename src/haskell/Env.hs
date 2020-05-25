@@ -17,19 +17,39 @@ data Context = Context {
     , inFor     :: Bool
 } deriving (Show)
 
+type Mutability = Bool
 data Entry
-    = Var Loc TCType
+    = Var Loc TCType Mutability
     | Const Loc TCType Literal
-    | Fun Loc TCType
+    | Fun Loc [Param] Intent TCType
     deriving (Show)
+
+isMut :: Entry -> Mutability
+isMut (Var _ _ m) = m
+
+
+data Param = Param Loc Id Intent TCType
+    deriving (Show)
+
+-- Convert from an AbsChapel.Form data to Param data
+formToParam :: Form -> Param
+formToParam (Form it (Ident l n) ty) = Param l n it $ tctypeOf ty
+
+-- Convert a Param to an Entry-Var (immutable when ConstIn or ConstRef modality)
+paramToEntry :: Param -> Entry
+paramToEntry (Param l id it ty) = Var l ty $ it==ConstIn || it==ConstRef
 
 
 -- Entry have TCType
 instance TCTypeable Entry where
     tctypeOf x = case x of
-        Var _ t     -> t
+        Var _ t _   -> t
         Const _ t _ -> t
-        Fun _ t     -> t
+        Fun _ _ _ t -> t
+
+-- Param have TCType
+instance TCTypeable Param where
+    tctypeOf (Param _ _ _ t) = t
 
 
 -- Take Just the deepest entry mapped from id (if it exists), otherwise Nothing
@@ -49,8 +69,8 @@ lookType id env = case lookEntry id env of
 -- Take the Ok (Fun ..) from the deepest entry mapped from id (if it exists), otherwise Bad
 lookFun :: Id -> Env -> EM.Err Entry
 lookFun id env = case lookEntry id env of
-    Just f@(Fun _ _) -> return f
-    _                -> EM.Bad "Function not declared."
+    Just f@(Fun _ _ _ _) -> return f
+    _                    -> EM.Bad "Function not declared."
 
 -- Take the Ok (Const ..) from the deepest entry mapped from id (if it exists), otherwise Bad
 lookConst :: Id -> Env -> EM.Err Entry
@@ -59,36 +79,39 @@ lookConst id env = case lookEntry id env of
     _                    -> EM.Bad "Constant not declared."
 
 
--- Add constant to the deepest context given Ident and value.
--- The existance is checked before insertion.
+-- Add a new Entry to the deepest context given Id
+-- The existence is checked before insertion.
+makeEntry :: Env -> (Id, Entry) -> EM.Err Env
+makeEntry env@(c:cs) (id, entry) = let cmap = entryMap c in case M.lookup id cmap of
+    Nothing -> return $
+        let cmap' = M.insert id entry cmap
+        in (Context cmap' (returns c) (inWhile c) (inFor c)) : cs
+    
+    Just x  -> EM.Bad "Error: local name already declared at this scope."
+
+-- Add constant to the deepest context given Ident and Literal value.
+-- The existence is checked before insertion.
 makeConst :: Env -> Ident -> Literal -> EM.Err Env
-makeConst env@(c:cs) (Ident l n) lit = let cmap = entryMap c in case M.lookup n cmap of
-    Nothing -> return $
-        let cmap' = M.insert n (Const l (tctypeOf lit) lit) cmap
-        in (Context cmap' (returns c) (inWhile c) (inFor c)) : cs
-    
-    Just x  -> EM.Bad "Error: local name already declared at this scope."
+makeConst env (Ident l n) lit = makeEntry env (n, Const l (tctypeOf lit) lit)
 
--- Add variable to the deepest context given Ident and TCType.
+-- Add variable to the deepest context given Ident, TCType and mutability.
 -- The existance is checked before insertion.
-makeVar :: Env -> Ident -> TCType -> EM.Err Env
-makeVar env@(c:cs) (Ident l n) t = let cmap = entryMap c in case M.lookup n cmap of
-    Nothing -> return $
-        let cmap' = M.insert n (Var l t) cmap
-        in (Context cmap' (returns c) (inWhile c) (inFor c)) : cs
-    
-    Just x  -> EM.Bad "Error: local name already declared at this scope."
+makeVar :: Mutability -> Env -> Ident -> TCType -> EM.Err Env
+makeVar mut env (Ident l n) t = makeEntry env (n, Var l t mut)
+
+-- Add mutable variable
+makeMutable :: Env -> Ident -> TCType -> EM.Err Env
+makeMutable = makeVar False
+
+-- Add immutable variable
+makeImmutable :: Env -> Ident -> TCType -> EM.Err Env
+makeImmutable = makeVar True
 
 
--- add a function to the deepest contex given  ident parameters return type
+-- add a function to the deepest contex given Ident, [Param], return Intent and return TCType
 -- The existance is checked before insertion
--- TODO finish this function TODO Correct
-makeFun :: Env -> Ident -> Decl -> TCType -> EM.Err Env
-makeFun env@(c:cs) (Ident l n) f t = let cmap = entryMap c in case M.lookup n cmap of
-    Nothing -> return $
-        let cmap' = M.insert n (Var l t) cmap
-        in (Context cmap' (returns c) (inWhile c) (inFor c)) : cs
-    Just x  -> EM.Bad "Error: local name already declared at this scope."
+makeFun :: Env -> Ident -> [Param] -> Intent -> TCType -> EM.Err Env
+makeFun env (Ident l n) ps it rt = makeEntry env (n, Fun l ps it rt)
 
 
 -- Push an empty context on top of the stack
@@ -99,14 +122,18 @@ pushContext env@(c:cs) = (Context mempty (returns c) (inWhile c) (inFor c)) : en
 pushWhile :: Env -> Env
 pushWhile env@(c:cs) = (Context mempty (returns c) True (inFor c)) : env
 
--- Push an emmpty context on top of the stack for a bounded iteration (inWhile = False, inFor = True)
+-- Push an empty context on top of the stack for a bounded iteration (inWhile = False, inFor = True)
 pushFor :: Env -> Env
 pushFor env@(c:cs) = (Context mempty (returns c) False True) : env
+
+-- Push an empty context on top of the stack for a function declaration (returns from input, inWhile = False, inFor = False)
+pushFun :: Env -> TCType -> Env
+pushFun env ret = (Context mempty ret False False) : env
 
 -- Pop context on top of the stack
 popContext :: Env -> Env
 popContext (c:cs) = cs
 
--- Add a for-loop counter (as constant with dummy int value) to the deepest context given Ident
+-- Add a for-loop counter (as immutable integer) to the deepest context given Ident
 makeForCounter :: Env -> Ident -> EM.Err Env
-makeForCounter env@(c:cs) ident = makeConst env ident (LInt 0)
+makeForCounter env@(c:cs) ident = makeImmutable env ident TInt
