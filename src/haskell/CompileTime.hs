@@ -158,31 +158,45 @@ litArith x = case x of
 
 type LiteralComparison = Literal -> Literal -> Maybe Bool
 
-litRel :: (Ord a) => (a -> a -> Bool) -> LiteralComparison
-litRel op = \x y -> case (x, y) of
-    (LBool   a, LBool   b)  -> return $ a `op` b
-    (LChar   a, LChar   b)  -> return $ a `op` b
-    (LInt    a, LInt    b)  -> return $ a `op` b
-    (LReal   a, LReal   b)  -> return $ a `op` b
-    (LString a, LString b)  -> return $ a `op` b
-    _                       -> Nothing
+data LitOrd = LitLT | LitEQ | LitGT | LitNC
+    deriving (Eq, Show)
 
-overload' :: LiteralComparison -> LiteralComparison
-overload' op = \x y -> let t = (tctypeOf x) `supremum` (tctypeOf y) in case t of
-    TBool   -> x `op` y
-    TChar   -> x `op` y
-    TInt    -> (toLInt x) `op` (toLInt y)
-    TReal   -> (toLReal x) `op` (toLReal y)
-    TString -> (toLString x) `op` (toLString y)
-    _       -> Nothing
+toLitOrd :: Ordering -> LitOrd
+toLitOrd x = case x of
+    LT  -> LitLT
+    EQ  -> LitEQ
+    GT  -> LitGT
+
+-- Strict comparison
+strictCompare :: Literal -> Literal -> LitOrd
+strictCompare x y = case (x, y) of
+    (LBool   a, LBool b)    -> toLitOrd $ a `compare` b
+    (LChar   a, LChar b)    -> toLitOrd $ a `compare` b
+    (LInt    a, LInt  b)    -> toLitOrd $ a `compare` b
+    (LReal   a, LReal b)    -> toLitOrd $ a `compare` b
+    (LString a, LString b)  -> toLitOrd $ a `compare` b
+    _                       -> LitNC
 
 
--- Comparison dispatcher
+-- Comparison with type compatibilities
+overloadCompare :: Literal -> Literal -> LitOrd
+overloadCompare x y = case (tctypeOf x) `supremum` (tctypeOf y) of
+    TBool   -> x `strictCompare` y
+    TChar   -> x `strictCompare` y
+    TInt    -> (toLInt x)    `strictCompare` (toLInt y)
+    TReal   -> (toLReal x)   `strictCompare` (toLReal y)
+    TString -> (toLString x) `strictCompare` (toLString y)
+    _       -> LitNC
+
+
+-- Comparison operator dispatcher
 litComp :: CompOp -> LiteralComparison
-litComp x = overload' . litRel $ case x of
-    Lt  -> (<)
-    Leq -> (<=)
-    Eq  -> (==)
-    Neq -> (/=)
-    Geq -> (>=)
-    Gt  -> (>)
+litComp op = \x y -> let rel = x `overloadCompare` y in case rel of
+    LitNC -> Nothing
+    _     -> Just $ case op of
+        Lt  -> rel == LitLT
+        Leq -> rel == LitLT || rel == LitEQ
+        Eq  -> rel == LitEQ
+        Neq -> rel /= LitEQ
+        Geq -> rel /= LitLT
+        Gt  -> rel == LitGT
