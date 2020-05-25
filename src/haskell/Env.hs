@@ -74,6 +74,17 @@ makeVar env@(c:cs) (Ident l n) t = let cmap = entryMap c in case M.lookup n cmap
     Just x  -> EM.Bad "Error: local name already declared at this scope."
 
 
+-- add a function to the deepest contex given  ident parameters return type
+-- The existance is checked before insertion
+-- TODO finish this function TODO Correct
+makeFun :: Env -> Ident -> Decl -> TCType -> EM.Err Env
+makeFun env@(c:cs) (Ident l n) f t = let cmap = entryMap c in case M.lookup n cmap of
+    Nothing -> return $
+        let cmap' = M.insert n (Var l t) cmap
+        in (Context cmap' (returns c) (inWhile c) (inFor c)) : cs
+    Just x  -> EM.Bad "Error: local name already declared at this scope."
+
+
 -- Push an empty context on top of the stack
 pushContext :: Env -> Env
 pushContext env@(c:cs) = (Context mempty (returns c) (inWhile c) (inFor c)) : env
