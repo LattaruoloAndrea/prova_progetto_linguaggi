@@ -101,6 +101,18 @@ inferLExp env lexp = case lexp of
     Name ident  -> lookType (idName ident) env
 
 
+-- INFER EXPRESSIONS WITH ERRORS
+
+checkRExpError :: Env -> RExp -> EM.Err TCType
+checkRExpError env rexp = let t = inferRExp env rexp in case t of
+    (OK t') -> return t'
+    (Bad s) -> (EM.Bad (s ++ ", in the expression " ++ (show rexp)))
+    
+checkLExpError :: Env -> LExp -> EM.Err TCType
+checkLExpError env lexp = let t = inferLExp env lexp in case t of
+    (OK t') -> return t'
+    (Bad s) -> (EM.Bad (s ++ ", in the expression " ++ (show lexp)))
+
 -- CHECK VALIDITY OF STATEMENTS /////////////////////////////////////////////////////////////////////////
 
 checkStm :: Env -> Stm -> EM.Err Env -- To be changed to ET.Err ()
@@ -113,13 +125,13 @@ checkStm env stm = let x = "Dummy" in case stm of -- Dummy x to be deleted once 
 
     PredW pwrite r -> do
         let t = tctypeOf pwrite
-        t' <- inferRExp env r    
+        t' <- checkRExpError env r    
         unless (t' `subtypeOf` t) (EM.Bad $ "Error: type mismatch in a FUNCTION CALL.")
         return env
     
-    Assign l _ r -> do -- @TODO: check that l is non-constant
-        tl <- inferLExp env l
-        tr <- inferRExp env r
+    Assign l _ r -> do -- @TODO: check that l is non-constant (and non-function)
+        tl <- checkLExpError env l
+        tr <- checkRExpError env r
         unless (tr `subtypeOf` tl) (EM.Bad $ "Error: type mismatch in an ASSIGNMENT.")
         return env
 
@@ -128,14 +140,14 @@ checkStm env stm = let x = "Dummy" in case stm of -- Dummy x to be deleted once 
         return env
 
     If r stm -> do
-        tr <- inferRExp env r
+        tr <- checkRExpError env r
         unless (tr == TBool) (EM.Bad $ "Error: expression is not of type bool in the guard of an IF STATEMENT.")
         let thenEnv = pushContext env                   -- Entering the scope of true
         thenEnv' <- checkStm thenEnv stm
         return $ popContext thenEnv'                    -- Exiting the scope of true and return the new env
 
     IfElse r s1 s2 -> do
-        tr <- inferRExp env r
+        tr <- checkRExpError env r
         unless (tr == TBool) (EM.Bad $ "Error: expression is not of type bool in the guard of an IF STATEMENT.")
         let thenEnv = pushContext env                   -- Entering the scope of true
         thenEnv' <- checkStm thenEnv s1
@@ -144,14 +156,14 @@ checkStm env stm = let x = "Dummy" in case stm of -- Dummy x to be deleted once 
         return $ popContext elseEnv'                    -- Exiting the scope of false and return the new env
 
     While r s -> do
-        tr <- inferRExp env r
+        tr <- checkRExpError env r
         unless (tr == TBool) (EM.Bad $ "Error: expression is not of type bool in the guard of a WHILE STATEMENT.")
         let loopEnv = pushWhile env
         exitEnv <- checkStm loopEnv s
         return $ popContext exitEnv
 
     DoWhile s r -> do
-        tr <- inferRExp env r
+        tr <- checkRExpError env r
         unless (tr == TBool) (EM.Bad $ "Error: expression is not of type bool in the guard of a WHILE STATEMENT.")
         let loopEnv = pushWhile env
         exitEnv <- checkStm loopEnv s
@@ -278,7 +290,7 @@ checkJmp env@(c:cs) jmp = case jmp of
         unless (returns c == TVoid) (EM.Bad "cannot return a type different from void in a PROCEDURE")
 
     ReturnE _ r -> do
-        t <- inferRExp env r
+        t <- checkRExpError env r
         let t' = returns c
         when (inFor c || inWhile c) (EM.Bad "Cannot return inside a loop.")
         unless (t `subtypeOf` t') (EM.Bad ("the return type should be " ++ (show t')))
