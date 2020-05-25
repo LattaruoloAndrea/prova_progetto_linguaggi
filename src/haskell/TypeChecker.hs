@@ -196,7 +196,12 @@ checkRange env rng = do
 
 checkDecl :: Env -> Decl -> EM.Err Env
 checkDecl env decl = case decl of
-    FDecl ident forms intent typee block -> checkFDecl env decl
+    FDecl _ _ _ _ _ -> do
+        let params  = map formToParam forms             -- create Params from Forms
+        let entries = map paramToEntry params           -- create EnvEntries from Params
+        env' <- foldM makeEntry env $ zip [id | (Param _ id _ _) <- params] entries  -- fold the entry insertion given the list (id, entry)
+        checkBlock env' blk
+
     CList cs -> do
         foldM checkCDecl env cs
 
@@ -214,67 +219,13 @@ checkCDecl env c@(CDecl id t r) = do
 
 checkVDecl :: Env -> VDecl -> EM.Err Env
 checkVDecl env v = case v of
-    Solo id t   -> makeVar env id (tctypeOf t)
+    Solo id t   -> makeMutable env id (tctypeOf t)
 
     Init id t r -> do
         let tc = tctypeOf t
         tr <- inferRExp env r
         unless (tr `subtypeOf` tc) (EM.Bad "Error: type mismatch in a VAR DECLARATION.")
-        makeVar env id tc
-
--- ///////////////////////////start  made by latta could be bugged as fuck //////
-checkFDecl:: Env -> Decl -> EM.Err Env
-checkFDecl env f = case f of
-    -- TODO cehck if id is a function predefinited then error else ->
-    FDecl id forms i t b -> do
-        let tc = tctypeOf t
-        let tform = fromFormToDecl forms -- create a list with of triple (intent,ident,type) of the form
-        let env1 = pushContext env
-        envGood <- checkDecl env1 tform
-        envGood' <- checkBlock envGood b
-        tr  <- inferBlock envGood' b
-        unless (tr `subtypeOf` tc) (EM.Bad "Error prova.")--(EM.Bad "Error: type mismatch between FUNCTION "++ show(id)++" with type: "++show(tc) ++"and Return type: "++show(tr) ++".")
-        makeFun env id tform tc
-
-takeEnv :: EM.Err Env -> Env
-takeEnv env = case env of
-    EM.Ok e -> e
-
-takeType :: EM.Err TCType -> TCType
-takeType tr = case tr of
-            EM.Ok t -> t
-
-fromFormToDecl :: [Form] -> Decl
--- function needed for the constructor in front
-fromFormToDecl xs = VList (fromFormToDecl2 xs)
-
-fromFormToDecl2 :: [Form] -> [VDecl]
-fromFormToDecl2 [] = []
-fromFormToDecl2 (x:xs) = 
-    case x of
-    Form intent id t -> do
-        let vd = Solo id t 
-        vd:(fromFormToDecl2 xs)
-
-inferBlock:: Env ->Block -> EM.Err TCType
-inferBlock env b = startInferStatements env (stms  b) TError
-
-startInferStatements :: Env ->[Stm] -> TCType -> EM.Err TCType
-startInferStatements env [] t = (EM.Ok t)
-startInferStatements env (x:xs) t = case x of
-    JmpStm p -> do
-        case p of
-            ReturnE _ exp-> do
-                ti <- inferRExp env exp
-                let tp = (if t == TError then ti else t) --first return encounter
-                unless (ti `subtypeOf` tp) (EM.Bad "Error: Returning type") --(EM.Bad "Error: Returning type:"++show(ti) ++" in line"++ show((reLoc exp))++ "is not the one excpected")
-                startInferStatements env xs ti
-            Return _ -> do 
-                let ti = TVoid
-                let tp = (if t == TError then ti else t) --first return encounter
-                unless (ti `subtypeOf` tp) (EM.Bad "Error: Returning type") --(EM.Bad "Error: Returning type:"++show(ti) ++" in line"++ show((reLoc exp))++ "is not the one excpected")
-                startInferStatements env xs ti
--- ///////////////////////////end  made by latta could be bugged as fuck //////
+        makeMutable env id tc
 
 
 -- Returns a literal if r is a compile-time constant expression,
@@ -301,7 +252,6 @@ constexpr env r = case r of
         l2 <- constexpr env r2
         b  <- litComp op l1 l2
         return . LBool $ b
-        --() <- constexpr env r2
 
     Arith _ r1 op r2 -> do
         l1 <- constexpr env r1
@@ -352,12 +302,21 @@ constexprL env lexp = case lexp of
         return lit
 
 
+-- Insert function in the scope (to be used once we enter in a new block to permit mutual-recursion)
+loadFunction :: Env -> Decl -> EM.Err Env
+loadFunction env d = case d of
+    FDecl id forms it ty _  ->
+        let params = map formToParam forms      -- formToParam is in Env.hs
+        in makeFun env id params it $ tctypeOf ty
+    
+    _                       -> return env
 
 checkBlock :: Env -> Block -> EM.Err Env
 checkBlock env block = do
     let env1 = pushContext env
-    env2 <- foldM checkDecl env1 (decls block)
-    env3 <- foldM checkStm  env2 (stms  block)
+    env2 <- foldM loadFunction env1 (decls block)
+    env3 <- foldM checkDecl env2 (decls block)
+    env4 <- foldM checkStm  env3 (stms  block)
     return $ popContext env3
 
 
