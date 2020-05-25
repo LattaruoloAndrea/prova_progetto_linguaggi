@@ -9,7 +9,7 @@ proc nyFunction(x:int, y:real) : real {
   var x:int = 0;
 
   while myBool {
-    if counter == x then myBool = True;
+    if counter == x then myBool = true;
     readInt(myInt[counter]);
     counter+=1;
   }

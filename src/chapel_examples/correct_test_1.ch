@@ -13,7 +13,9 @@ param myConstInt: int = -1000;
 param myConstReal: real = 9.876; 
 param myConstBool: bool = false;
 param myConstChar: char = 'a';
-param myyConstVoid: void = "No";
+param myyConstVoid: string = "No";
 param myConstStr: string = "Some string..."; 
 param myConstInit: real = 1.5;
 param myConstRealVar: real = -1.234;
+
+param weird: [5]int = [1,2,3,4, myConstInt*5];
