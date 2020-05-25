@@ -5,9 +5,12 @@ import TCType
 import TCInstances
 import Locatable
 import Env
-import Control.Monad (unless, when, foldM)
+import Control.Monad (guard, unless, when, foldM)
 import qualified ErrM as EM
 import qualified ErrT as ET
+import CompileTime
+import qualified Data.Map.Lazy as M
+import Data.Char
 
 -- Copied from Skel --------------------------------------
 type Result a = EM.Err a
@@ -46,14 +49,14 @@ inferRExp env rexp = case rexp of
         t1 <- inferRExp env r1
         t2 <- inferRExp env r2
         let t = supremum t1 t2
-        when (t == TError) (EM.Bad ("Error at line " ++ (show (linOf r)) ++ "operands " ++ (show r1) ++ " (type: " ++ (show t1) ++ ") and " ++ (show r2) ++ " (type: " ++ (show t2) ++ ") are not compatible in a COMPARISON expression"))
+        when (t == TError) (EM.Bad ("Error at line " ++ (show (linOf r1)) ++ "operands " ++ (show r1) ++ " (type: " ++ (show t1) ++ ") and " ++ (show r2) ++ " (type: " ++ (show t2) ++ ") are not compatible in a COMPARISON expression"))
         return TBool
 
     Arith _ r1 _ r2 -> do
         t1 <- inferRExp env r1
         t2 <- inferRExp env r2
         let t = supremum t1 t2
-        when (t == TError) (EM.Bad ("Error at line " ++ (show (linOf r)) ++ "operands " ++ (show r1) ++ " (type: " ++ (show t1) ++ ") and " ++ (show r2) ++ " (type: " ++ (show t2) ++ ") are not compatible in an ARITHMETIC expression"))
+        when (t == TError) (EM.Bad ("Error at line " ++ (show (linOf r1)) ++ "operands " ++ (show r1) ++ " (type: " ++ (show t1) ++ ") and " ++ (show r2) ++ " (type: " ++ (show t2) ++ ") are not compatible in an ARITHMETIC expression"))
         return t
 
     Sign _ _ r -> inferRExp env r
@@ -67,10 +70,10 @@ inferRExp env rexp = case rexp of
         return t
     
     ArrList _ rs -> case rs of
-        [] -> EM.Bad ("Error at line " ++ (show (linOf rs)) ++ ": empty array initializer")
+        [] -> EM.Bad ("Error at line " ++ (show (linOf rexp)) ++ ": empty array initializer")
         _  -> do
             t <- foldl1 supremumM $ map (inferRExp env) rs
-            when (t == TError) (EM.Bad ("Error at line " ++ (show (linOf rs)) ++ ": types in the array initializer " ++ (show rs) ++ " are not compatible"))
+            when (t == TError) (EM.Bad ("Error at line " ++ (show (linOf rexp)) ++ ": types in the array initializer " ++ (show rs) ++ " are not compatible"))
             return $ TArr (length rs) t
     
     FCall _ ident rs -> lookType (idName ident) env -- @TODO: check right numbers and types of rs
@@ -193,7 +196,7 @@ checkRange env rng = do
 
 checkDecl :: Env -> Decl -> EM.Err Env
 checkDecl env decl = case decl of
-    FDecl ident forms intent typee block -> checkFDecl decl
+    FDecl ident forms intent typee block -> checkFDecl env decl
     CList cs -> do
         foldM checkCDecl env cs
 
@@ -202,7 +205,7 @@ checkDecl env decl = case decl of
 
 
 checkCDecl :: Env -> CDecl -> EM.Err Env
-checkCDecl env c@(id, t, r) = do
+checkCDecl env c@(CDecl id t r) = do
     inferRExp env r                 -- Error purpose: check that r is well-typed
     case constexpr env r of
         Nothing -> (EM.Bad "Error: the expression is not a const-expression in a CONST DECLARATION.")
@@ -280,50 +283,75 @@ startInferStatements env (x:xs) t = case x of
 constexpr :: Env -> RExp -> Maybe Literal
 constexpr env r = case r of
     Or _ r1 r2 -> do
-        (LBool l1) <- constexpr env r1
-        (LBool l2) <- constexpr env r2
-        return $ l1 || l2
+        (LBool b1) <- constexpr env r1
+        (LBool b2) <- constexpr env r2
+        return . LBool $ b1 || b2
 
     And _ r1 r2 -> do
-        (LBool l1) <- constexpr env r1
-        (LBool l2) <- constexpr env r2
-        return $ l1 && l2
+        (LBool b1) <- constexpr env r1
+        (LBool b2) <- constexpr env r2
+        return . LBool $ b1 && b2
     
     Not _ r -> do
-        (LBool l) <- constexpr env r
-        return $ not l
+        (LBool b) <- constexpr env r
+        return . LBool $ not b
         
-    Comp _ r1 _ r2 -> do
-        (LBool l1) <- constexpr env r1
-        return $ not l1
+    Comp _ r1 op r2 -> do
+        l1 <- constexpr env r1
+        l2 <- constexpr env r2
+        b  <- litComp op l1 l2
+        return . LBool $ b
         --() <- constexpr env r2
 
-    Arith _ r1 _ r2 -> do
-        t1 <- inferRExp env r1
-        t2 <- inferRExp env r2
-        let t = supremum t1 t2
-        when (t == TError) (EM.Bad ("operands " ++ (show r1) ++ " (type: " ++ (show t1) ++ ") and " ++ (show r2) ++ " (type: " ++ (show t2) ++ ") are not compatible in an ARITHMETIC expression"))
-        return t
+    Arith _ r1 op r2 -> do
+        l1 <- constexpr env r1
+        l2 <- constexpr env r2
+        litArith op l1 l2
 
-    Sign _ _ r -> inferRExp env r
+    Sign _ Pos r -> constexpr env r
 
-    RefE _ l -> do
-        t <- inferLExp env l
-        return $ TPoint t
+    Sign _ Neg r -> do
+        l <- constexpr env r
+        case l of
+            LChar a -> return . LInt . toInteger $ -(ord a)
+            LInt  a -> return . LInt $ -a
+            LReal a -> return . LReal $ -a
+            _       -> Nothing
 
-    RLExp _ l -> inferLExp env l
+    RLExp _ l -> constexprL env l
     
-    ArrList _ rs -> case rs of
-        [] -> EM.Bad "empty array initializer"
-        _  -> do
-            t <- foldl1 supremumM $ map (inferRExp env) rs
-            when (t == TError) (EM.Bad ("types in the array initializer " ++ (show rs) ++ " are not compatible"))
-            return $ TArr (length rs) t
-    
-    FCall _ ident rs -> lookType (idName ident) env -- @TODO: check right numbers and types of rs
+    ArrList _ rs -> do
+        let lits = map (constexpr env) rs                -- take list of Maybe literals recursively
+        let t    = foldl1 supremum $ map tctypeOf lits   -- take unifier type
+        guard (t /= TError)                              -- safety check
 
-    PredR _ pread -> return $ tctypeOf pread
+        let conv = case t of                             -- select coercion function based on more general type in lits
+                    TInt    -> toLInt
+                    TReal   -> toLReal
+                    TString -> toLString
+                    _       -> id
+
+        return $ LArr [ conv x | (Just x) <- lits ]
+
     Lit _ lit   -> Just lit
+
+    _ -> Nothing
+
+
+constexprL :: Env -> LExp -> Maybe Literal
+constexprL env lexp = case lexp of
+    Deref l     -> Nothing
+
+    Access l r  -> do
+        arr <- constexprL env l     -- take literal array
+        i <- constexpr env r        -- take literal index
+        litAccess arr i             -- return the accessed value
+
+    Name ident  -> do
+        (Const _ _ lit) <- EM.errToMaybe $ lookConst (idName ident) env
+        return lit
+
+
 
 checkBlock :: Env -> Block -> EM.Err Env
 checkBlock env block = do
