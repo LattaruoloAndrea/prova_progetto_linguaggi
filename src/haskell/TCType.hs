@@ -57,7 +57,7 @@ x `compare'` y = if x == y
 
 -- S `subtypeOf` T means that S can be coerced to T
 subtypeOf :: TCType -> TCType -> Bool
-s `subtypeOf` t = s `compare'` t == TLess
+s `subtypeOf` t = let st = s `compare'` t in st == TLess || st == TEqual
 
 
 -- Name from lattice-theory (perché fa figo ovviamente)

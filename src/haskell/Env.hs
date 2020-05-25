@@ -63,20 +63,20 @@ head' (x:xs)    = Just x
 -- Take the Ok TCType from the deepest entry mapped from id (if it exists), otherwise Bad
 lookType :: Id -> Env -> EM.Err TCType
 lookType id env = case lookEntry id env of
-    Nothing -> EM.Bad "Name not declared."
+    Nothing -> EM.Bad $ "Name " ++ id ++ " not declared."
     Just x  -> return $ tctypeOf x
 
 -- Take the Ok (Fun ..) from the deepest entry mapped from id (if it exists), otherwise Bad
 lookFun :: Id -> Env -> EM.Err Entry
 lookFun id env = case lookEntry id env of
     Just f@(Fun _ _ _ _) -> return f
-    _                    -> EM.Bad "Function not declared."
+    _                    -> EM.Bad $ "Function " ++ id ++ " not declared."
 
 -- Take the Ok (Const ..) from the deepest entry mapped from id (if it exists), otherwise Bad
 lookConst :: Id -> Env -> EM.Err Entry
 lookConst id env = case lookEntry id env of
     Just c@(Const _ _ _) -> return c
-    _                    -> EM.Bad "Constant not declared."
+    _                    -> EM.Bad $ "Constant " ++ id ++ " not declared."
 
 
 -- Add a new Entry to the deepest context given Id
@@ -87,7 +87,7 @@ makeEntry env@(c:cs) (id, entry) = let cmap = entryMap c in case M.lookup id cma
         let cmap' = M.insert id entry cmap
         in (Context cmap' (returns c) (inWhile c) (inFor c)) : cs
     
-    Just x  -> EM.Bad "Error: local name already declared at this scope."
+    Just x  -> EM.Bad $ "Error: local name " ++ id ++ " already declared at this scope."
 
 -- Add constant to the deepest context given Ident and Literal value.
 -- The existence is checked before insertion.
