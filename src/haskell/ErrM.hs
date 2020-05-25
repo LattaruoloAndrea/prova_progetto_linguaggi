@@ -8,6 +8,11 @@ module ErrM where
 
 import Control.Monad (MonadPlus(..), liftM)
 import Control.Applicative (Applicative(..), Alternative(..))
+import Data.Maybe
+
+errToMaybe :: Err a -> Maybe a
+errToMaybe (Ok x)   = Just x
+errToMaybe (Bad _)  = Nothing
 
 data Err a = Ok a | Bad String
   deriving (Read, Show, Eq, Ord)
