@@ -1,6 +1,7 @@
 module Locatable where
 
 import AbsChapel
+import Env
 
 -- Class to retrieve the location information (AbsChapel.Loc) from a
 
@@ -80,3 +81,13 @@ instance Locatable Stm where
         DoWhile _ rexp  -> locOf rexp
         For id _ _      -> locOf id
         JmpStm jmp      -> locOf jmp
+
+
+instance Locatable Entry where
+    locOf x = case x of
+        Var l _ _   -> l
+        Const l _ _ -> l
+        Fun l _ _ _ -> l
+
+instance Locatable Param where
+    locOf (Param l _ _ _) = l
