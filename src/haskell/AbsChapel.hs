@@ -145,4 +145,5 @@ data Literal
     | LInt Integer
     | LReal Double
     | LString String
+    | LArr [Literal]
   deriving (Eq, Ord, Show, Read)
