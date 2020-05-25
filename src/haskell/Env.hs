@@ -52,13 +52,19 @@ lookFun id env = case lookEntry id env of
     Just f@(Fun _ _) -> return f
     _                -> EM.Bad "Function not declared."
 
+-- Take the Ok (Const ..) from the deepest entry mapped from id (if it exists), otherwise Bad
+lookConst :: Id -> Env -> EM.Err Entry
+lookConst id env = case lookEntry id env of
+    Just c@(Const _ _ _) -> return c
+    _                    -> EM.Bad "Constant not declared."
+
 
 -- Add constant to the deepest context given Ident and value.
 -- The existance is checked before insertion.
 makeConst :: Env -> Ident -> Literal -> EM.Err Env
 makeConst env@(c:cs) (Ident l n) lit = let cmap = entryMap c in case M.lookup n cmap of
     Nothing -> return $
-        let cmap' = M.insert n (Const (tctypeOf lit) lit) cmap
+        let cmap' = M.insert n (Const l (tctypeOf lit) lit) cmap
         in (Context cmap' (returns c) (inWhile c) (inFor c)) : cs
     
     Just x  -> EM.Bad "Error: local name already declared at this scope."
