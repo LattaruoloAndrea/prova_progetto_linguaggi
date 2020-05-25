@@ -19,7 +19,27 @@ failure :: Show a => a -> Result b
 failure x = EM.Bad $ "Undefined case: " ++ show x
 ----------------------------------------------------------
 
+predList :: [(String, Entry)]
+predList = [
+    ("readChar",    Fun (Loc 0 0) [] In TChar),
+    ("readInt",     Fun (Loc 0 0) [] In TInt),
+    ("readReal",    Fun (Loc 0 0) [] In TReal),
+    ("readString",  Fun (Loc 0 0) [] In TString),
+    ("writeChar",   Fun (Loc 0 0) [Param (Loc 0 1) "x" In TChar] In TVoid),
+    ("writeInt",    Fun (Loc 0 0) [Param (Loc 0 1) "x" In TInt] In TVoid),
+    ("writeReal",   Fun (Loc 0 0) [Param (Loc 0 1) "x" In TReal] In TVoid),
+    ("writeString", Fun (Loc 0 0) [Param (Loc 0 1) "x" In TString] In TVoid)]
 
+startEnv :: Env
+startEnv = [Context (M.fromList predList) TVoid False False]
+
+typeCheck :: Program -> EM.Err Env
+typeCheck = checkProgram startEnv
+
+checkProgram :: Env -> Program -> EM.Err Env
+checkProgram env (Prog decls) = do
+    env1 <- foldM loadFunction env decls
+    foldM checkDecl env1 decls
 
 
 -- INFER RIGHT EXPRESSIONS //////////////////////////////////////////////////////////////////////////////
@@ -196,11 +216,14 @@ checkRange env rng = do
 
 checkDecl :: Env -> Decl -> EM.Err Env
 checkDecl env decl = case decl of
-    FDecl _ _ _ _ _ -> do
+    FDecl id forms it ty blk -> do
         let params  = map formToParam forms             -- create Params from Forms
         let entries = map paramToEntry params           -- create EnvEntries from Params
-        env' <- foldM makeEntry env $ zip [id | (Param _ id _ _) <- params] entries  -- fold the entry insertion given the list (id, entry)
-        checkBlock env' blk
+        let env1    = pushFun env $ tctypeOf ty
+        unless (it==In || it==Ref) (EM.Bad "Return intent must be In or Ref.")
+        env2 <- foldM makeEntry env1 $ zip [id | (Param _ id _ _) <- params] entries  -- fold the entry insertion given the list (id, entry)
+        env3 <- checkBlock env2 blk
+        return $ popContext env3
 
     CList cs -> do
         foldM checkCDecl env cs
@@ -211,10 +234,13 @@ checkDecl env decl = case decl of
 
 checkCDecl :: Env -> CDecl -> EM.Err Env
 checkCDecl env c@(CDecl id t r) = do
-    inferRExp env r                 -- Error purpose: check that r is well-typed
+    tr <- inferRExp env r                 -- Error purpose: check that r is well-typed
+    unless (tr `subtypeOf` (tctypeOf t)) (EM.Bad $ "Error: type mismatch in a CONST DECLARATION at line " ++ (show $ locOf id) ++ ".")
     case constexpr env r of
         Nothing -> (EM.Bad "Error: the expression is not a const-expression in a CONST DECLARATION.")
-        Just x  -> makeConst env id x
+        Just x  -> do
+
+            makeConst env id x
 
 
 checkVDecl :: Env -> VDecl -> EM.Err Env
