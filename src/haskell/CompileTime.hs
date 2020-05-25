@@ -1,8 +1,10 @@
 module CompileTime where
 
-import AbsChapel (Literal(..))
+import AbsChapel
 import Data.Maybe
 import Data.Char -- ord, chr
+import TCType
+import TCInstances
 
 -- Literal coercions /////////////////////////////////////////////////////////////
 
@@ -137,3 +139,50 @@ i@(LInt a) `litMod` x = case x of
     _           -> Nothing
 
 _ `litMod` _ = Nothing -- undefined for non integer operands
+
+
+-- Arithmetic dispatcher
+
+litArith :: ArithOp -> LiteralOperator
+litArith x = case x of
+    Add -> litAdd
+    Sub -> litSub
+    Mul -> litMul
+    Div -> litDiv
+    Mod -> litMod
+    Pow -> litPow
+
+
+
+-- COMPARISON OPERATORS ////////////////////////////////////////////////////////////////
+
+type LiteralComparison = Literal -> Literal -> Maybe Bool
+
+litRel :: (Ord a) => (a -> a -> Bool) -> LiteralComparison
+litRel op = \x y -> case (x, y) of
+    (LBool   a, LBool   b)  -> return $ a `op` b
+    (LChar   a, LChar   b)  -> return $ a `op` b
+    (LInt    a, LInt    b)  -> return $ a `op` b
+    (LReal   a, LReal   b)  -> return $ a `op` b
+    (LString a, LString b)  -> return $ a `op` b
+    _                       -> Nothing
+
+overload' :: LiteralComparison -> LiteralComparison
+overload' op = \x y -> let t = (tctypeOf x) `supremum` (tctypeOf y) in case t of
+    TBool   -> x `op` y
+    TChar   -> x `op` y
+    TInt    -> (toLInt x) `op` (toLInt y)
+    TReal   -> (toLReal x) `op` (toLReal y)
+    TString -> (toLString x) `op` (toLString y)
+    _       -> Nothing
+
+
+-- Comparison dispatcher
+litComp :: CompOp -> LiteralComparison
+litComp x = overload' . litRel $ case x of
+    Lt  -> (<)
+    Leq -> (<=)
+    Eq  -> (==)
+    Neq -> (/=)
+    Geq -> (>=)
+    Gt  -> (>)
