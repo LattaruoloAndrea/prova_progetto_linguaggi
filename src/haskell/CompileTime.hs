@@ -5,6 +5,8 @@ import Data.Maybe
 import Data.Char -- ord, chr
 import TCType
 import TCInstances
+import Control.Monad (guard)
+
 
 -- Literal coercions /////////////////////////////////////////////////////////////
 
@@ -200,3 +202,16 @@ litComp op = \x y -> let rel = x `overloadCompare` y in case rel of
         Neq -> rel /= LitEQ
         Geq -> rel /= LitLT
         Gt  -> rel == LitGT
+
+
+
+-- ARRAY ACCESS ///////////////////////////////////////////////////////////////////////
+
+-- Access element at position i in an array of Literals
+-- (Precondition) i must have tctype <= TInt
+litAccess :: Literal -> Literal -> Maybe Literal
+litAccess arr@(LArr lits) i = do
+    let (LInt i') = toLInt i
+    guard (i' < (toInteger . length $ lits))
+    guard (0 <= i')
+    return $ lits !! (fromInteger i')
