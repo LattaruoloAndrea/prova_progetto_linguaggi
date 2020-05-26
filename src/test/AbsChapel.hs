@@ -4,7 +4,10 @@
 module AbsChapel where
 
 data Loc = Loc { line, column :: Int }
-  deriving (Eq, Ord, Show, Read)
+  deriving (Eq, Ord, Read)
+
+instance Show Loc where
+  show l = "(" ++ (show $ line l) ++ "," ++ (show $ column l) ++ ")"
 
 data Ident = Ident {idLoc :: Loc, idName :: String}
   deriving (Eq, Ord, Show, Read)
