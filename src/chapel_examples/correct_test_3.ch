@@ -3,12 +3,12 @@ proc fibonacci(n : int) : int {
   return fibonacci(n-1) + fibonacci(n-2);
 }
 
-proc addThree(in n:int) out:int{
+proc addThree(in n:int) in:int{
   param p: int = 5;
   return n + 3+p;
 }
 
-proc doublePrint(inout thing:string) out: string {
+proc doublePrint(inout thing:string) in: string {
   var p: int = 5;
   return thing + thing;
 }

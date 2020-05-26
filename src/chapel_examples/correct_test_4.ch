@@ -12,12 +12,12 @@ proc fibonacci(n : int) : int {
 var myReal: [myConst]real = [9.876,9.876,9.876]; 
 var myBool: [2]bool = [true,false];
 
-proc addThree(in n:int) out:int{
+proc addThree(in n:int) in:int{
   param p: int = 5;
   return n + 3+p;
 }
 
-proc doublePrint(inout thing:string) out: string {
+proc doublePrint(inout thing:string) in: string {
   var p: int = 5;
   param myConst: int = 3;
   var myInt: [5]int = [1,2,3,4,5]; 
@@ -29,7 +29,7 @@ proc defaultsProc(in x: int,ref y: real): real {
 }
 
 var myyVoid: *void;
-var myyVoidTwo: ***void = 10^2^2^2;
+//var myyVoidTwo: ***void = 10^2^2^2;
 
 proc sumProc( x: int, y: real): real {
   return x+y;
