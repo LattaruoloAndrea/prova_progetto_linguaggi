@@ -6,6 +6,8 @@ import Data.Char -- ord, chr
 import TCType
 import TCInstances
 import Control.Monad (guard)
+import Env
+import qualified ErrM as EM
 
 
 -- Literal coercions /////////////////////////////////////////////////////////////
@@ -215,3 +217,79 @@ litAccess arr@(LArr lits) i = do
     guard (i' < (toInteger . length $ lits))
     guard (0 <= i')
     return $ lits !! (fromInteger i')
+
+
+-- CONSTEXPR //////////////////////////////////////////////////////////////////////////
+
+-- Returns a literal if r is a compile-time constant expression,
+-- Nothing otherwise.
+-- (Precondition): r is semantically correct
+constexpr :: Env -> RExp -> Maybe Literal
+constexpr env r = case r of
+    Or _ r1 r2 -> do
+        (LBool b1) <- constexpr env r1
+        (LBool b2) <- constexpr env r2
+        return . LBool $ b1 || b2
+
+    And _ r1 r2 -> do
+        (LBool b1) <- constexpr env r1
+        (LBool b2) <- constexpr env r2
+        return . LBool $ b1 && b2
+    
+    Not _ r -> do
+        (LBool b) <- constexpr env r
+        return . LBool $ not b
+        
+    Comp _ r1 op r2 -> do
+        l1 <- constexpr env r1
+        l2 <- constexpr env r2
+        b  <- litComp op l1 l2
+        return . LBool $ b
+
+    Arith _ r1 op r2 -> do
+        l1 <- constexpr env r1
+        l2 <- constexpr env r2
+        litArith op l1 l2
+
+    Sign _ Pos r -> constexpr env r
+
+    Sign _ Neg r -> do
+        l <- constexpr env r
+        case l of
+            LChar a -> return . LInt . toInteger $ -(ord a)
+            LInt  a -> return . LInt $ -a
+            LReal a -> return . LReal $ -a
+            _       -> Nothing
+
+    RLExp _ l -> constexprL env l
+    
+    ArrList _ rs -> do
+        let lits = map (constexpr env) rs                -- take list of Maybe literals recursively
+        let t    = foldl1 supremum $ map tctypeOf lits   -- take unifier type
+        guard (t /= TError)                              -- safety check
+
+        let conv = case t of                             -- select coercion function based on more general type in lits
+                    TInt    -> toLInt
+                    TReal   -> toLReal
+                    TString -> toLString
+                    _       -> id
+
+        return $ LArr [ conv x | (Just x) <- lits ]
+
+    Lit _ lit   -> Just lit
+
+    _ -> Nothing
+
+
+constexprL :: Env -> LExp -> Maybe Literal
+constexprL env lexp = case lexp of
+    Deref l     -> Nothing
+
+    Access l r  -> do
+        arr <- constexprL env l     -- take literal array
+        i <- constexpr env r        -- take literal index
+        litAccess arr i             -- return the accessed value
+
+    Name ident  -> do
+        (Const _ _ lit) <- EM.errToMaybe $ lookConst ident env
+        return lit
