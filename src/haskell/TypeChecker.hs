@@ -12,6 +12,7 @@ import CompileTime
 import qualified Data.Map.Lazy as M
 import Data.Char
 import ErrorHandling
+import PrintChapel
 
 -- Copied from Skel --------------------------------------
 type Result a = EM.Err a
@@ -128,14 +129,10 @@ inferLExp env lexp = case lexp of
 -- INFER EXPRESSIONS WITH ERRORS
 
 checkRExpError :: Env -> RExp -> EM.Err TCType
-checkRExpError env rexp = let t = inferRExp env rexp in case t of
-    (EM.Ok t') -> return t'
-    (EM.Bad s) -> (EM.Bad (s ++ ", in the expression " ++ (show rexp)))
+checkRExpError = checkExpError inferRExp
     
 checkLExpError :: Env -> LExp -> EM.Err TCType
-checkLExpError env lexp = let t = inferLExp env lexp in case t of
-    (EM.Ok t') -> return t'
-    (EM.Bad s) -> (EM.Bad (s ++ ", in the expression " ++ (show lexp)))
+checkLExpError = checkExpError inferLExp
 
 -- CHECK VALIDITY OF STATEMENTS /////////////////////////////////////////////////////////////////////////
 
@@ -211,8 +208,8 @@ checkRange :: Env -> Range -> EM.Err Env
 checkRange env rng = do
     ts <- inferRExp env $ start rng
     te <- inferRExp env $ end   rng
-    unless (ts `subtypeOf` TInt) (EM.Bad "Error: START of a RANGE is not subtype of int.")
-    unless (ts `subtypeOf` TInt) (EM.Bad "Error: END of a RANGE is not subtype of int.")
+    unless (ts `subtypeOf` TInt) $ errorRangeStart (locOf rng) (start rng) ts
+    unless (te `subtypeOf` TInt) $ errorRangeEnd (locOf rng) (end rng) te
     return env
 
 checkDecl :: Env -> Decl -> EM.Err Env
