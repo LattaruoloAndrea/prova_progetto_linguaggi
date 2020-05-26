@@ -12,6 +12,7 @@ import CompileTime
 import qualified Data.Map.Lazy as M
 import Data.Char
 import ErrorHandling
+import PrintChapel
 
 -- Copied from Skel --------------------------------------
 type Result a = EM.Err a
@@ -130,12 +131,12 @@ inferLExp env lexp = case lexp of
 checkRExpError :: Env -> RExp -> EM.Err TCType
 checkRExpError env rexp = let t = inferRExp env rexp in case t of
     (EM.Ok t') -> return t'
-    (EM.Bad s) -> (EM.Bad (s ++ ", in the expression " ++ (show rexp)))
+    (EM.Bad s) -> EM.Bad $ s ++ "\n\tIn the expression '" ++ (printTree rexp) ++ "'."
     
 checkLExpError :: Env -> LExp -> EM.Err TCType
 checkLExpError env lexp = let t = inferLExp env lexp in case t of
     (EM.Ok t') -> return t'
-    (EM.Bad s) -> (EM.Bad (s ++ ", in the expression " ++ (show lexp)))
+    (EM.Bad s) -> EM.Bad $ s ++ "\n\tIn the expression '" ++ (printTree lexp) ++ "'."
 
 -- CHECK VALIDITY OF STATEMENTS /////////////////////////////////////////////////////////////////////////
 
