@@ -8,6 +8,14 @@ import Locatable
 import PrintChapel
 
 
+showLim :: (Show a) => a -> String
+showLim a = 
+    let s = show a
+        s' = take 10 s
+    in (s'++) $ if (length s) > 10
+        then "..."
+        else ""
+
 
 whenT :: a -> Bool -> EM.Err a -> ET.ErrT a
 whenT a g v = 
@@ -20,13 +28,13 @@ unlessT a g v = whenT a (not g) v
 
 
 badLoc :: Loc -> String -> EM.Err a
-badLoc loc reason = EM.Bad $ (show loc) ++ ": Error! " ++ reason ++ "."
+badLoc loc reason = EM.Bad $ (showLim loc) ++ ": Error! " ++ reason ++ "."
 
 
 
 errorLogicOperand :: String -> RExp -> TCType -> EM.Err a
 errorLogicOperand op r t =
-    badLoc (locOf r) $ "The operand " ++ (printTree r) ++ " in a " ++ op ++ " expression should have type bool, instead has type " ++ (show t)
+    badLoc (locOf r) $ "The operand " ++ (printTree r) ++ " in a " ++ op ++ " expression should have type bool, instead has type " ++ (showLim t)
 
 errorOr :: RExp -> TCType -> EM.Err a
 errorOr = errorLogicOperand "OR"
@@ -41,7 +49,7 @@ errorNot = errorLogicOperand "NOT"
 
 errorBinary :: (Show a) => a -> RExp -> RExp -> TCType -> TCType -> EM.Err b
 errorBinary op r1 r2 t1 t2 =
-    badLoc (locOf r1) $ "Operands " ++ (printTree r1) ++ " (type: " ++ (show t1) ++ ") and " ++ (printTree r2) ++ " (type: " ++ (show t2) ++ ") are not compatible in a " ++ (show op) ++ " expression"
+    badLoc (locOf r1) $ "Operands " ++ (printTree r1) ++ " (type: " ++ (showLim t1) ++ ") and " ++ (printTree r2) ++ " (type: " ++ (showLim t2) ++ ") are not compatible in a " ++ (showLim op) ++ " expression"
 
 
 
@@ -75,24 +83,24 @@ errorNameDoesNotExist (Ident loc id) =
 
 errorNameAlreadyDeclared :: Ident -> Loc -> EM.Err a
 errorNameAlreadyDeclared (Ident loc id) whr =
-    badLoc loc $ "Name '" ++ id ++ "' already declared at (" ++ (show whr) ++ ")"
+    badLoc loc $ "Name '" ++ id ++ "' already declared at (" ++ (showLim whr) ++ ")"
 
 
 
 errorRangeStart :: Loc -> RExp -> TCType -> EM.Err a
 errorRangeStart loc st t =
-    badLoc loc $ "Start of range '" ++ (printTree st) ++ "' should be of type int, instead have type " ++ (show t)
+    badLoc loc $ "Start of range '" ++ (printTree st) ++ "' should be of type int, instead have type " ++ (showLim t)
 
 errorRangeEnd :: Loc -> RExp -> TCType -> EM.Err a
 errorRangeEnd loc en t =
-    badLoc loc $ "End of range '" ++ (printTree en) ++ "' should be of type int, instead have type " ++ (show t)
+    badLoc loc $ "End of range '" ++ (printTree en) ++ "' should be of type int, instead have type " ++ (showLim t)
 
 
 
 
 errorDeclTypeMismatch :: String -> Ident -> TCType -> TCType -> EM.Err a
 errorDeclTypeMismatch kind id td tr = 
-    badLoc (locOf id) $ "Type mismatch in a " ++ kind ++ " DECLARATION. '" ++ (idName id) ++ "' should have type " ++ (show tr) ++ ", instead has type " ++ (show td)
+    badLoc (locOf id) $ "Type mismatch in a " ++ kind ++ " DECLARATION. '" ++ (idName id) ++ "' should have type " ++ (showLim tr) ++ ", instead has type " ++ (showLim td)
 
 errorConstTypeMismatch :: Ident -> TCType -> TCType -> EM.Err a
 errorConstTypeMismatch = errorDeclTypeMismatch "CONST"
@@ -112,11 +120,11 @@ errorReturnLoop loc =
 
 errorReturnProcedure :: Loc -> TCType -> EM.Err a
 errorReturnProcedure loc t =
-    badLoc loc $ "Missing expression in a 'return' statement: expected type " ++ (show t)
+    badLoc loc $ "Missing expression in a 'return' statement: expected type " ++ (showLim t)
 
 errorReturnTypeMismatch :: Loc -> TCType -> TCType -> EM.Err a
 errorReturnTypeMismatch loc t tr =
-    badLoc loc $ "Type mismatch in a 'return' statement: expected type " ++ (show tr) ++ ", found " ++ (show t)
+    badLoc loc $ "Type mismatch in a 'return' statement: expected type " ++ (showLim tr) ++ ", found " ++ (showLim t)
 
 errorReturnIntent :: Loc -> Intent -> EM.Err a
 errorReturnIntent loc it =
@@ -149,7 +157,7 @@ errorContinueOutside = errorOutside "continue"
 
 errorGuard :: RExp -> TCType -> EM.Err a
 errorGuard r t =
-    badLoc (locOf r) $ "Type mismatch in a guard. Expected type bool, found " ++ (show t)
+    badLoc (locOf r) $ "Type mismatch in a guard. Expected type bool, found " ++ (showLim t)
 
 
 

@@ -15,12 +15,26 @@ data TCType
     | TPoint TCType                         -- Pointer to
     | TArr Int TCType                       -- Array Dim Type
     | TFun TCType Intent [(TCType, Intent)] -- Function RetType RetIntent [(ArgType, ArgIntent)]
-    deriving (Eq, Show)
+    deriving (Eq)
 
 
 -- extract a tctype from other data types
 class TCTypeable a where
     tctypeOf :: a -> TCType
+
+
+instance Show TCType where
+    show t = case t of
+        TError      -> "error_type"
+        TVoid       -> "void"
+        TBool       -> "bool"
+        TChar       -> "char"
+        TInt        -> "int"
+        TReal       -> "real"
+        TString     -> "string"
+        TPoint t'   -> ("*"++) $ show t'
+        TArr d t'   -> (("[" ++ (show d) ++ "]")++) $ show t'
+        TFun _ _ _  -> "function"
 
 
 -- Poset structure of TCType
