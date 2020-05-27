@@ -29,9 +29,41 @@ data Entry
 
 isMut :: Entry -> Mutability
 isMut (Var _ _ m)   = m
-isMut (Const _ _ _) = True
+isMut (Const _ _ _) = False
+isMut (Fun _ _ _ _) = True  -- The check for mutability of functions does not have much sense
+                            -- it is assumed mutable for a practical reason on simplifying error
+                            -- check on assignments
 
--- isMutable :: Env -> LExp -> Mutability
+
+isFun :: Entry -> Bool
+isFun (Fun _ _ _ _) = True
+isFun _             = False
+
+
+-- Returns the mutability of an LExp
+-- If the entry does not exist, it is assumed to be mutable
+-- (although it would be better to check the existence first)
+isMutable :: Env -> LExp -> Mutability
+isMutable env l = case l of
+    Deref l     -> isMutable env l
+
+    Access l _  -> isMutable env l
+
+    Name ident  -> case lookEntry ident env of
+        Just entry  -> isMut entry
+        _           -> False
+
+
+-- Returns True if a name is a function in the current environment
+-- If the name is a Const or Var, False
+-- Otherwise, if the name is not defined it is assumed True (for ease of error-checking)
+isFunction :: Env -> LExp -> Bool
+isFunction env l = case l of
+    Name ident -> case lookEntry ident env of
+        Just entry  -> isFun entry
+        Nothing     -> True
+    
+    _               -> False
 
 
 
@@ -128,11 +160,11 @@ makeVar mut env id@(Ident l n) t = if t == TVoid
 
 -- Add mutable variable
 makeMutable :: Env -> Ident -> TCType -> EM.Err Env
-makeMutable = makeVar False
+makeMutable = makeVar True
 
 -- Add immutable variable
 makeImmutable :: Env -> Ident -> TCType -> EM.Err Env
-makeImmutable = makeVar True
+makeImmutable = makeVar False
 
 
 -- add a function to the deepest contex given Ident, [Param], return Intent and return TCType

@@ -128,88 +128,96 @@ inferLExp env lexp = case lexp of
 
 -- INFER EXPRESSIONS WITH ERRORS
 
-checkRExpError :: Env -> RExp -> EM.Err TCType
+checkRExpError :: TCType -> Env -> RExp -> ET.ErrT TCType
 checkRExpError = checkExpError inferRExp
     
-checkLExpError :: Env -> LExp -> EM.Err TCType
+checkLExpError :: TCType -> Env -> LExp -> ET.ErrT TCType
 checkLExpError = checkExpError inferLExp
 
 -- CHECK VALIDITY OF STATEMENTS /////////////////////////////////////////////////////////////////////////
 
-checkStm :: Env -> Stm -> EM.Err Env -- To be changed to ET.Err ()
+checkStm :: Env -> Stm -> ET.ErrT Env
 checkStm env stm = case stm of
-    StmBlock block -> ET.fromErrT $ checkBlock env block
+    StmBlock block -> checkBlock env block
 
     StmCall ident rs -> do
-        f <- lookFun ident env -- @TODO: check that arguments are ok with function definition
+        -- f <- lookFun ident env -- @TODO: check that arguments are ok with function definition
         return env
 
     PredW pwrite r -> do
-        let t = tctypeOf pwrite
-        t' <- checkRExpError env r    
-        unless (t' `subtypeOf` t) (EM.Bad $ "Error: type mismatch in a FUNCTION CALL.")
+        -- let t = tctypeOf pwrite
+        -- t' <- checkRExpError env r    
+        -- unless (t' `subtypeOf` t) (EM.Bad $ "Error: type mismatch in a FUNCTION CALL.")
         return env
     
     Assign l _ r -> do -- @TODO: check that l is non-constant (and non-function)
-        tl <- checkLExpError env l
-        tr <- checkRExpError env r
-        unless (tr `subtypeOf` tl) (EM.Bad $ "Error: type mismatch in an ASSIGNMENT.")
+        tl <- checkLExpError TError env l
+        tr <- checkRExpError tl env r
+        unlessT env (tr `subtypeOf` tl) $ errorAssignType $ locOf l
+        unlessT env (isMutable env l)   $ errorAssignImmutable l
+        whenT env (isFunction env l) $ EM.Bad "Functions cannot be on the left of an assignment"
         return env
 
     StmL l -> do
-        inferLExp env l
+        checkLExpError TVoid env l
         return env
 
-    If r stm -> do
-        tr <- checkRExpError env r
-        unless (tr == TBool) (EM.Bad $ "Error: expression is not of type bool in the guard of an IF STATEMENT.")
-        let thenEnv = pushContext env                   -- Entering the scope of true
-        thenEnv' <- checkStm thenEnv stm
-        return $ popContext thenEnv'                    -- Exiting the scope of true and return the new env
+    If r stm -> checkIf env r stm
 
-    IfElse r s1 s2 -> do
-        tr <- checkRExpError env r
-        unless (tr == TBool) (EM.Bad $ "Error: expression is not of type bool in the guard of an IF STATEMENT.")
-        let thenEnv = pushContext env                   -- Entering the scope of true
-        thenEnv' <- checkStm thenEnv s1
-        let elseEnv = pushContext $ popContext thenEnv' -- Exiting the scope of true and entering the scope of false
-        elseEnv' <- checkStm elseEnv s2
-        return $ popContext elseEnv'                    -- Exiting the scope of false and return the new env
+    IfElse r s1 s2 -> checkIfElse env r s1 s2
 
-    While r s -> do
-        tr <- checkRExpError env r
-        unless (tr == TBool) (EM.Bad $ "Error: expression is not of type bool in the guard of a WHILE STATEMENT.")
-        let loopEnv = pushWhile env
-        exitEnv <- checkStm loopEnv s
-        return $ popContext exitEnv
+    While r s -> checkWhile env r s
 
-    DoWhile s r -> do
-        tr <- checkRExpError env r
-        unless (tr == TBool) (EM.Bad $ "Error: expression is not of type bool in the guard of a WHILE STATEMENT.")
-        let loopEnv = pushWhile env
-        exitEnv <- checkStm loopEnv s
-        return $ popContext exitEnv
+    DoWhile s r -> checkWhile env r s
 
-
-    For ident rng s -> do
-        checkRange env rng
-        let loopEnv  = pushFor env
-        let loopEnv' = makeForCounter loopEnv ident
-        exitEnv <- checkStm loopEnv s
-        return $ popContext exitEnv
-
+    For ident rng s -> checkFor env ident rng s
     
     JmpStm jmp -> do
         checkJmp env jmp
         return env
 
 
-checkRange :: Env -> Range -> EM.Err Env
+emptyBlock :: Block
+emptyBlock = Block (Loc 0 0) [] []
+
+checkIf :: Env -> RExp -> Stm -> ET.ErrT Env
+checkIf env r s = checkIfElse env r s (StmBlock emptyBlock)
+
+checkIfElse :: Env -> RExp -> Stm -> Stm -> ET.ErrT Env
+checkIfElse env r s1 s2 = do
+    tr <- checkRExpError TBool env r
+    unlessT env (tr == TBool) $ errorGuard r tr
+    let thenEnv = pushContext env                   -- Entering the scope of true
+    thenEnv' <- checkStm thenEnv s1
+    let elseEnv = pushContext $ popContext thenEnv' -- Exiting the scope of true and entering the scope of false
+    elseEnv' <- checkStm elseEnv s2
+    return $ popContext elseEnv'                    -- Exiting the scope of false and return the new env
+
+
+checkWhile :: Env -> RExp -> Stm -> ET.ErrT Env
+checkWhile env r s = do
+    tr <- checkRExpError TBool env r
+    unlessT env (tr == TBool) $ errorGuard r tr
+    let loopEnv = pushWhile env
+    exitEnv <- checkStm loopEnv s
+    return $ popContext exitEnv
+
+
+checkFor :: Env -> Ident -> Range -> Stm -> ET.ErrT Env
+checkFor env ident rng s = do
+    checkRange env rng
+    let loopEnv  = pushFor env
+    loopEnv' <- ET.toErrT loopEnv $ makeForCounter loopEnv ident
+    exitEnv <- checkStm loopEnv' s
+    return $ popContext exitEnv
+
+
+checkRange :: Env -> Range -> ET.ErrT Env
 checkRange env rng = do
-    ts <- inferRExp env $ start rng
-    te <- inferRExp env $ end   rng
-    unless (ts `subtypeOf` TInt) $ errorRangeStart (locOf rng) (start rng) ts
-    unless (te `subtypeOf` TInt) $ errorRangeEnd (locOf rng) (end rng) te
+    ts <- checkRExpError TInt env $ start rng
+    te <- checkRExpError TInt env $ end rng
+    unlessT env (ts `subtypeOf` TInt) $ errorRangeStart (locOf rng) (start rng) ts
+    unlessT env (te `subtypeOf` TInt) $ errorRangeEnd (locOf rng) (end rng) te
     return env
 
 checkDecl :: Env -> Decl -> ET.ErrT Env
@@ -218,7 +226,7 @@ checkDecl env decl = case decl of
         let params  = map formToParam forms             -- create Params from Forms
             entries = map paramToEntry params           -- create EnvEntries from Params
             env1    = pushFun env (tctypeOf ty) it
-        unless (it==In || it==Ref) $ ET.toErrT () $ errorReturnIntent (locOf id) it
+        unlessT () (it==In || it==Ref) $ errorReturnIntent (locOf id) it
         let makeEntry' = \e p -> ET.toErrT e $ makeEntry e p -- return the old env if something goes wrong
         env2 <- foldM makeEntry' env1 $ zip [identFromParam p | p <- params] entries  -- fold the entry insertion given the list (id, entry)
         env3 <- checkBlock env2 blk
@@ -281,23 +289,21 @@ checkBlock env block = do
     let env1 = pushContext env
     env2 <- foldM loadFunction env1 (decls block)
     env3 <- foldM checkDecl env2 (decls block)
-    let checkStm' = \e s -> ET.toErrT e $ checkStm e s
-    env4 <- foldM checkStm' env3 (stms block)
+    env4 <- foldM checkStm env3 (stms block)
     return $ popContext env4
 
 
 
 -- CHECK VALIDITY OF JUMP STATEMENTS ///////////////////////////////////////////////////////////////////
 
-checkJmp :: Env -> Jump -> EM.Err () -- To be changed to ET.Err ()
-checkJmp env@(c:cs) jmp = case jmp of
+checkJmp :: Env -> Jump -> ET.ErrT () -- To be changed to ET.Err ()
+checkJmp env@(c:cs) jmp = ET.toErrT () $ case jmp of
     Return _    -> do
         when (inFor c || inWhile c) $ errorReturnLoop $ locOf jmp
         unless (returns c == TVoid) $ errorReturnProcedure (locOf jmp) $ returns c
 
-    ReturnE _ r -> do
-        t <- checkRExpError env r
-        let t' = returns c
+    ReturnE _ r -> let t' = returns c in do
+        t <- ET.fromErrT $ checkRExpError t' env r
         when (inFor c || inWhile c) $ errorReturnLoop $ locOf jmp
         unless (t `subtypeOf` t') $ errorReturnTypeMismatch (locOf jmp) t t'
 

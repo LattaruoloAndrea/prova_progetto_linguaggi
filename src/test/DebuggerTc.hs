@@ -77,8 +77,8 @@ debugRExp :: Env -> String -> EM.Err TCType
 debugRExp = debugWith pRExp inferRExp
 
 
-debugStm :: Env -> String -> EM.Err Env
-debugStm = debugWith pStm checkStm
+-- debugStm :: Env -> String -> EM.Err Env
+-- debugStm = debugWith pStm checkStm
 
 
 debugProgram :: String -> EM.Err Env
