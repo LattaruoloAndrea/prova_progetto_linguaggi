@@ -5,7 +5,7 @@ var myBool: bool = false;
 proc nyFunction(x:int, y:real) : real {
   var newResult: real = 0.0;
   var counter: int = 0;
-  while myInt*a {
+  while myBool {
 	if counter == x then myBool = false;
 	readInt(myInt[counter]);
 	counter+=1;
