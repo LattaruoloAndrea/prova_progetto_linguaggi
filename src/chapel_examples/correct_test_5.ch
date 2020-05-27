@@ -1,10 +1,11 @@
 param myConst: int = 3;
-var myInt: [5]int = [1,2,3,4,5];
+var myInt: [5][5][5][5][5][5][5]int;
 var myBool: bool = false;
 
 proc nyFunction(x:int, y:real) : real {
   var newResult: real = 0.0;
   var counter: int = 0;
+  myConst = 10;
   while myInt {
     var myBool: bool = true;
     if counter == x then myBool = 5;
