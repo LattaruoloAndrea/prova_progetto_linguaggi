@@ -64,3 +64,78 @@ errorNameDoesNotExist (Ident loc id) =
 errorNameAlreadyDeclared :: Ident -> Loc -> EM.Err a
 errorNameAlreadyDeclared (Ident loc id) whr =
     badLoc loc $ "Name '" ++ id ++ "' already declared at (" ++ (show whr) ++ ")"
+
+
+
+errorRangeStart :: Loc -> RExp -> TCType -> EM.Err a
+errorRangeStart loc st t =
+    badLoc loc $ "Start of range '" ++ (printTree st) ++ "' should be of type int, instead have type " ++ (show t)
+
+errorRangeEnd :: Loc -> RExp -> TCType -> EM.Err a
+errorRangeEnd loc en t =
+    badLoc loc $ "End of range '" ++ (printTree en) ++ "' should be of type int, instead have type " ++ (show t)
+
+
+
+
+errorDeclTypeMismatch :: String -> Ident -> TCType -> TCType -> EM.Err a
+errorDeclTypeMismatch kind id td tr = 
+    badLoc (locOf id) $ "Type mismatch in a " ++ kind ++ " DECLARATION. '" ++ (idName id) ++ "' should have type " ++ (show tr) ++ ", instead has type " ++ (show td)
+
+errorConstTypeMismatch :: Ident -> TCType -> TCType -> EM.Err a
+errorConstTypeMismatch = errorDeclTypeMismatch "CONST"
+
+errorVarTypeMismatch :: Ident -> TCType -> TCType -> EM.Err a
+errorVarTypeMismatch = errorDeclTypeMismatch "VAR"
+
+errorNotConst :: Ident -> RExp -> EM.Err a
+errorNotConst id r =
+    badLoc (locOf id) $ "Initializer expression '" ++ (printTree r) ++ "' is not a constant expression"
+
+
+
+errorReturnLoop :: Loc -> EM.Err a
+errorReturnLoop loc =
+    badLoc loc $ "Cannot 'return' inside a loop"
+
+errorReturnProcedure :: Loc -> TCType -> EM.Err a
+errorReturnProcedure loc t =
+    badLoc loc $ "Missing expression in a 'return' statement: expected type " ++ (show t)
+
+errorReturnTypeMismatch :: Loc -> TCType -> TCType -> EM.Err a
+errorReturnTypeMismatch loc t tr =
+    badLoc loc $ "Type mismatch in a 'return' statement: expected type " ++ (show tr) ++ ", found " ++ (show t)
+
+errorReturnIntent :: Loc -> Intent -> EM.Err a
+errorReturnIntent loc it =
+    badLoc loc $ "Return intent must be either 'in' or 'ref', found '" ++ (printTree it) ++ "'"
+
+
+
+
+errorFor :: String -> Loc -> EM.Err a
+errorFor key loc =
+    badLoc loc $ "Cannot use '" ++ key ++ "' inside of a for statement"
+
+errorOutside :: String -> Loc -> EM.Err a
+errorOutside key loc =
+    badLoc loc $ "Cannot use '" ++ key ++ "' outside of a (do-)while statement"
+
+errorBreakFor :: Loc -> EM.Err a
+errorBreakFor = errorFor "break"
+
+errorBreakOutside :: Loc -> EM.Err a
+errorBreakOutside = errorOutside "break"
+
+errorContinueFor :: Loc -> EM.Err a
+errorContinueFor = errorFor "continue"
+
+errorContinueOutside :: Loc -> EM.Err a
+errorContinueOutside = errorOutside "continue"
+
+
+
+checkExpError :: (Print b) => (a -> b -> EM.Err c) -> (a -> b -> EM.Err c)
+checkExpError f = \a b -> case f a b of
+    EM.Ok x     -> return x
+    EM.Bad s    -> EM.Bad $ s ++ "\n\tIn the expression '" ++ (printTree b) ++ "'."
