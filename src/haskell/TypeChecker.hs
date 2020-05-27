@@ -35,11 +35,11 @@ predList = [
 startEnv :: Env
 startEnv = [Context (M.fromList predList) TVoid False False False]
 
-typeCheck :: Program -> ET.ErrT Env
+typeCheck :: Program -> EM.Err Env
 typeCheck = checkProgram startEnv
 
-checkProgram :: Env -> Program -> ET.ErrT Env
-checkProgram env (Prog decls) = do
+checkProgram :: Env -> Program -> EM.Err Env
+checkProgram env (Prog decls) = ET.fromErrT $ do
     env1 <- foldM loadFunction env decls
     foldM checkDecl env1 decls
 
@@ -281,7 +281,8 @@ checkBlock env block = do
     let env1 = pushContext env
     env2 <- foldM loadFunction env1 (decls block)
     env3 <- foldM checkDecl env2 (decls block)
-    env4 <- ET.toErrT env3 $ foldM checkStm env3 (stms block)
+    let checkStm' = \e s -> ET.toErrT e $ checkStm e s
+    env4 <- foldM checkStm' env3 (stms block)
     return $ popContext env4
 
 
