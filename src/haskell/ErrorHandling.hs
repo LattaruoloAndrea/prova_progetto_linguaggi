@@ -1,10 +1,22 @@
 module ErrorHandling where
 
 import qualified ErrM as EM
+import qualified ErrT as ET
 import AbsChapel
 import TCType
 import Locatable
 import PrintChapel
+
+
+
+whenT :: a -> Bool -> EM.Err a -> ET.ErrT a
+whenT a g v = 
+    if g 
+        then ET.toErrT a v 
+        else return a
+
+unlessT :: a -> Bool -> EM.Err a -> ET.ErrT a
+unlessT a g v = whenT a (not g) v
 
 
 badLoc :: Loc -> String -> EM.Err a
@@ -135,7 +147,24 @@ errorContinueOutside = errorOutside "continue"
 
 
 
-checkExpError :: (Print b) => (a -> b -> EM.Err c) -> (a -> b -> EM.Err c)
-checkExpError f = \a b -> case f a b of
+errorGuard :: RExp -> TCType -> EM.Err a
+errorGuard r t =
+    badLoc (locOf r) $ "Type mismatch in a guard. Expected type bool, found " ++ (show t)
+
+
+
+
+errorAssignType :: Loc -> EM.Err a
+errorAssignType loc =
+    badLoc loc $ "Type mismatch in an assignment"
+
+errorAssignImmutable :: LExp -> EM.Err a
+errorAssignImmutable l =
+    badLoc (locOf l) $ "Cannot modify '" ++ (printTree l) ++ "' because it's immutable"
+
+
+
+checkExpError :: (Print b) => (a -> b -> EM.Err c) -> c -> (a -> b -> ET.ErrT c)
+checkExpError f c = \a b -> ET.toErrT c $ case f a b of
     EM.Ok x     -> return x
     EM.Bad s    -> EM.Bad $ s ++ "\n\tIn the expression '" ++ (printTree b) ++ "'."
