@@ -97,14 +97,28 @@ data PRead
   | ReadInt     {prLoc :: Loc}
   | ReadReal    {prLoc :: Loc}
   | ReadString  {prLoc :: Loc}
-  deriving (Eq, Ord, Show, Read)
+  deriving (Eq, Ord, Read)
+
+instance Show PRead where
+  show pr = case pr of
+    ReadChar _    -> "readChar"
+    ReadInt  _    -> "readInt"
+    ReadReal _    -> "readReal"
+    ReadString _  -> "readString"
 
 data PWrite 
   = WriteChar   {pwLoc :: Loc}
   | WriteInt    {pwLoc :: Loc}
   | WriteReal   {pwLoc :: Loc}
   | WriteString {pwLoc :: Loc}
-  deriving (Eq, Ord, Show, Read)
+  deriving (Eq, Ord, Read)
+
+instance Show PWrite where
+  show pw = case pw of
+    WriteChar _   -> "writeChar"
+    WriteInt  _   -> "writeInt"
+    WriteReal _   -> "writeReal"
+    WriteString _ -> "writeString"
 
 data ArithOp 
   = Add
@@ -150,3 +164,13 @@ data Literal
     | LString String
     | LArr [Literal]
   deriving (Eq, Ord, Show, Read)
+
+
+class PredF a where
+  toIdent :: a -> Ident
+
+instance PredF PWrite where
+  toIdent pw = Ident (pwLoc pw) (show pw)
+
+instance PredF PRead where
+  toIdent pr = Ident (prLoc pr) (show pr)
