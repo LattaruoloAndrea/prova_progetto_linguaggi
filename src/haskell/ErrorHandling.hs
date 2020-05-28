@@ -7,10 +7,17 @@ import TCType
 import Locatable
 import PrintChapel
 
-
 showLim :: (Show a) => a -> String
 showLim a = 
     let s = show a
+        s' = take 10 s
+    in (s'++) $ if (length s) > 10
+        then "..."
+        else ""
+
+printLim :: (Print a) => a -> String
+printLim a = 
+    let s = printTree a
         s' = take 10 s
     in (s'++) $ if (length s) > 10
         then "..."
@@ -28,13 +35,13 @@ unlessT a g v = whenT a (not g) v
 
 
 badLoc :: Loc -> String -> EM.Err a
-badLoc loc reason = EM.Bad $ (showLim loc) ++ ": Error! " ++ reason ++ "."
+badLoc loc reason = EM.Bad $ (show loc) ++ ": Error! " ++ reason ++ "."
 
 
 
 errorLogicOperand :: String -> RExp -> TCType -> EM.Err a
 errorLogicOperand op r t =
-    badLoc (locOf r) $ "The operand " ++ (printTree r) ++ " in a " ++ op ++ " expression should have type bool, instead has type " ++ (showLim t)
+    badLoc (locOf r) $ "The operand '" ++ (printLim r) ++ "' in a " ++ op ++ " expression should have type bool, instead has type " ++ (show t)
 
 errorOr :: RExp -> TCType -> EM.Err a
 errorOr = errorLogicOperand "OR"
@@ -49,7 +56,7 @@ errorNot = errorLogicOperand "NOT"
 
 errorBinary :: (Show a) => a -> RExp -> RExp -> TCType -> TCType -> EM.Err b
 errorBinary op r1 r2 t1 t2 =
-    badLoc (locOf r1) $ "Operands " ++ (printTree r1) ++ " (type: " ++ (showLim t1) ++ ") and " ++ (printTree r2) ++ " (type: " ++ (showLim t2) ++ ") are not compatible in a " ++ (showLim op) ++ " expression"
+    badLoc (locOf r1) $ "Operands '" ++ (printLim r1) ++ "' (type: " ++ (show t1) ++ ") and '" ++ (printLim r2) ++ "' (type: " ++ (show t2) ++ ") are not compatible in a " ++ (show op) ++ " expression"
 
 
 
@@ -62,17 +69,17 @@ errorArrayElementsCompatibility loc =
 
 errorArrayIndex :: RExp -> EM.Err a
 errorArrayIndex r =
-    badLoc (locOf r) $ "Array index " ++ (printTree r) ++ " should have type integer in an ARRAY ACCESS"
+    badLoc (locOf r) $ "Array index '" ++ (printLim r) ++ "' should have type integer in an ARRAY ACCESS"
 
 errorArrayNot :: LExp -> EM.Err a
 errorArrayNot lexp =
-    badLoc (locOf lexp) $ "Left expression " ++ (printTree lexp) ++ " is not an array in an ARRAY ACCESS"
+    badLoc (locOf lexp) $ "Left expression '" ++ (printLim lexp) ++ "' is not an array in an ARRAY ACCESS"
 
 
 
 errorNotAPointer :: LExp -> EM.Err a
 errorNotAPointer lexp = 
-    badLoc (locOf lexp) $ "Trying to dereference " ++ (printTree lexp) ++ " which is not a pointer"
+    badLoc (locOf lexp) $ "Trying to dereference '" ++ (printLim lexp) ++ "' which is not a pointer"
 
 
 
@@ -83,24 +90,24 @@ errorNameDoesNotExist (Ident loc id) =
 
 errorNameAlreadyDeclared :: Ident -> Loc -> EM.Err a
 errorNameAlreadyDeclared (Ident loc id) whr =
-    badLoc loc $ "Name '" ++ id ++ "' already declared at (" ++ (showLim whr) ++ ")"
+    badLoc loc $ "Name '" ++ id ++ "' already declared at (" ++ (show whr) ++ ")"
 
 
 
 errorRangeStart :: Loc -> RExp -> TCType -> EM.Err a
 errorRangeStart loc st t =
-    badLoc loc $ "Start of range '" ++ (printTree st) ++ "' should be of type int, instead have type " ++ (showLim t)
+    badLoc loc $ "Start of range '" ++ (printLim st) ++ "' should be of type int, instead have type " ++ (show t)
 
 errorRangeEnd :: Loc -> RExp -> TCType -> EM.Err a
 errorRangeEnd loc en t =
-    badLoc loc $ "End of range '" ++ (printTree en) ++ "' should be of type int, instead have type " ++ (showLim t)
+    badLoc loc $ "End of range '" ++ (printLim en) ++ "' should be of type int, instead have type " ++ (show t)
 
 
 
 
 errorDeclTypeMismatch :: String -> Ident -> TCType -> TCType -> EM.Err a
 errorDeclTypeMismatch kind id td tr = 
-    badLoc (locOf id) $ "Type mismatch in a " ++ kind ++ " DECLARATION. '" ++ (idName id) ++ "' should have type " ++ (showLim tr) ++ ", instead has type " ++ (showLim td)
+    badLoc (locOf id) $ "Type mismatch in a " ++ kind ++ " DECLARATION. '" ++ (idName id) ++ "' should have type " ++ (show tr) ++ ", instead has type " ++ (show td)
 
 errorConstTypeMismatch :: Ident -> TCType -> TCType -> EM.Err a
 errorConstTypeMismatch = errorDeclTypeMismatch "CONST"
@@ -110,7 +117,7 @@ errorVarTypeMismatch = errorDeclTypeMismatch "VAR"
 
 errorNotConst :: Ident -> RExp -> EM.Err a
 errorNotConst id r =
-    badLoc (locOf id) $ "Initializer expression '" ++ (printTree r) ++ "' is not a constant expression"
+    badLoc (locOf id) $ "Initializer expression '" ++ (printLim r) ++ "' is not a constant expression"
 
 
 
@@ -120,15 +127,19 @@ errorReturnLoop loc =
 
 errorReturnProcedure :: Loc -> TCType -> EM.Err a
 errorReturnProcedure loc t =
-    badLoc loc $ "Missing expression in a 'return' statement: expected type " ++ (showLim t)
+    badLoc loc $ "Missing expression in a 'return' statement: expected type " ++ (show t)
 
 errorReturnTypeMismatch :: Loc -> TCType -> TCType -> EM.Err a
 errorReturnTypeMismatch loc t tr =
-    badLoc loc $ "Type mismatch in a 'return' statement: expected type " ++ (showLim tr) ++ ", found " ++ (showLim t)
+    badLoc loc $ "Type mismatch in a 'return' statement: expected type " ++ (show tr) ++ ", found " ++ (show t)
 
 errorReturnIntent :: Loc -> Intent -> EM.Err a
 errorReturnIntent loc it =
-    badLoc loc $ "Return intent must be either 'in' or 'ref', found '" ++ (printTree it) ++ "'"
+    badLoc loc $ "Return intent must be either 'in' or 'ref', found '" ++ (printLim it) ++ "'"
+
+errorReturnRef :: RExp -> EM.Err a
+errorReturnRef r =
+    badLoc (locOf r) $ "Returned expression '" ++ (printLim r) ++ "' must be a left-expression"
 
 
 
@@ -157,7 +168,7 @@ errorContinueOutside = errorOutside "continue"
 
 errorGuard :: RExp -> TCType -> EM.Err a
 errorGuard r t =
-    badLoc (locOf r) $ "Type mismatch in a guard. Expected type bool, found " ++ (showLim t)
+    badLoc (locOf r) $ "Type mismatch in a guard. Expected type bool, found " ++ (show t)
 
 
 
@@ -168,11 +179,39 @@ errorAssignType loc =
 
 errorAssignImmutable :: LExp -> EM.Err a
 errorAssignImmutable l =
-    badLoc (locOf l) $ "Cannot modify '" ++ (printTree l) ++ "' because it's immutable"
+    badLoc (locOf l) $ "Cannot modify '" ++ (printLim l) ++ "' because it's immutable"
+
+-- errorAssignFunction :: Loc -> EM.Err a
+-- errorAssignFunction loc =
+--     badLoc l $ "Functions cannot be on the left of an assignment"
+
+errorCallWrongNumber :: Ident -> Int -> Int -> EM.Err a
+errorCallWrongNumber (Ident loc id) la lp=
+    badLoc loc $ "Wrong number of parameters in a function call for '" ++ id ++ "': expected " ++ (show lp) ++ ", found " ++ (show la)
+
+
+
+
+errorPassingTypeSub :: RExp -> TCType -> TCType -> EM.Err a
+errorPassingTypeSub r t tp =
+    badLoc (locOf r) $ "Type mismatch: type " ++ (show t) ++ " of actual argument '" ++ (printLim r) ++ "' is not a subtype of " ++ (show tp)
+
+errorPassingTypeSuper :: RExp -> TCType -> TCType -> EM.Err a
+errorPassingTypeSuper r t tp =
+    badLoc (locOf r) $ "Type mismatch: type " ++ (show t) ++ " of actual argument '" ++ (printLim r) ++ "' is not a supertype of " ++ (show tp)
+
+errorPassingTypeSame :: RExp -> TCType -> TCType -> EM.Err a
+errorPassingTypeSame r t tp =
+    badLoc (locOf r) $ "Type mismatch: type " ++ (show t) ++ " of actual argument '" ++ (printLim r) ++ "' is not the same as " ++ (show tp)
+
+
+errorPassingLExp :: RExp -> EM.Err a
+errorPassingLExp r =
+    badLoc (locOf r) $ "Expression '" ++ (printLim r) ++ "' must be a left-expression"
 
 
 
 checkExpError :: (Print b) => (a -> b -> EM.Err c) -> c -> (a -> b -> ET.ErrT c)
 checkExpError f c = \a b -> ET.toErrT c $ case f a b of
     EM.Ok x     -> return x
-    EM.Bad s    -> EM.Bad $ s ++ "\n\tIn the expression '" ++ (printTree b) ++ "'."
+    EM.Bad s    -> EM.Bad $ s ++ "\n\tIn the expression '" ++ (printLim b) ++ "'."

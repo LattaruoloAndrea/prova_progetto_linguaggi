@@ -27,6 +27,14 @@ data Entry
     | Fun Loc [Param] Intent TCType
     deriving (Show)
 
+
+data Param = Param Loc Id Intent TCType
+    deriving (Show)
+
+
+paramsOf :: Entry -> [Param]
+paramsOf (Fun _ ps _ _) = ps
+
 isMut :: Entry -> Mutability
 isMut (Var _ _ m)   = m
 isMut (Const _ _ _) = False
@@ -38,6 +46,11 @@ isMut (Fun _ _ _ _) = True  -- The check for mutability of functions does not ha
 isFun :: Entry -> Bool
 isFun (Fun _ _ _ _) = True
 isFun _             = False
+
+
+isLExp :: RExp -> Bool
+isLExp (RLExp _ _)  = True
+isLExp _            = False
 
 
 -- Returns the mutability of an LExp
@@ -67,8 +80,6 @@ isFunction env l = case l of
 
 
 
-data Param = Param Loc Id Intent TCType
-    deriving (Show)
 
 
 instance Locatable Entry where

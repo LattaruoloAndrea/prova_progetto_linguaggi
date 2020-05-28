@@ -98,9 +98,13 @@ inferRExp env rexp = case rexp of
             when (t == TError) $ errorArrayElementsCompatibility loc
             return $ TArr (length rs) t
     
-    FCall _ ident rs -> lookType ident env -- @TODO: check right numbers and types of rs
+    FCall _ ident rs -> do
+        ET.fromErrT $ checkCall env ident rs
+        lookType ident env
 
-    PredR _ pread -> return $ tctypeOf pread
+    PredR _ pread -> do
+        ET.fromErrT $ checkCall env (toIdent pread) []
+        return $ tctypeOf pread
 
     Lit _ literal -> return $ tctypeOf literal
 
@@ -140,22 +144,16 @@ checkStm :: Env -> Stm -> ET.ErrT Env
 checkStm env stm = case stm of
     StmBlock block -> checkBlock env block
 
-    StmCall ident rs -> do
-        -- f <- lookFun ident env -- @TODO: check that arguments are ok with function definition
-        return env
+    StmCall ident rs -> checkCall env ident rs
 
-    PredW pwrite r -> do
-        -- let t = tctypeOf pwrite
-        -- t' <- checkRExpError env r    
-        -- unless (t' `subtypeOf` t) (EM.Bad $ "Error: type mismatch in a FUNCTION CALL.")
-        return env
+    PredW pwrite r -> checkCall env (toIdent pwrite) [r]
     
-    Assign l _ r -> do -- @TODO: check that l is non-constant (and non-function)
+    Assign l _ r -> do
         tl <- checkLExpError TError env l
         tr <- checkRExpError tl env r
         unlessT env (tr `subtypeOf` tl) $ errorAssignType $ locOf l
         unlessT env (isMutable env l)   $ errorAssignImmutable l
-        whenT env (isFunction env l) $ EM.Bad "Functions cannot be on the left of an assignment"
+        -- whenT   env (isFunction env l)  $ errorAssignFunction $ locOf l
         return env
 
     StmL l -> do
@@ -175,6 +173,33 @@ checkStm env stm = case stm of
     JmpStm jmp -> do
         checkJmp env jmp
         return env
+
+
+checkPassing :: Env -> (RExp, Param) -> ET.ErrT Env
+checkPassing env (r, Param loc id it tp) = do
+    t <- ET.toErrT tp $ inferRExp env r
+    case it of
+        In          ->  unlessT env (t `subtypeOf` tp)  $ errorPassingTypeSub r t tp
+        Out         -> (unlessT env (tp `subtypeOf` t)  $ errorPassingTypeSuper r t tp) >> 
+                       (unlessT env (isLExp r)          $ errorPassingLExp r)
+        InOut       -> (unlessT env (t == tp)           $ errorPassingTypeSame r t tp) >>
+                       (unlessT env (isLExp r)          $ errorPassingLExp r)
+        Ref         -> (unlessT env (t == tp)           $ errorPassingTypeSame r t tp) >>
+                       (unlessT env (isLExp r)          $ errorPassingLExp r)
+        ConstIn     ->  unlessT env (t `subtypeOf` tp)  $ errorPassingTypeSub r t tp
+        ConstRef    -> (unlessT env (t == tp)           $ errorPassingTypeSame r t tp) >>
+                       (unlessT env (isLExp r)          $ errorPassingLExp r)
+
+
+checkCall :: Env -> Ident -> [RExp] -> ET.ErrT Env
+checkCall env ident actuals = ET.toErrT env $ do
+    f <- lookFun ident env
+    let la = length actuals
+        params = paramsOf f
+        lp = length params
+    unless (la == lp) $ errorCallWrongNumber ident la lp
+    ET.fromErrT $ foldM checkPassing env $ zip actuals params
+
 
 
 emptyBlock :: Block
@@ -306,6 +331,7 @@ checkJmp env@(c:cs) jmp = ET.toErrT () $ case jmp of
         t <- ET.fromErrT $ checkRExpError t' env r
         when (inFor c || inWhile c) $ errorReturnLoop $ locOf jmp
         unless (t `subtypeOf` t') $ errorReturnTypeMismatch (locOf jmp) t t'
+        when ((isRef c) && (not (isLExp r))) $ errorReturnRef r
 
     Break _     -> do
         when (inFor c) $ errorBreakFor $ locOf jmp
