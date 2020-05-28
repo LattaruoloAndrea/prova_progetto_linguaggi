@@ -2,14 +2,18 @@ param myConst: int = 3;
 var myInt: [5][5][5][5][5][5][5]int;
 var myBool: bool = false;
 
-proc nyFunction(x:int, y:real) : real {
-  var newResult: real = 0.0;
-  var counter: int = 0;
+proc myFunction(x:int, y:real) : real {
+  var newResult: real = zzzz;
+  var counter: int = 0+"I believe I can fly";
   myConst = 10;
+  myFunction(5, true);
+  myFunction(5, true);
+  myFunction(5, true);
+  myFunction(true, true);
   while myInt {
     var myBool: bool = true;
     if counter == x then myBool = 5;
-    writeReal(1.56);
+    writeReal("Ciao");
     readInt(myInt[counter]);
     counter+=1;
   }
