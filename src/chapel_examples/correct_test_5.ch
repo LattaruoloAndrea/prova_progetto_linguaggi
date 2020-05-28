@@ -14,11 +14,15 @@ proc myFunction(x:int, y:real) : real {
     var myBool: bool = true;
     if counter == x then myBool = 5;
     writeReal("Ciao");
-    readInt(myInt[counter]);
-    counter+=1;
+    readInt();
+    x = readReal();
+
   }
   for x in {counter..10} do {
     writeInt(myInt[x]);
+    x += 1;
+    x *= 5;
+    x = true;
   }
   return newResult; 
   }
