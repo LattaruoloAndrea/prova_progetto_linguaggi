@@ -199,6 +199,7 @@ checkCall env ident actuals = ET.toErrT env $ do
         lp = length params
     unless (la == lp) $ errorCallWrongNumber ident la lp
     ET.fromErrT $ foldM checkPassing env $ zip actuals params
+    return env
 
 
 

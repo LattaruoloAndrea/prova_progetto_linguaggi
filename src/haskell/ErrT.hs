@@ -20,13 +20,13 @@ data ErrT a = OkT a | BadT a Log
 -- Transform an ErrT to a BNFC-Err
 fromErrT :: ErrT a -> Err a
 fromErrT (OkT a) = Ok a
-fromErrT (BadT _ s) = Bad . unlines $ DL.toList s
+fromErrT (BadT _ s) = Bad . unlines $ filter (not . null) $ DL.toList s
 
 -- Transform a BNFC-Err in an ErrT
 -- a 'basic' value is provided for BadT
 toErrT :: a -> Err a -> ErrT a
 toErrT _ (Ok a)  = OkT a
-toErrT a (Bad s) = BadT a $ DL.fromList [s]
+toErrT a (Bad s) = BadT a $ DL.fromList $ filter (not . null) $ lines s
 
 -- Transform a BNFC-Err in an ErrT
 -- a Err value is provided for BadT
