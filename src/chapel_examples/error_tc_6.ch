@@ -36,4 +36,3 @@ proc nyFunction(x:int, y:real) : real {
 
   return newResult; 
   }
-© 2020 GitHub, Inc.

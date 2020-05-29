@@ -45,3 +45,4 @@ proc nyFunction(x:int, y:real) : real {
       writeInt(n);
       return 0;
     }  
+  }
