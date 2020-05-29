@@ -31,6 +31,26 @@ data Entry
 data Param = Param Loc Id Intent TCType
     deriving (Show)
 
+instance Locatable Entry where
+    locOf x = case x of
+        Var l _ _   -> l
+        Const l _ _ -> l
+        Fun l _ _ _ -> l
+
+instance Locatable Param where
+    locOf (Param l _ _ _) = l
+
+-- Entry have TCType
+instance TCTypeable Entry where
+    tctypeOf x = case x of
+        Var _ t _   -> t
+        Const _ t _ -> t
+        Fun _ _ _ t -> t
+
+-- Param have TCType
+instance TCTypeable Param where
+    tctypeOf (Param _ _ _ t) = t
+
 
 paramsOf :: Entry -> [Param]
 paramsOf (Fun _ ps _ _) = ps
@@ -79,21 +99,6 @@ isFunction env l = case l of
     _               -> False
 
 
-
-
-
-instance Locatable Entry where
-    locOf x = case x of
-        Var l _ _   -> l
-        Const l _ _ -> l
-        Fun l _ _ _ -> l
-
-instance Locatable Param where
-    locOf (Param l _ _ _) = l
-
-
-
-
 -- Convert from an AbsChapel.Form data to Param data
 formToParam :: Form -> Param
 formToParam (Form it (Ident l n) ty) = Param l n it $ tctypeOf ty
@@ -106,18 +111,6 @@ paramToEntry (Param l id it ty) = Var l ty $ not $ it==ConstIn || it==ConstRef
 -- Get the Ident from Param
 identFromParam :: Param -> Ident
 identFromParam (Param l id _ _) = Ident l id
-
-
--- Entry have TCType
-instance TCTypeable Entry where
-    tctypeOf x = case x of
-        Var _ t _   -> t
-        Const _ t _ -> t
-        Fun _ _ _ t -> t
-
--- Param have TCType
-instance TCTypeable Param where
-    tctypeOf (Param _ _ _ t) = t
 
 
 -- Take Just the deepest entry mapped from id (if it exists), otherwise Nothing
@@ -192,9 +185,9 @@ pushContext env@(c:cs) = (Context mempty (returns c) (inWhile c) (inFor c) (isRe
 pushWhile :: Env -> Env
 pushWhile env@(c:cs) = (Context mempty (returns c) True (inFor c) (isRef c)) : env
 
--- Push an empty context on top of the stack for a bounded iteration (inWhile = False, inFor = True)
+-- Push an empty context on top of the stack for a bounded iteration (inFor = True)
 pushFor :: Env -> Env
-pushFor env@(c:cs) = (Context mempty (returns c) False True (isRef c)) : env
+pushFor env@(c:cs) = (Context mempty (returns c) (inWhile c) True (isRef c)) : env
 
 -- Push an empty context on top of the stack for a function declaration
 -- (returns from input, inWhile = False, inFor = False, isRef from Intent)

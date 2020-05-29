@@ -54,7 +54,7 @@ errorNot = errorLogicOperand "NOT"
 
 
 
-errorBinary :: (Show a) => a -> RExp -> RExp -> TCType -> TCType -> EM.Err b
+errorBinary :: (Show binop) => binop -> RExp -> RExp -> TCType -> TCType -> EM.Err b
 errorBinary op r1 r2 t1 t2 =
     badLoc (locOf r1) $ "Operands '" ++ (printLim r1) ++ "' (type: " ++ (show t1) ++ ") and '" ++ (printLim r2) ++ "' (type: " ++ (show t2) ++ ") are not compatible in a " ++ (show op) ++ " expression"
 
