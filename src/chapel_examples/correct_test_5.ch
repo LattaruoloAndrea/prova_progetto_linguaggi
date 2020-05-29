@@ -26,3 +26,14 @@ proc myFunction(x:int, y:real) : real {
   }
   return newResult; 
   }
+
+  proc fib(n:int): int {
+    if ( false ) {
+
+    }else {
+      writeInt(n);
+      return 0;
+    }
+
+    
+  }
