@@ -83,10 +83,18 @@ errorNotAPointer lexp =
 
 
 
+errorDoesNotExist :: String -> Ident -> EM.Err a
+errorDoesNotExist s (Ident loc id) =
+    badLoc loc $ s ++ " '" ++ id ++ "' does not exist at this scope"
 
 errorNameDoesNotExist :: Ident -> EM.Err a
-errorNameDoesNotExist (Ident loc id) =
-    badLoc loc $ "Name '" ++ id ++ "' does not exist at this scope"
+errorNameDoesNotExist = errorDoesNotExist "Name"
+
+errorFunDoesNotExist :: Ident -> EM.Err a
+errorFunDoesNotExist = errorDoesNotExist "Function name"
+
+errorConstDoesNotExist :: Ident -> EM.Err a
+errorConstDoesNotExist = errorDoesNotExist "Compile-time constant name"
 
 errorNameAlreadyDeclared :: Ident -> Loc -> EM.Err a
 errorNameAlreadyDeclared (Ident loc id) whr =
