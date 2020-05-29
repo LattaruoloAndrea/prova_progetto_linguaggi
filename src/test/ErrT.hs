@@ -41,7 +41,7 @@ instance Monad ErrT where
   OkT a    >>= f = f a
   BadT a s >>= f = case f a of
       OkT a'     -> BadT a' s
-      BadT a' s' -> BadT a' $ s `mappend` s'
+      BadT a' s' -> BadT a' $ s `mappend` s'  -- DList is instance of Monoid
 
 instance Applicative ErrT where
   pure = OkT

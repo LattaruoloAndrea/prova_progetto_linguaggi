@@ -43,6 +43,18 @@ checkProgram env (Prog decls) = ET.fromErrT $ do
     foldM checkDecl env1 decls
 
 
+-- Insert function name in the scope (to be used once we enter in a new block to permit mutual-recursion)
+--  * If no duplicate declaration occures, OkT (env++function)
+--  * Otherwise, BadT env
+loadFunction :: Env -> Decl -> ET.ErrT Env
+loadFunction env d = ET.toErrT env $ case d of
+    FDecl id forms it ty _  ->
+        let params = map formToParam forms      -- formToParam is in Env.hs
+        in makeFun env id params it $ tctypeOf ty
+    
+    _                       -> return env
+
+
 -- Check of a declaration: for variables and compile-time constants lists just fold of an individual check
 -- For a function, first we check for totality of non-procedures, then we check the rest
 checkDecl :: Env -> Decl -> ET.ErrT Env
@@ -51,11 +63,9 @@ checkDecl env decl = case decl of
         unlessT env (((tctypeOf rt) == TVoid) || (checkReturnPaths $ stms blk)) $ errorReturnMissing id
         checkFDecl env decl
 
-    CList cs -> do
-        foldM checkCDecl env cs
+    CList cs -> foldM checkCDecl env cs
 
-    VList vs -> do
-        foldM checkVDecl env vs
+    VList vs -> foldM checkVDecl env vs
 
 
 -- Check for the "totality" of a list of statements
@@ -81,7 +91,8 @@ checkReturnPaths ls = foldr helper False ls
 
 
 -- Check for a function definition:
---   * 
+--   * return intent must be one of In (by value) or Ref (by reference)
+--   * check that the body with the formal parameters added in is valid
 checkFDecl :: Env -> Decl -> ET.ErrT Env
 checkFDecl env (FDecl id forms it ty blk) =
     let params  = map formToParam forms             -- create Params from Forms
@@ -98,6 +109,8 @@ checkFDecl env (FDecl id forms it ty blk) =
 -- Extends the environment with a new compile-time constant (if possibile)
 --  * If no duplicate declaration occures and type is correct and initializer is a compile-time constant, OkT (env++constant)
 --  * Otherwise, BadT env
+--
+-- constexpr is defined in module CompileTime
 checkCDecl :: Env -> CDecl -> ET.ErrT Env
 checkCDecl env c@(CDecl id t r) = ET.toErrT env $ let tc = tctypeOf t in do
     tr <- inferRExp env r                 -- Error purpose: check that r is semantically correct
@@ -122,148 +135,205 @@ checkVDecl env v = case v of
         makeMutable env id tc
 
 
--- Insert function in the scope (to be used once we enter in a new block to permit mutual-recursion)
---  * If no duplicate declaration occures, OkT (env++function)
---  * Otherwise, BadT env
-loadFunction :: Env -> Decl -> ET.ErrT Env
-loadFunction env d = ET.toErrT env $ case d of
-    FDecl id forms it ty _  ->
-        let params = map formToParam forms      -- formToParam is in Env.hs
-        in makeFun env id params it $ tctypeOf ty
-    
-    _                       -> return env
 
--- INFER RIGHT EXPRESSIONS //////////////////////////////////////////////////////////////////////////////
-
+-- Type inference for right expressions: all cases are delegated to minor functions
 inferRExp :: Env -> RExp -> EM.Err TCType
 inferRExp env rexp = case rexp of
-    Or _ r1 r2 -> do
-        t1 <- inferRExp env r1
-        t2 <- inferRExp env r2
-        unless (t1 == TBool) $ errorOr r1 t1
-        unless (t2 == TBool) $ errorOr r2 t2
-        return TBool
-
-    And _ r1 r2 -> do
-        t1 <- inferRExp env r1
-        t2 <- inferRExp env r2
-        unless (t1 == TBool) $ errorAnd r1 t1
-        unless (t2 == TBool) $ errorAnd r2 t2
-        return TBool
-    
-    Not _ r -> do
-        t <- inferRExp env r
-        unless (t == TBool) $ errorNot r t
-        return TBool
-        
-    Comp _ r1 op r2 -> do
-        t1 <- inferRExp env r1
-        t2 <- inferRExp env r2
-        let t = supremum t1 t2
-        when (t == TError) $ errorBinary op r1 r2 t1 t2
-        return TBool
-
-    Arith _ r1 op r2 -> do
-        t1 <- inferRExp env r1
-        t2 <- inferRExp env r2
-        let t = supremum t1 t2
-        when (t == TError) $ errorBinary op r1 r2 t1 t2
-        return t
-
-    Sign _ _ r -> inferRExp env r
-
-    RefE _ l -> do
-        t <- inferLExp env l
-        return $ TPoint t
-
-    RLExp _ l -> do
-        t <- inferLExp env l
-        return t
-    
-    ArrList loc rs -> case rs of
-        [] -> errorArrayEmpty loc
-        _  -> do
-            t <- foldl1 supremumM $ map (inferRExp env) rs
-            when (t == TError) $ errorArrayElementsCompatibility loc
-            return $ TArr (length rs) t
-    
-    FCall _ ident rs -> do
-        ET.fromErrT $ checkCall env ident rs
-        lookType ident env
-
-    PredR _ pread -> do
-        ET.fromErrT $ checkCall env (toIdent pread) []
-        return $ tctypeOf pread
-
-    Lit _ literal -> return $ tctypeOf literal
+    Or _ r1 r2          -> inferOr env r1 r2
+    And _ r1 r2         -> inferAnd env r1 r2
+    Not _ r             -> inferNot env r
+    Comp _ r1 op r2     -> inferComp env r1 op r2
+    Arith _ r1 op r2    -> inferArith env r1 op r2
+    Sign _ _ r          -> inferRExp env r
+    RefE _ l            -> inferRefE env l
+    RLExp _ l           -> inferLExp env l
+    ArrList loc rs      -> inferArrList env loc rs
+    FCall _ ident rs    -> inferFCall env ident rs
+    PredR _ pread       -> inferPredR env pread
+    Lit _ literal       -> inferLiteral literal
 
 
--- INFER LEFT EXPRESSIONS //////////////////////////////////////////////////////////////////////////////
+-- Infer logical operators //////////////////////////////////////////////////////////
 
+inferOr :: Env -> RExp -> RExp -> EM.Err TCType
+inferOr = inferOrAnd errorOr
+
+inferAnd :: Env -> RExp -> RExp -> EM.Err TCType
+inferAnd = inferOrAnd errorAnd
+
+inferNot :: Env -> RExp -> EM.Err TCType
+inferNot env r = do
+    inferLogicalOperand errorNot env r
+    return TBool
+
+-- Abstraction on the Or/And infer given a suitable error message handler
+inferOrAnd :: (RExp -> TCType -> EM.Err a) -> Env -> RExp -> RExp -> EM.Err TCType
+inferOrAnd errF env r1 r2 = do
+    f r1
+    f r2
+    return TBool
+    where
+        errF' = \r t -> (errF r t) >> (return ())
+        f = inferLogicalOperand errF' env
+
+-- Abstraction on the single logical operand inference
+inferLogicalOperand :: (RExp -> TCType -> EM.Err ()) -> Env -> RExp -> EM.Err Env
+inferLogicalOperand errF env r = do
+    t <- inferRExp env r
+    unless (t == TBool) $ errF r t
+    return env
+
+
+-- Infer relational and arithmetic operators ///////////////////////////////////////////////////////////
+
+inferComp :: Env -> RExp -> CompOp -> RExp -> EM.Err TCType
+inferComp env r1 op r2 = do
+    inferBinary env r1 op r2
+    return TBool
+
+inferArith :: Env -> RExp -> ArithOp -> RExp -> EM.Err TCType
+inferArith = inferBinary
+
+-- Abstraction over infer of relational and arithmetic operators
+--   * Non compatible types of the operands throw an error
+inferBinary :: (Show binop) => Env -> RExp -> binop -> RExp -> EM.Err TCType
+inferBinary env r1 op r2 = do
+    t1 <- inferRExp env r1
+    t2 <- inferRExp env r2
+    let t = supremum t1 t2
+    when (t == TError) $ errorBinary op r1 r2 t1 t2
+    return t
+
+
+-- Minor RExp inferers /////////////////////////////////////////////////////////////////////
+
+-- ArrayList type is the supremum of the inferred types inside the list
+--   * Empty array throws an error
+--   * Non compatible types throw an error
+inferArrList :: Env -> Loc -> [RExp] -> EM.Err TCType
+inferArrList env loc rs = case rs of
+    [] -> errorArrayEmpty loc
+    _  -> do
+        t <- foldl1 supremumM $ map (inferRExp env) rs
+        when (t == TError) $ errorArrayElementsCompatibility loc
+        return $ TArr (length rs) t
+
+-- Reference to a left-expression have type pointer to..
+inferRefE :: Env -> LExp -> EM.Err TCType
+inferRefE env l = do
+    t <- inferLExp env l
+    return $ TPoint t
+
+-- Check of well-formed predefined reader call is delegated to checkCall
+-- Type of a predefined read is monomorphic
+inferPredR :: Env -> PRead -> EM.Err TCType
+inferPredR env pread = do
+    ET.fromErrT $ checkCall env (toIdent pread) []  -- toIdent is from AbsChapel
+    return $ tctypeOf pread
+
+
+-- Function calls have type of the return
+--   * Check of well formed call is delegated to checkCall
+inferFCall :: Env -> Ident -> [RExp] -> EM.Err TCType
+inferFCall env ident rs = do
+    ET.fromErrT $ checkCall env ident rs
+    lookType ident env
+
+
+-- Type of a literal is induced by the typeclass instanciation
+inferLiteral :: Literal -> EM.Err TCType
+inferLiteral literal = return $ tctypeOf literal
+
+
+
+-- Infer of a left-expression: all cases are delegated to minor inferers
 inferLExp :: Env -> LExp -> EM.Err TCType
 inferLExp env lexp = case lexp of
-    Deref l     -> do
-        t <- inferLExp env l
-        case t of
-            TPoint t' -> return t'
-            _         -> errorNotAPointer lexp
-
-    Access l r  -> do
-        ta <- inferLExp env l
-        ti <- inferRExp env r
-        when (ti `supremum` TInt /= TInt) $ errorArrayIndex r
-        case ta of
-            TArr _ t -> return t
-            _        -> errorArrayNot l
-
-    Name ident  -> lookType ident env
+    Deref l     -> inferDeref env l
+    Access l r  -> inferAccess env l r
+    Name ident  -> inferName env ident
 
 
--- INFER EXPRESSIONS WITH ERRORS
+-- Type of a dereference is induced by the type of the pointer
+--   * If the left-expression is not a pointer, throw an error
+inferDeref :: Env -> LExp -> EM.Err TCType
+inferDeref env l = do
+    t <- inferLExp env l
+    case t of
+        TPoint t' -> return t'
+        _         -> errorNotAPointer l
 
+
+-- Type of an array access is induced by the type of the array
+--   * If the left-expression is not an array, throw an error
+--   * If the right-expression is not subtype of an integer, throw an error
+inferAccess :: Env -> LExp -> RExp -> EM.Err TCType
+inferAccess env l r = do
+    ta <- inferLExp env l
+    ti <- inferRExp env r
+    when (ti `supremum` TInt /= TInt) $ errorArrayIndex r
+    case ta of
+        TArr _ t -> return t
+        _        -> errorArrayNot l
+
+
+-- Type of a name is induced by it's entry in the environment
+--   * If the name does not exist, Env.lookType will throw an error
+inferName :: Env -> Ident -> EM.Err TCType
+inferName env ident = lookType ident env
+
+
+
+-- Infer right/left-expressions enhancing the error message:
+-- this is used when we need to infer an expression in a check of a statement
+-- 'checkExpError' is defined in module ErrorHandling
 checkRExpError :: TCType -> Env -> RExp -> ET.ErrT TCType
 checkRExpError = checkExpError inferRExp
     
 checkLExpError :: TCType -> Env -> LExp -> ET.ErrT TCType
 checkLExpError = checkExpError inferLExp
 
--- CHECK VALIDITY OF STATEMENTS /////////////////////////////////////////////////////////////////////////
 
+
+-- Check validity of a statement, given an environment: all cases are delegated to minor checkers
 checkStm :: Env -> Stm -> ET.ErrT Env
 checkStm env stm = case stm of
     StmBlock block -> checkBlock env block
-
     StmCall ident rs -> checkCall env ident rs
-
     PredW pwrite r -> checkCall env (toIdent pwrite) [r]
-    
-    Assign l _ r -> do
-        tl <- checkLExpError TError env l
-        tr <- checkRExpError tl env r
-        unlessT env (tr `subtypeOf` tl) $ errorAssignType $ locOf l
-        unlessT env (isMutable env l)   $ errorAssignImmutable l
-        -- whenT   env (isFunction env l)  $ errorAssignFunction $ locOf l
-        return env
-
-    StmL l -> do
-        checkLExpError TVoid env l
-        return env
-
+    Assign l _ r -> checkAssign env l r
+    StmL l -> checkStmL env l
     If r stm -> checkIf env r stm
-
     IfElse r s1 s2 -> checkIfElse env r s1 s2
-
     While r s -> checkWhile env r s
-
-    DoWhile s r -> checkWhile env r s
-
+    DoWhile s r -> checkDoWhile env r s
     For ident rng s -> checkFor env ident rng s
-    
-    JmpStm jmp -> do
-        checkJmp env jmp
-        return env
+    JmpStm jmp -> checkJmpStm env jmp
 
 
+-- Empty block
+emptyBlock :: Block
+emptyBlock = Block (Loc 0 0) [] []
+
+-- Check of a block statement:
+-- * Push a new empty context
+-- * Load all function names (to allow mutual-recursion)
+-- * Check all declarations
+-- * Check all statements
+-- * Pop the new context
+--
+-- @returns the environment changed adding the subjects of the declaration
+checkBlock :: Env -> Block -> ET.ErrT Env
+checkBlock env block = do
+    let env1 = pushContext env
+    env2 <- foldM loadFunction env1 (decls block)
+    env3 <- foldM checkDecl env2 (decls block)
+    env4 <- foldM checkStm env3 (stms block)
+    return $ popContext env4
+
+
+-- Helper for check of a function call:
+-- check that the expression passed is compatible with the parameter type and intent
 checkPassing :: Env -> (RExp, Param) -> ET.ErrT Env
 checkPassing env (r, Param loc id it tp) = do
     t <- ET.toErrT tp $ inferRExp env r
@@ -280,6 +350,10 @@ checkPassing env (r, Param loc id it tp) = do
                        (unlessT env (isLExp r)          $ errorPassingLExp r)
 
 
+-- Check of a function call:
+--   * Function must exist in the scope, otherwise Env.lookFun will throw an error
+--   * If actual and formal parameters lists have not the same length, throw an error
+--   * If actual and formal types and intents are not compatible, throw an error
 checkCall :: Env -> Ident -> [RExp] -> ET.ErrT Env
 checkCall env ident actuals = ET.toErrT env $ do
     f <- lookFun ident env
@@ -291,33 +365,65 @@ checkCall env ident actuals = ET.toErrT env $ do
     return env
 
 
+-- Check an assignment statement
+--   * If the left-expression is ill-formed, throw an error
+--   * If the right-expression is ill-formed, throw an error
+--   * If not (leftType >= rightType), throw an error
+--   * If left-expression is immutable, throw an error
+checkAssign :: Env -> LExp -> RExp -> ET.ErrT Env
+checkAssign env l r = do
+    tl <- checkLExpError TError env l
+    tr <- checkRExpError tl env r
+    unlessT env (tr `subtypeOf` tl) $ errorAssignType $ locOf l
+    unlessT env (isMutable env l)   $ errorAssignImmutable l
+    -- whenT   env (isFunction env l)  $ errorAssignFunction $ locOf l
+    return env
 
-emptyBlock :: Block
-emptyBlock = Block (Loc 0 0) [] []
+-- Check a left-expression statement
+--   * If the expression is ill-formed, throw an error
+checkStmL :: Env -> LExp -> ET.ErrT Env
+checkStmL env l = do
+    checkLExpError TVoid env l
+    return env
 
+
+-- Check of if-then statement is delegated to if-then-else with an empty else-block
 checkIf :: Env -> RExp -> Stm -> ET.ErrT Env
 checkIf env r s = checkIfElse env r s (StmBlock emptyBlock)
 
+-- Check of an if-then-else statement:
+--   * If the guard-expression is ill-formed, throw an error
+--   * If the guard-expression is not a bool, throw an error
 checkIfElse :: Env -> RExp -> Stm -> Stm -> ET.ErrT Env
 checkIfElse env r s1 s2 = do
     tr <- checkRExpError TBool env r
     unlessT env (tr == TBool) $ errorGuard r tr
-    let thenEnv = pushContext env                   -- Entering the scope of true
+    let thenEnv = pushContext env                   -- Entering the scope of then
     thenEnv' <- checkStm thenEnv s1
-    let elseEnv = pushContext $ popContext thenEnv' -- Exiting the scope of true and entering the scope of false
+    let elseEnv = pushContext $ popContext thenEnv' -- Exiting the scope of then and entering the scope of else
     elseEnv' <- checkStm elseEnv s2
-    return $ popContext elseEnv'                    -- Exiting the scope of false and return the new env
+    return $ popContext elseEnv'                    -- Exiting the scope of else and return the new env
 
 
+-- Check of a while-statement:
+--   * If the guard-expression is ill-formed, throw an error
+--   * If the guard-expression is not a bool, throw an error
 checkWhile :: Env -> RExp -> Stm -> ET.ErrT Env
 checkWhile env r s = do
     tr <- checkRExpError TBool env r
     unlessT env (tr == TBool) $ errorGuard r tr
-    let loopEnv = pushWhile env
+    let loopEnv = pushWhile env                     -- Entering the loop scope
     exitEnv <- checkStm loopEnv s
-    return $ popContext exitEnv
+    return $ popContext exitEnv                     -- Exiting the loop scope
 
 
+-- Do-while is delegated to checkWhile 
+checkDoWhile :: Env -> RExp -> Stm -> ET.ErrT Env
+checkDoWhile = checkWhile
+
+
+-- check of for-statement:
+--   * If range is ill-formed, throw an error
 checkFor :: Env -> Ident -> Range -> Stm -> ET.ErrT Env
 checkFor env ident rng s = do
     checkRange env rng
@@ -327,6 +433,9 @@ checkFor env ident rng s = do
     return $ popContext exitEnv
 
 
+-- check of a for-range:
+--   * If start/end expressions are ill-formed, throw an error
+--   * If start/end expression are not a subtype of integer, throw an error
 checkRange :: Env -> Range -> ET.ErrT Env
 checkRange env rng = do
     ts <- checkRExpError TInt env $ start rng
@@ -336,26 +445,23 @@ checkRange env rng = do
     return env
 
 
+-- Check of a jump statement is delegated
+checkJmpStm :: Env -> Jump -> ET.ErrT Env
+checkJmpStm env jmp = do
+    checkJmp env jmp
+    return env
 
-
--- * Push a new empty context
--- * Load all function names (to allow mutual-recursion)
--- * Check all declarations
--- * Check all statements
--- * Pop the new context
-checkBlock :: Env -> Block -> ET.ErrT Env
-checkBlock env block = do
-    let env1 = pushContext env
-    env2 <- foldM loadFunction env1 (decls block)
-    env3 <- foldM checkDecl env2 (decls block)
-    env4 <- foldM checkStm env3 (stms block)
-    return $ popContext env4
-
-
-
--- CHECK VALIDITY OF JUMP STATEMENTS ///////////////////////////////////////////////////////////////////
-
-checkJmp :: Env -> Jump -> ET.ErrT () -- To be changed to ET.Err ()
+-- * 'return;' cannot be used inside a loop
+-- * 'return;' can be used only in procedures
+--
+-- * The returned expression in 'return expr;' must be well-formed
+-- * 'return expr;' cannot be used inside a loop
+-- * The returned expression in 'return expr;' must be compatible with the return type of the function
+-- * The returned expression in 'return expr;' must be an l-value if the return intent is 'ref'
+--
+-- * 'break' and 'continue' cannot be used inside a For
+-- * 'break' and 'contonue' cannot be used outside a loop
+checkJmp :: Env -> Jump -> ET.ErrT ()
 checkJmp env@(c:cs) jmp = ET.toErrT () $ case jmp of
     Return _    -> do
         when (inFor c || inWhile c) $ errorReturnLoop $ locOf jmp
