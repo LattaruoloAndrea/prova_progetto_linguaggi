@@ -63,11 +63,9 @@ checkDecl env decl = case decl of
         unlessT env (((tctypeOf rt) == TVoid) || (checkReturnPaths $ stms blk)) $ errorReturnMissing id
         checkFDecl env decl
 
-    CList cs -> do
-        foldM checkCDecl env cs
+    CList cs -> foldM checkCDecl env cs
 
-    VList vs -> do
-        foldM checkVDecl env vs
+    VList vs -> foldM checkVDecl env vs
 
 
 -- Check for the "totality" of a list of statements
