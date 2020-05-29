@@ -29,7 +29,7 @@ proc myFunction(x:int, y:real) : real {
 
   proc fib(n:int): int {
     if ( false ) {
-
+      return n+fib(n-1);
     }else {
       writeInt(n);
       return 0;
