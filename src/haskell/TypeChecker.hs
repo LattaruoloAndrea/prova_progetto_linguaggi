@@ -109,6 +109,8 @@ checkFDecl env (FDecl id forms it ty blk) =
 -- Extends the environment with a new compile-time constant (if possibile)
 --  * If no duplicate declaration occures and type is correct and initializer is a compile-time constant, OkT (env++constant)
 --  * Otherwise, BadT env
+--
+-- constexpr is defined in module CompileTime
 checkCDecl :: Env -> CDecl -> ET.ErrT Env
 checkCDecl env c@(CDecl id t r) = ET.toErrT env $ let tc = tctypeOf t in do
     tr <- inferRExp env r                 -- Error purpose: check that r is semantically correct
