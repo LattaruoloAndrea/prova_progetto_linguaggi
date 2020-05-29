@@ -100,7 +100,7 @@ formToParam (Form it (Ident l n) ty) = Param l n it $ tctypeOf ty
 
 -- Convert a Param to an Entry-Var (immutable when ConstIn or ConstRef modality)
 paramToEntry :: Param -> Entry
-paramToEntry (Param l id it ty) = Var l ty $ it==ConstIn || it==ConstRef
+paramToEntry (Param l id it ty) = Var l ty $ not $ it==ConstIn || it==ConstRef
 
 
 -- Get the Ident from Param
@@ -138,13 +138,13 @@ lookType id env = case lookEntry id env of
 lookFun :: Ident -> Env -> EM.Err Entry
 lookFun id env = case lookEntry id env of
     Just f@(Fun _ _ _ _) -> return f
-    _                    -> errorNameDoesNotExist id
+    _                    -> errorFunDoesNotExist id
 
 -- Take the Ok (Const ..) from the deepest entry mapped from id (if it exists), otherwise Bad
 lookConst :: Ident -> Env -> EM.Err Entry
 lookConst id env = case lookEntry id env of
     Just c@(Const _ _ _) -> return c
-    _                    -> errorNameDoesNotExist id
+    _                    -> errorConstDoesNotExist id
 
 
 -- Add a new Entry to the deepest context given Id

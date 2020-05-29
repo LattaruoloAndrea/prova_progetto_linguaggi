@@ -14,13 +14,8 @@ import Data.Char
 import ErrorHandling
 import PrintChapel
 
--- Copied from Skel --------------------------------------
-type Result a = EM.Err a
 
-failure :: Show a => a -> Result b
-failure x = EM.Bad $ "Undefined case: " ++ show x
-----------------------------------------------------------
-
+-- List of predefined functions
 predList :: [(String, Entry)]
 predList = [
     ("readChar",    Fun (Loc 0 0) [] In TChar),
@@ -32,17 +27,111 @@ predList = [
     ("writeReal",   Fun (Loc 0 0) [Param (Loc 0 1) "x" In TReal] In TVoid),
     ("writeString", Fun (Loc 0 0) [Param (Loc 0 1) "x" In TString] In TVoid)]
 
+-- Initial environment (with the global context)
 startEnv :: Env
 startEnv = [Context (M.fromList predList) TVoid False False False]
 
+-- Typecheck starting point: check of a program with the startEnv
 typeCheck :: Program -> EM.Err Env
 typeCheck = checkProgram startEnv
 
+
+-- Loading of function names and check of all declarations
 checkProgram :: Env -> Program -> EM.Err Env
 checkProgram env (Prog decls) = ET.fromErrT $ do
     env1 <- foldM loadFunction env decls
     foldM checkDecl env1 decls
 
+
+-- Check of a declaration: for variables and compile-time constants lists just fold of an individual check
+-- For a function, first we check for totality of non-procedures, then we check the rest
+checkDecl :: Env -> Decl -> ET.ErrT Env
+checkDecl env decl = case decl of
+    FDecl id _ _ rt blk -> do
+        unlessT env (((tctypeOf rt) == TVoid) || (checkReturnPaths $ stms blk)) $ errorReturnMissing id
+        checkFDecl env decl
+
+    CList cs -> do
+        foldM checkCDecl env cs
+
+    VList vs -> do
+        foldM checkVDecl env vs
+
+
+-- Check for the "totality" of a list of statements
+-- (although the definition of totality for a statement is a bit stretched)
+--
+--   * a return statement is total
+--   * an if/if-else is total if both his branches are total
+--   * a block is total if the list of statements inside it is total
+--   * all other statements are not total
+--
+-- The entire list is total if we reach a total statement from the first one:
+-- the reachability on the graph of statements is emulated by a fold right (with base case False)
+checkReturnPaths :: [Stm] -> Bool
+checkReturnPaths ls = foldr helper False ls
+    where
+        helper = \s acc -> acc || case s of
+            JmpStm (Return _)       -> True
+            JmpStm (ReturnE _ _)    -> True
+            If _ s'                 -> checkReturnPaths [s']
+            IfElse _ s1 s2          -> (checkReturnPaths [s1]) && (checkReturnPaths [s2])
+            StmBlock b              -> checkReturnPaths $ stms b
+            _                       -> False
+
+
+-- Check for a function definition:
+--   * 
+checkFDecl :: Env -> Decl -> ET.ErrT Env
+checkFDecl env (FDecl id forms it ty blk) =
+    let params  = map formToParam forms             -- create Params from Forms
+        entries = map paramToEntry params           -- create EnvEntries from Params
+        env1    = pushFun env (tctypeOf ty) it
+        makeEntry' = \e p -> ET.toErrT e $ makeEntry e p -- return the old env if something goes wrong
+    in do
+        unlessT () (it==In || it==Ref) $ errorReturnIntent (locOf id) it
+        env2 <- foldM makeEntry' env1 $ zip [identFromParam p | p <- params] entries  -- fold the entry insertion given the list (id, entry)
+        env3 <- checkBlock env2 blk
+        return $ popContext env3
+
+
+-- Extends the environment with a new compile-time constant (if possibile)
+--  * If no duplicate declaration occures and type is correct and initializer is a compile-time constant, OkT (env++constant)
+--  * Otherwise, BadT env
+checkCDecl :: Env -> CDecl -> ET.ErrT Env
+checkCDecl env c@(CDecl id t r) = ET.toErrT env $ let tc = tctypeOf t in do
+    tr <- inferRExp env r                 -- Error purpose: check that r is semantically correct
+    unless (tr `subtypeOf` tc) $ errorConstTypeMismatch id tc tr
+    case constexpr env r of
+        Nothing -> errorNotConst id r
+        Just x  -> do
+            makeConst env id x
+
+
+-- Extends the environment with a new variable (if possible)
+--  * If no duplicate declaration occures and type of initialization is correct, OkT (env++initialized) 
+--  * If no duplicate declaration occures and type of initialization is incorrect, BadT (env++not_initialized)
+--  * If duplicate declaration occures, BadT env
+checkVDecl :: Env -> VDecl -> ET.ErrT Env
+checkVDecl env v = case v of
+    Solo id t   -> ET.toErrT env $ makeMutable env id (tctypeOf t)
+
+    Init id t r -> let tc = tctypeOf t in ET.toErrTM env (makeMutable env id tc) $ do
+        tr <- inferRExp env r
+        unless (tr `subtypeOf` tc) $ errorVarTypeMismatch id tc tr
+        makeMutable env id tc
+
+
+-- Insert function in the scope (to be used once we enter in a new block to permit mutual-recursion)
+--  * If no duplicate declaration occures, OkT (env++function)
+--  * Otherwise, BadT env
+loadFunction :: Env -> Decl -> ET.ErrT Env
+loadFunction env d = ET.toErrT env $ case d of
+    FDecl id forms it ty _  ->
+        let params = map formToParam forms      -- formToParam is in Env.hs
+        in makeFun env id params it $ tctypeOf ty
+    
+    _                       -> return env
 
 -- INFER RIGHT EXPRESSIONS //////////////////////////////////////////////////////////////////////////////
 
@@ -246,80 +335,7 @@ checkRange env rng = do
     unlessT env (te `subtypeOf` TInt) $ errorRangeEnd (locOf rng) (end rng) te
     return env
 
-checkDecl :: Env -> Decl -> ET.ErrT Env
-checkDecl env decl = case decl of
-    FDecl id _ _ rt blk -> do
-        unlessT env (((tctypeOf rt) == TVoid) || (checkReturnPaths $ stms blk)) $ errorReturnMissing id
-        checkFDecl env decl
 
-    CList cs -> do
-        foldM checkCDecl env cs
-
-    VList vs -> do
-        foldM checkVDecl env vs
-
-
-checkReturnPaths :: [Stm] -> Bool
-checkReturnPaths ls = foldr helper False ls
-    where
-        helper = \s acc -> acc || case s of
-            JmpStm (Return _)       -> True
-            JmpStm (ReturnE _ _)    -> True
-            If _ s'                 -> checkReturnPaths [s']
-            IfElse _ s1 s2          -> (checkReturnPaths [s1]) && (checkReturnPaths [s2])
-            StmBlock b              -> checkReturnPaths $ stms b
-            _                       -> False
-
-
-checkFDecl :: Env -> Decl -> ET.ErrT Env
-checkFDecl env (FDecl id forms it ty blk) = do
-    let params  = map formToParam forms             -- create Params from Forms
-        entries = map paramToEntry params           -- create EnvEntries from Params
-        env1    = pushFun env (tctypeOf ty) it
-    unlessT () (it==In || it==Ref) $ errorReturnIntent (locOf id) it
-    let makeEntry' = \e p -> ET.toErrT e $ makeEntry e p -- return the old env if something goes wrong
-    env2 <- foldM makeEntry' env1 $ zip [identFromParam p | p <- params] entries  -- fold the entry insertion given the list (id, entry)
-    env3 <- checkBlock env2 blk
-    return $ popContext env3
-
-
--- Extends the environment with a new compile-time constant (if possibile)
---  * If no duplicate declaration occures and type is correct and initializer is a compile-time constant, OkT (env++constant)
---  * Otherwise, BadT env
-checkCDecl :: Env -> CDecl -> ET.ErrT Env
-checkCDecl env c@(CDecl id t r) = ET.toErrT env $ let tc = tctypeOf t in do
-    tr <- inferRExp env r                 -- Error purpose: check that r is semantically correct
-    unless (tr `subtypeOf` tc) $ errorConstTypeMismatch id tc tr
-    case constexpr env r of
-        Nothing -> errorNotConst id r
-        Just x  -> do
-            makeConst env id x
-
-
--- Extends the environment with a new variable (if possible)
---  * If no duplicate declaration occures and type of initialization is correct, OkT (env++initialized) 
---  * If no duplicate declaration occures and type of initialization is incorrect, BadT (env++not_initialized)
---  * If duplicate declaration occures, BadT env
-checkVDecl :: Env -> VDecl -> ET.ErrT Env
-checkVDecl env v = case v of
-    Solo id t   -> ET.toErrT env $ makeMutable env id (tctypeOf t)
-
-    Init id t r -> let tc = tctypeOf t in ET.toErrTM env (makeMutable env id tc) $ do
-        tr <- inferRExp env r
-        unless (tr `subtypeOf` tc) $ errorVarTypeMismatch id tc tr
-        makeMutable env id tc
-
-
--- Insert function in the scope (to be used once we enter in a new block to permit mutual-recursion)
---  * If no duplicate declaration occures, OkT (env++function)
---  * Otherwise, BadT env
-loadFunction :: Env -> Decl -> ET.ErrT Env
-loadFunction env d = ET.toErrT env $ case d of
-    FDecl id forms it ty _  ->
-        let params = map formToParam forms      -- formToParam is in Env.hs
-        in makeFun env id params it $ tctypeOf ty
-    
-    _                       -> return env
 
 
 -- * Push a new empty context
