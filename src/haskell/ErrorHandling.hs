@@ -141,6 +141,10 @@ errorReturnRef :: RExp -> EM.Err a
 errorReturnRef r =
     badLoc (locOf r) $ "Returned expression '" ++ (printLim r) ++ "' must be a left-expression"
 
+errorReturnMissing :: Ident -> EM.Err a
+errorReturnMissing (Ident loc id) =
+    badLoc loc $ "Missing return in a function definition: '" ++ id ++ "' is not a total function"
+
 
 
 

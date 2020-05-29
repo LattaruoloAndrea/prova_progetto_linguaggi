@@ -248,15 +248,9 @@ checkRange env rng = do
 
 checkDecl :: Env -> Decl -> ET.ErrT Env
 checkDecl env decl = case decl of
-    FDecl id forms it ty blk -> do
-        let params  = map formToParam forms             -- create Params from Forms
-            entries = map paramToEntry params           -- create EnvEntries from Params
-            env1    = pushFun env (tctypeOf ty) it
-        unlessT () (it==In || it==Ref) $ errorReturnIntent (locOf id) it
-        let makeEntry' = \e p -> ET.toErrT e $ makeEntry e p -- return the old env if something goes wrong
-        env2 <- foldM makeEntry' env1 $ zip [identFromParam p | p <- params] entries  -- fold the entry insertion given the list (id, entry)
-        env3 <- checkBlock env2 blk
-        return $ popContext env3
+    FDecl id _ _ rt blk -> do
+        unlessT env (((tctypeOf rt) == TVoid) || (checkReturnPaths $ stms blk)) $ errorReturnMissing id
+        checkFDecl env decl
 
     CList cs -> do
         foldM checkCDecl env cs
@@ -264,6 +258,29 @@ checkDecl env decl = case decl of
     VList vs -> do
         foldM checkVDecl env vs
 
+
+checkReturnPaths :: [Stm] -> Bool
+checkReturnPaths ls = foldr helper False ls
+    where
+        helper = \s acc -> acc || case s of
+            JmpStm (Return _)       -> True
+            JmpStm (ReturnE _ _)    -> True
+            If _ s'                 -> checkReturnPaths [s']
+            IfElse _ s1 s2          -> (checkReturnPaths [s1]) && (checkReturnPaths [s2])
+            StmBlock b              -> checkReturnPaths $ stms b
+            _                       -> False
+
+
+checkFDecl :: Env -> Decl -> ET.ErrT Env
+checkFDecl env (FDecl id forms it ty blk) = do
+    let params  = map formToParam forms             -- create Params from Forms
+        entries = map paramToEntry params           -- create EnvEntries from Params
+        env1    = pushFun env (tctypeOf ty) it
+    unlessT () (it==In || it==Ref) $ errorReturnIntent (locOf id) it
+    let makeEntry' = \e p -> ET.toErrT e $ makeEntry e p -- return the old env if something goes wrong
+    env2 <- foldM makeEntry' env1 $ zip [identFromParam p | p <- params] entries  -- fold the entry insertion given the list (id, entry)
+    env3 <- checkBlock env2 blk
+    return $ popContext env3
 
 
 -- Extends the environment with a new compile-time constant (if possibile)
