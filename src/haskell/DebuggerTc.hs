@@ -103,13 +103,13 @@ run :: Verbosity -> ParseFun Program -> String -> IO ()
 run v p s = let ts = myLLexer s in case p ts of
     EM.Bad s    -> do
         putStrLn "\nParse              Failed...\n"
-        putStrV v "Tokens:"
-        putStrV v $ show ts
+        -- putStrV v "Tokens:"
+        -- putStrV v $ show ts
         putStrLn s
         exitFailure
     EM.Ok  tree -> do
         putStrLn "\nParse Successful!"
-        showTree v tree
+        -- showTree v tree
         case typeCheck tree of
             EM.Bad s -> do
                 putStrLn "\nTypeCheck            Failed...\n"
