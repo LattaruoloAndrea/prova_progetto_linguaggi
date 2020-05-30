@@ -6,13 +6,13 @@ proc nyFunction(x:int, y:real) : real {
   
   var newResult: real = 0.0;
   var counter: int = 0;
-  var x:int = 0;
-
+  var x:bool = false;
+  //var b: bool = x; // here works since the x above is seen and not the x in the function parameter
   while myBool {  
-    var y:int = 0;
+    var t:int = 0;
     counter+=1;
   }
-  x = y; // error on using a var declered inside a block and block ended
+  x = t; // error on using a var declered inside a block and block ended
   return newResult; 
   }
   

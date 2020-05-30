@@ -10,7 +10,6 @@ proc nyFunction(x:int, y:real) : real {
 
   while myBool {
     if counter == x then myBool = true;
-    readInt(myInt[counter]);
     counter+=1;
     return myBool; //error return inside a loop
   }
@@ -31,8 +30,7 @@ proc nyFunction(x:int, y:real) : real {
     }
     else {
           var x:int = 0;
-          y+=1;
-          y+=1;}
+          }
    }
 
   return newResult; 

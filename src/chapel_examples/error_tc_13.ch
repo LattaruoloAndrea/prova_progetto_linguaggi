@@ -10,11 +10,13 @@ proc nyFunction(x:int, y:real) : real {
 
   for x in {1 .. 20}
    {
-     proc nyFunction(x:int,p:real) : bool {
-     	return y; // y is seen from outside
-     }
-     newResult = nyFunction(0,newResult); // error: the function seen here is the one inside the for loop
-   }
+     continue;              // error no continue inside for statement!
+    }
 
-  return newResult; 
+  return newResult;
   }
+
+proc gatto() : real {
+  return nyFunction(5);     //error number of parameter mismatch
+  }
+  
