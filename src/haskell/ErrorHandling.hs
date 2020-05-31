@@ -58,6 +58,14 @@ errorBinary :: (Show binop) => binop -> RExp -> RExp -> TCType -> TCType -> EM.E
 errorBinary op r1 r2 t1 t2 =
     badLoc (locOf r1) $ "Operands '" ++ (printLim r1) ++ "' (type: " ++ (show t1) ++ ") and '" ++ (printLim r2) ++ "' (type: " ++ (show t2) ++ ") are not compatible in a " ++ (show op) ++ " expression"
 
+errorArithmetic :: (Show binop) => binop -> RExp -> RExp -> TCType -> TCType -> EM.Err b
+errorArithmetic op r1 r2 t1 t2 =
+    badLoc (locOf r1) $ "Operands '" ++ (printLim r1) ++ "' (type: " ++ (show t1) ++ ") and '" ++ (printLim r2) ++ "' (type: " ++ (show t2) ++ ") are not a subtype of real in a " ++ (show op) ++ " expression"
+
+errorArithOperandInt :: RExp -> TCType -> EM.Err a
+errorArithOperandInt r t =
+    badLoc (locOf r) $ "Operand '" ++ (printLim r) ++ "' should have type int, but found " ++ (show t)
+
 
 
 errorArrayEmpty :: Loc -> EM.Err a
@@ -153,6 +161,10 @@ errorReturnMissing :: Ident -> EM.Err a
 errorReturnMissing (Ident loc id) =
     badLoc loc $ "Missing return in a function definition: '" ++ id ++ "' is not a total function"
 
+errorMissingAssignRes :: Loc -> String -> String -> EM.Err a
+errorMissingAssignRes loc id n =
+    badLoc loc $ "Missing assignment to '" ++ n ++ "' passed by result (either Out or InOut) in the definition of '" ++ id ++ "'"
+
 
 
 
@@ -193,9 +205,24 @@ errorAssignImmutable :: LExp -> EM.Err a
 errorAssignImmutable l =
     badLoc (locOf l) $ "Cannot modify '" ++ (printLim l) ++ "' because it's immutable"
 
--- errorAssignFunction :: Loc -> EM.Err a
--- errorAssignFunction loc =
---     badLoc l $ "Functions cannot be on the left of an assignment"
+errorAssignMod :: LExp -> TCType -> EM.Err a
+errorAssignMod l t =
+    badLoc (locOf l) $ "Left expression '" ++ (printLim l) ++ "' in a mod assignment should have type int, found " ++ (show t)
+
+errorAssignPow :: RExp -> TCType -> EM.Err a
+errorAssignPow r t =
+    badLoc (locOf r) $ "Right expression '" ++ (printLim r) ++ "' in a pow assignment should have type int, found " ++ (show t)
+
+errorAssignNotReal :: RExp -> TCType -> EM.Err a
+errorAssignNotReal r t = 
+    badLoc (locOf r) $ "Right expression '" ++ (printLim r) ++ "' should be a number, found " ++ (show t)
+
+errorAssignFunction :: Loc -> EM.Err a
+errorAssignFunction loc =
+    badLoc loc $ "Functions cannot be on the left of an assignment"
+
+
+
 
 errorCallWrongNumber :: Ident -> Int -> Int -> EM.Err a
 errorCallWrongNumber (Ident loc id) la lp=

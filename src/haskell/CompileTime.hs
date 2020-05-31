@@ -29,16 +29,9 @@ toLString s@(LString _) = s
 -- undefined patterns
 
 -- Binary operation overloading abstractions ///////////////////////////////////////
-type LStringOperator = Literal -> Literal -> Maybe Literal
 type LIntOperator    = Literal -> Literal -> Maybe Literal
 type LRealOperator   = Literal -> Literal -> Maybe Literal
 type LiteralOperator = Literal -> Literal -> Maybe Literal
-
--- 1. Abstraction on the "pure" operations
-strBinary :: (String -> String -> String) -> LStringOperator
-strBinary op = \x y -> case (x,y) of
-    (LString a, LString b) -> Just . LString $ a `op` b
-    _                      -> Nothing
 
 intBinary :: (Integer -> Integer -> Integer) -> LIntOperator
 intBinary op = \x y -> case (x,y) of
@@ -68,21 +61,14 @@ overload intOp realOp = \x y -> case (x, y) of
 
 -- Concrete addition ////////////////////////////////////////////////////////////////
 
-strAdd :: LStringOperator
-strAdd = strBinary (++)
-
 intAdd :: LIntOperator
 intAdd = intBinary (+)
 
 realAdd :: LRealOperator
 realAdd = realBinary (+)
 
-
 litAdd :: LiteralOperator
-x `litAdd` y = case (x, y) of
-    (LChar _, LString _)    -> (toLString x) `strAdd` y
-    (LString _, _)          -> x `strAdd` y
-    _                       -> overload intAdd realAdd x y
+x `litAdd` y = overload intAdd realAdd x y
 
 
 
