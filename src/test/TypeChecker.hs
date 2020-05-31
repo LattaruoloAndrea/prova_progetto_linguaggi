@@ -131,6 +131,7 @@ checkRes env id params ss = foldl (>>) (return env) errs
                     Assign (Name ident) _ _ -> acc || (idName ident) == n
                     IfElse _ s1 s2          -> acc || (helper x [s1]) && (helper x [s2])
                     StmBlock b              -> acc || (helper x $ stms b)
+                    _                       -> acc
             in foldr helper' False ss
 
 -- Check for a function definition:
