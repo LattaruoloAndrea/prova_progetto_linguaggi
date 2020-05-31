@@ -56,23 +56,49 @@ loadFunction env d = ET.toErrT env $ case d of
 
 
 -- Check of a declaration: for variables and compile-time constants lists just fold of an individual check
--- For a function, first we check for totality of non-procedures, then we check the rest
+-- For a function, first we filter-out unreachable statements and then we check the "filtered" function
 checkDecl :: Env -> Decl -> ET.ErrT Env
 checkDecl env decl = case decl of
-    FDecl id _ _ rt blk -> do
-        unlessT env (((tctypeOf rt) == TVoid) || (checkReturnPaths $ stms blk)) $ errorReturnMissing id
-        checkFDecl env decl
+    FDecl id forms it rt b ->
+        let ss  = stms b
+            ss' = reachables ss
+            b'  = Block (locOf b) (decls b) ss'
+        in  checkFDecl env (FDecl id forms it rt b')
 
     CList cs -> foldM checkCDecl env cs
-
     VList vs -> foldM checkVDecl env vs
+
+
+-- Given a list of statements, returns a list of statements filtering out unreachable ones
+-- A statement s is unreachable when there is a "sink" between the start statement and s
+-- A sink is a statement that terminates the computation in every possible execution paths:
+--   * 'return' and 'return expr' are sinks
+--   * if-else is a sink when both branches are sinks
+--   * a block is a sink when it contains a sink
+reachables :: [Stm] -> [Stm]
+reachables ss = ss'
+    where
+        extends = \s -> case s of   -- Transform a block in a block of reachable statements
+            StmBlock b  -> StmBlock $ Block (locOf b) (decls b) (reachables $ stms b)
+            _           -> s
+        
+        isSink = \s -> case s of    -- Predicate to capture the notion of sink
+            JmpStm (Return _)       -> True
+            JmpStm (ReturnE _ _)    -> True
+            IfElse _ s1 s2          -> isSink s1 && isSink s2
+            StmBlock b              -> or $ map isSink $ stms b
+            _                       -> False
+
+        extended = map extends ss           -- "Relax" all blocks
+        (n, y)   = break isSink extended    -- split statements on the first sink
+        ss'      = n ++ (take 1 y)          -- Take only the reachable ones (i.e. statements until first sink included)
 
 
 -- Check for the "totality" of a list of statements
 -- (although the definition of totality for a statement is a bit stretched)
 --
 --   * a return statement is total
---   * an if/if-else is total if both his branches are total
+--   * an if-else is total if both his branches are total
 --   * a block is total if the list of statements inside it is total
 --   * all other statements are not total
 --
@@ -84,23 +110,45 @@ checkReturnPaths ls = foldr helper False ls
         helper = \s acc -> acc || case s of
             JmpStm (Return _)       -> True
             JmpStm (ReturnE _ _)    -> True
-            If _ s'                 -> checkReturnPaths [s']
             IfElse _ s1 s2          -> (checkReturnPaths [s1]) && (checkReturnPaths [s2])
             StmBlock b              -> checkReturnPaths $ stms b
             _                       -> False
 
 
+-- Check that a parameters passed by res/valres are assigned to a value in all execution paths
+checkRes :: Env -> Ident -> [Param] -> [Stm] -> ET.ErrT Env
+checkRes env id params ss = foldl (>>) (return env) errs
+    where
+        errs    = map ferr params
+        ferr    = \x@(Param _ n _ _) ->     -- Given a Param x, set error when at the end there is an exec path where it doesn't have a value assigned
+                    if helper x ss
+                    then return env
+                    else ET.toErrT env $ errorMissingAssignRes (locOf x) (idName id) n
+        helper  = \x@(Param _ n _ _) ss ->
+            let helper' = \s acc -> case s of   -- Roughly the same structure of return-paths
+                    JmpStm (Return _)       -> False
+                    JmpStm (ReturnE _ _)    -> False
+                    Assign (Name ident) _ _ -> acc || (idName ident) == n
+                    IfElse _ s1 s2          -> acc || (helper x [s1]) && (helper x [s2])
+                    StmBlock b              -> acc || (helper x $ stms b)
+            in foldr helper' False ss
+
 -- Check for a function definition:
---   * return intent must be one of In (by value) or Ref (by reference)
+--   * return intent must be either In (by value) or Ref (by reference)
+--   * Proper functions must reach a 'return' in every possibile exec path
+--   * check that all res/valres parameters will reach an assignment in every exec path
 --   * check that the body with the formal parameters added in is valid
 checkFDecl :: Env -> Decl -> ET.ErrT Env
 checkFDecl env (FDecl id forms it ty blk) =
-    let params  = map formToParam forms             -- create Params from Forms
-        entries = map paramToEntry params           -- create EnvEntries from Params
-        env1    = pushFun env (tctypeOf ty) it
+    let params          = map formToParam forms             -- create Params from Forms
+        resCandidates   = filter (\(Param _ _ it _) -> it == Out || it == InOut) params -- Get params passed by res/valres
+        entries         = map paramToEntry params           -- create EnvEntries from Params
+        env1            = pushFun env (tctypeOf ty) it
         makeEntry' = \e p -> ET.toErrT e $ makeEntry e p -- return the old env if something goes wrong
     in do
         unlessT () (it==In || it==Ref) $ errorReturnIntent (locOf id) it
+        whenT env  (tctypeOf ty /= TVoid && (not $ checkReturnPaths $ stms blk)) $ errorReturnMissing id
+        checkRes env id resCandidates $ stms blk
         env2 <- foldM makeEntry' env1 $ zip [identFromParam p | p <- params] entries  -- fold the entry insertion given the list (id, entry)
         env3 <- checkBlock env2 blk
         return $ popContext env3
@@ -186,22 +234,30 @@ inferLogicalOperand errF env r = do
 
 -- Infer relational and arithmetic operators ///////////////////////////////////////////////////////////
 
+
+-- For relational operators we need both operands to be compatible with each other
 inferComp :: Env -> RExp -> CompOp -> RExp -> EM.Err TCType
 inferComp env r1 op r2 = do
-    inferBinary env r1 op r2
-    return TBool
-
-inferArith :: Env -> RExp -> ArithOp -> RExp -> EM.Err TCType
-inferArith = inferBinary
-
--- Abstraction over infer of relational and arithmetic operators
---   * Non compatible types of the operands throw an error
-inferBinary :: (Show binop) => Env -> RExp -> binop -> RExp -> EM.Err TCType
-inferBinary env r1 op r2 = do
     t1 <- inferRExp env r1
     t2 <- inferRExp env r2
     let t = supremum t1 t2
     when (t == TError) $ errorBinary op r1 r2 t1 t2
+    return TBool
+
+-- For arithmetic operators we need "numeric" operands (i.e. subtype of real)
+-- extra conditions for '%' (operands both subtype of int) and '^' (exponent subtype of int)
+inferArith :: Env -> RExp -> ArithOp -> RExp -> EM.Err TCType
+inferArith env r1 op r2 = do
+    t1 <- inferRExp env r1
+    t2 <- inferRExp env r2
+    let t = supremum t1 t2
+    when (t == TError) $ errorBinary op r1 r2 t1 t2
+    unless (t `subtypeOf` TReal) $ errorArithmetic op r1 r2 t1 t2
+    case op of
+        Mod ->  (unless (t1 `subtypeOf` TInt) $ errorArithOperandInt r1 t1) >>
+                (unless (t2 `subtypeOf` TInt) $ errorArithOperandInt r2 t2)
+        Pow ->   unless (t2 `subtypeOf` TInt) $ errorArithOperandInt r2 t2
+        _   ->  return ()
     return t
 
 
@@ -301,7 +357,7 @@ checkStm env stm = case stm of
     StmBlock block -> checkBlock env block
     StmCall ident rs -> checkCall env ident rs
     PredW pwrite r -> checkCall env (toIdent pwrite) [r]
-    Assign l _ r -> checkAssign env l r
+    Assign l op r -> checkAssign env l op r
     StmL l -> checkStmL env l
     If r stm -> checkIf env r stm
     IfElse r s1 s2 -> checkIfElse env r s1 s2
@@ -321,8 +377,6 @@ emptyBlock = Block (Loc 0 0) [] []
 -- * Check all declarations
 -- * Check all statements
 -- * Pop the new context
---
--- @returns the environment changed adding the subjects of the declaration
 checkBlock :: Env -> Block -> ET.ErrT Env
 checkBlock env block = do
     let env1 = pushContext env
@@ -370,13 +424,21 @@ checkCall env ident actuals = ET.toErrT env $ do
 --   * If the right-expression is ill-formed, throw an error
 --   * If not (leftType >= rightType), throw an error
 --   * If left-expression is immutable, throw an error
-checkAssign :: Env -> LExp -> RExp -> ET.ErrT Env
-checkAssign env l r = do
-    tl <- checkLExpError TError env l
-    tr <- checkRExpError tl env r
-    unlessT env (tr `subtypeOf` tl) $ errorAssignType $ locOf l
-    unlessT env (isMutable env l)   $ errorAssignImmutable l
-    -- whenT   env (isFunction env l)  $ errorAssignFunction $ locOf l
+--   * Special check for '%=' and '^='
+--   * Right-expression must be a 'number' (subtype of real) when non-eq assignments are used
+--   * Function-names cannot be on the left of an assignment
+checkAssign :: Env -> LExp -> AssignOp -> RExp -> ET.ErrT Env
+checkAssign env l op r = ET.toErrT env $ do
+    tl <- ET.fromErrT $ checkLExpError TError env l
+    tr <- ET.fromErrT $ checkRExpError tl env r
+    unless (tr `subtypeOf` tl) $ errorAssignType $ locOf l
+    unless (isMutable env l)   $ errorAssignImmutable l
+    case op of
+        AssignMod _ -> unless (tl `subtypeOf` TInt) $ errorAssignMod l tl
+        AssignPow _ -> unless (tr `subtypeOf` TInt) $ errorAssignPow r tr
+        AssignEq  _ -> return ()
+        _           -> unless (tr `subtypeOf` TReal) $ errorAssignNotReal r tr
+    when (isFunction env l)  $ errorAssignFunction $ locOf l
     return env
 
 -- Check a left-expression statement
