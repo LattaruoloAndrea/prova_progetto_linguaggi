@@ -106,7 +106,7 @@ errorConstDoesNotExist = errorDoesNotExist "Compile-time constant name"
 
 errorNameAlreadyDeclared :: Ident -> Loc -> EM.Err a
 errorNameAlreadyDeclared (Ident loc id) whr =
-    badLoc loc $ "Name '" ++ id ++ "' already declared at (" ++ (show whr) ++ ")"
+    badLoc loc $ "Name '" ++ id ++ "' already declared at " ++ (show whr)
 
 
 

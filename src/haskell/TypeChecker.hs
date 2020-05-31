@@ -147,10 +147,10 @@ checkFDecl env (FDecl id forms it ty blk) =
         makeEntry' = \e p -> ET.toErrT e $ makeEntry e p -- return the old env if something goes wrong
     in do
         unlessT () (it==In || it==Ref) $ errorReturnIntent (locOf id) it
-        whenT env  (tctypeOf ty /= TVoid && (not $ checkReturnPaths $ stms blk)) $ errorReturnMissing id
-        checkRes env id resCandidates $ stms blk
+        whenT env1  (tctypeOf ty /= TVoid && (not $ checkReturnPaths $ stms blk)) $ errorReturnMissing id
+        checkRes env1 id resCandidates $ stms blk
         env2 <- foldM makeEntry' env1 $ zip [identFromParam p | p <- params] entries  -- fold the entry insertion given the list (id, entry)
-        env3 <- checkBlock env2 blk
+        env3 <- checkScope env2 blk
         return $ popContext env3
 
 
@@ -373,17 +373,23 @@ emptyBlock = Block (Loc 0 0) [] []
 
 -- Check of a block statement:
 -- * Push a new empty context
--- * Load all function names (to allow mutual-recursion)
--- * Check all declarations
--- * Check all statements
+-- * Check the new scope created
 -- * Pop the new context
 checkBlock :: Env -> Block -> ET.ErrT Env
 checkBlock env block = do
     let env1 = pushContext env
-    env2 <- foldM loadFunction env1 (decls block)
-    env3 <- foldM checkDecl env2 (decls block)
-    env4 <- foldM checkStm env3 (stms block)
-    return $ popContext env4
+    env2 <- checkScope env1 block
+    return $ popContext env2
+
+-- Check of a scope:
+-- * Load all function names (to allow mutual recursion)
+-- * Add al new declared variables/constants
+-- * Check the list of statements
+checkScope :: Env -> Block -> ET.ErrT Env
+checkScope env block = do
+    env1 <- foldM loadFunction env (decls block)
+    env2 <- foldM checkDecl env1 (decls block)
+    foldM checkStm env2 (stms block)
 
 
 -- Helper for check of a function call:
