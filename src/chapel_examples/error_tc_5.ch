@@ -28,8 +28,14 @@ proc myFunction(x:int, y:real) : real {
   }
 
   proc fib(n:int): int {
+    var q: real = 18;
+    q %= 5;
     if ( false ) {
         //error no return type here!!
+        if ( false ) {
+          return 1;
+        }
+        return 0;
     }else {
       writeInt(n);
       return 0;
