@@ -10,7 +10,7 @@ proc nyFunction(x:int, y:real) : real {
 
   while myBool {
     if counter == x then myBool = true;
-    readInt(myInt[counter]);
+    readInt(myInt[counter]); // error number of parameters
     counter+=1;
   }
   break; // error break outside a loop, gives error with continue as well
@@ -30,7 +30,7 @@ proc nyFunction(x:int, y:real) : real {
     }
     else {
           var x:int = 0;
-          y+=1;
+          y+=1; // error cannot modify the iterator
           y+=1;}
    }
 
