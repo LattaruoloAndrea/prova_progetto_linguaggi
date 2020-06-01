@@ -165,7 +165,6 @@ instance Print AbsChapel.Stm where
   prt i e = case e of
     AbsChapel.StmBlock block -> prPrec i 0 (concatD [prt 0 block])
     AbsChapel.StmCall id rexps -> prPrec i 0 (concatD [prt 0 id, doc (showString "("), prt 0 rexps, doc (showString ")"), doc (showString ";")])
-    AbsChapel.PredW pwrite rexp -> prPrec i 0 (concatD [prt 0 pwrite, doc (showString "("), prt 0 rexp, doc (showString ")"), doc (showString ";")])
     AbsChapel.Assign lexp assignop rexp -> prPrec i 0 (concatD [prt 0 lexp, prt 0 assignop, prt 0 rexp, doc (showString ";")])
     AbsChapel.StmL lexp -> prPrec i 0 (concatD [prt 0 lexp, doc (showString ";")])
     AbsChapel.If rexp stm -> prPrec i 0 (concatD [doc (showString "if"), prt 0 rexp, doc (showString "then"), prt 0 stm])
@@ -209,25 +208,10 @@ instance Print AbsChapel.RExp where
     AbsChapel.RLExp _ lexp -> prPrec i 0 (concatD [prt 0 lexp])
     AbsChapel.ArrList _ rexps -> prPrec i 0 (concatD [doc (showString "["), prt 0 rexps, doc (showString "]")])
     AbsChapel.FCall _ id rexps -> prPrec i 0 (concatD [prt 0 id, doc (showString "("), prt 0 rexps, doc (showString ")")])
-    AbsChapel.PredR _ pread -> prPrec i 0 (concatD [prt 0 pread, doc (showString "("), doc (showString ")")])
     AbsChapel.Lit _ literal -> prPrec i 0 (concatD [prt 0 literal])
   prtList _ [] = concatD []
   prtList _ [x] = concatD [prt 0 x]
   prtList _ (x:xs) = concatD [prt 0 x, doc (showString ","), prt 0 xs]
-
-instance Print AbsChapel.PRead where
-  prt i e = case e of
-    AbsChapel.ReadChar _ -> prPrec i 0 (concatD [doc (showString "readChar")])
-    AbsChapel.ReadInt _ -> prPrec i 0 (concatD [doc (showString "readInt")])
-    AbsChapel.ReadReal _ -> prPrec i 0 (concatD [doc (showString "readReal")])
-    AbsChapel.ReadString _ -> prPrec i 0 (concatD [doc (showString "readString")])
-
-instance Print AbsChapel.PWrite where
-  prt i e = case e of
-    AbsChapel.WriteChar _ -> prPrec i 0 (concatD [doc (showString "writeChar")])
-    AbsChapel.WriteInt _ -> prPrec i 0 (concatD [doc (showString "writeInt")])
-    AbsChapel.WriteReal _ -> prPrec i 0 (concatD [doc (showString "writeReal")])
-    AbsChapel.WriteString _ -> prPrec i 0 (concatD [doc (showString "writeString")])
 
 instance Print AbsChapel.ArithOp where
   prt i e = case e of
