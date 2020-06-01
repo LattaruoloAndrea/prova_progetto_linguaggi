@@ -62,26 +62,18 @@ import Locatable
   'out' { PT _ (TS _ 46) }
   'param' { PT _ (TS _ 47) }
   'proc' { PT _ (TS _ 48) }
-  'readChar' { PT _ (TS _ 49) }
-  'readReal' { PT _ (TS _ 50) }
-  'readInt' { PT _ (TS _ 51) }
-  'readString' { PT _ (TS _ 52) }
-  'real' { PT _ (TS _ 53) }
-  'ref' { PT _ (TS _ 54) }
-  'return' { PT _ (TS _ 55) }
-  'string' { PT _ (TS _ 56) }
-  'then' { PT _ (TS _ 57) }
-  'true' { PT _ (TS _ 58) }
-  'var' { PT _ (TS _ 59) }
-  'void' { PT _ (TS _ 60) }
-  'while' { PT _ (TS _ 61) }
-  'writeChar' { PT _ (TS _ 62) }
-  'writeReal' { PT _ (TS _ 63) }
-  'writeInt' { PT _ (TS _ 64) }
-  'writeString' { PT _ (TS _ 65) }
-  '{' { PT _ (TS _ 66) }
-  '||' { PT _ (TS _ 67) }
-  '}' { PT _ (TS _ 68) }
+  'real' { PT _ (TS _ 49) }
+  'ref' { PT _ (TS _ 50) }
+  'return' { PT _ (TS _ 51) }
+  'string' { PT _ (TS _ 52) }
+  'then' { PT _ (TS _ 53) }
+  'true' { PT _ (TS _ 54) }
+  'var' { PT _ (TS _ 55) }
+  'void' { PT _ (TS _ 56) }
+  'while' { PT _ (TS _ 57) }
+  '{' { PT _ (TS _ 58) }
+  '||' { PT _ (TS _ 59) }
+  '}' { PT _ (TS _ 60) }
   L_ident  { PT _ (TV _) }
   L_charac { PT _ (TC _) }
   L_integ  { PT _ (TI _) }
@@ -172,7 +164,6 @@ Stm :: { Stm }
 Stm : ';' Stm { $2 }
     | Block { AbsChapel.StmBlock $1 }
     | Ident '(' ListRExp ')' ';' { AbsChapel.StmCall $1 $3 }
-    | PWrite '(' RExp ')' ';' { AbsChapel.PredW $1 $3 }
     
     | LExp '=' RExp ';' { AbsChapel.Assign $1 (AbsChapel.AssignEq (tokenLoc $2)) $3 }
     | LExp '+=' RExp ';' { AbsChapel.Assign $1 (AbsChapel.AssignAdd (tokenLoc $2)) $3 }
@@ -237,22 +228,9 @@ RExp : RExp '||' RExp { AbsChapel.Or (tokenLoc $2) $1 $3 }
      | LExp { AbsChapel.RLExp (locOf $1) $1 }
      | '[' ListRExp ']' { AbsChapel.ArrList (tokenLoc $1) $2 }
      | Ident '(' ListRExp ')' { AbsChapel.FCall (locOf $1) $1 $3 }
-     | PRead '(' ')' { AbsChapel.PredR (locOf $1) $1 }
      | Literal { AbsChapel.Lit (fst $1) (snd $1) }
 
      | '(' RExp ')' { $2 }
-
-PRead :: { PRead }
-PRead : 'readChar' { AbsChapel.ReadChar (tokenLoc $1) }
-      | 'readInt' { AbsChapel.ReadInt (tokenLoc $1) }
-      | 'readReal' { AbsChapel.ReadReal (tokenLoc $1) }
-      | 'readString' { AbsChapel.ReadString (tokenLoc $1) }
-
-PWrite :: { PWrite }
-PWrite : 'writeChar' { AbsChapel.WriteChar (tokenLoc $1) }
-       | 'writeInt' { AbsChapel.WriteInt (tokenLoc $1) }
-       | 'writeReal' { AbsChapel.WriteReal (tokenLoc $1) }
-       | 'writeString' { AbsChapel.WriteString (tokenLoc $1) }
 
 -- IncDecOp :: { IncDecOp }
 -- IncDecOp : '++' { AbsChapel.Inc } | '--' { AbsChapel.Dec }

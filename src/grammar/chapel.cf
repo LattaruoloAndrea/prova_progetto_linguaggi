@@ -57,7 +57,6 @@ Block.                      Block ::= "{" [Decl] [Stm] "}" ;
 
 StmBlock.                   Stm ::= Block ;
 StmCall.                    Stm ::= Ident "(" [RExp] ")" ";" ;
-PredW.                      Stm ::= PWrite "(" RExp ")" ";" ;
 Assign.                     Stm ::= LExp AssignOp RExp ";" ;
 StmL.                       Stm ::= LExp ";" ;
 
@@ -102,21 +101,7 @@ RefE.                       RExp ::= "&" LExp ;
 RLExp.                      RExp ::= LExp ;
 ArrList.                    RExp ::= "[" [RExp] "]" ;
 FCall.                      RExp ::= Ident "(" [RExp] ")" ;
-PredR.                      RExp ::= PRead "(" ")" ;
 Lit.                        RExp ::= Literal ;
-
-
--- PREDEFINED FUNCTIONS ///////////////////////////////////////////////////////
-
-ReadChar.                   PRead ::= "readChar" ;
-ReadInt.                    PRead ::= "readInt" ;
-ReadReal.                  PRead ::= "readReal" ;
-ReadString.                 PRead ::= "readString" ;
-
-WriteChar.                  PWrite ::= "writeChar" ;
-WriteInt.                   PWrite ::= "writeInt" ;
-WriteReal.                 PWrite ::= "writeReal" ;
-WriteString.                PWrite ::= "writeString" ;
 
 
 -- OPERATORS /////////////////////////////////////////////////////////////////
