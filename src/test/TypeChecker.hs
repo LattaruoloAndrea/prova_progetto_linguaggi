@@ -476,10 +476,10 @@ checkStmCall env (StmCall ident actuals) = do
 checkAssign :: Env -> Stm -> ET.ErrT Stm
 checkAssign env stm@(Assign l op r) = ET.toErrT stm $ do
     when (isFunction env l)  $ errorAssignFunction $ locOf l
+    unless (isMutable env l)   $ errorAssignImmutable l
     (tl, l') <- checkLExpError env l
     (tr, r') <- checkRExpError env r
     unless (tr `subtypeOf` tl) $ errorAssignType $ locOf l
-    unless (isMutable env l)   $ errorAssignImmutable l
     case op of
         AssignMod _ -> unless (tl `subtypeOf` TInt) $ errorAssignMod l tl
         AssignPow _ -> unless (tr `subtypeOf` TInt) $ errorAssignPow r tr
