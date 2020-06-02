@@ -14,6 +14,9 @@ errToMaybe :: Err a -> Maybe a
 errToMaybe (Ok x)   = Just x
 errToMaybe (Bad _)  = Nothing
 
+fromOk :: Err a -> a
+fromOk (Ok a ) = a
+
 data Err a = Ok a | Bad String
   deriving (Read, Show, Eq, Ord)
 
