@@ -10,10 +10,11 @@ import TCType
 import TCInstances
 import Locatable
 import Env
-import Control.Monad (unless, when)
+import Control.Monad (unless, when, mapM_)
 import qualified ErrM as EM
 import qualified ErrT as ET
 import PrintChapel
+import TacGenerator
 
 import System.IO ( stdin, hGetContents )
 import System.Environment ( getArgs, getProgName )
@@ -115,8 +116,11 @@ run v p s = let ts = myLLexer s in case p ts of
                 putStrLn "\nTypeCheck            Failed...\n"
                 putStrLn s
                 exitFailure
-            EM.Ok _ -> do
+            EM.Ok prog -> do
                 putStrLn "\nTypeCheck Successful!"
+                putStrLn "\nThree Address Code:"
+                let tacCode = genTAC prog
+                mapM_ (putStrLn . show) tacCode
                 exitSuccess
 
 
