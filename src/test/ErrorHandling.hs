@@ -68,6 +68,13 @@ errorArithOperandInt r t =
 
 
 
+
+errorSignNotNumber :: RExp -> TCType -> EM.Err a
+errorSignNotNumber r t =
+    badLoc (locOf r) $ "Signed expression '" ++ (printLim r) ++ "' must be a number, found " ++ (show t)
+
+
+
 errorArrayEmpty :: Loc -> EM.Err a
 errorArrayEmpty loc = badLoc loc "Empty array initializer"
 
@@ -250,7 +257,7 @@ errorPassingLExp r =
 
 
 
-checkExpError :: (Print b) => (a -> b -> EM.Err c) -> c -> (a -> b -> ET.ErrT c)
-checkExpError f c = \a b -> ET.toErrT c $ case f a b of
+checkExpError :: (Print b) => (a -> b -> EM.Err c) -> (a -> b -> EM.Err c)
+checkExpError f = \a b -> case f a b of
     EM.Ok x     -> return x
     EM.Bad s    -> EM.Bad $ s ++ "\n\tIn the expression '" ++ (printLim b) ++ "'."

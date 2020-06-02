@@ -42,19 +42,6 @@ instance TCTypeable Literal where
                 in case t of
                     TError  -> TError
                     _       -> TArr (length lits) t
-            
-
--- Predefined reading functions have TCType
-instance TCTypeable PRead where
-    tctypeOf x = case x of
-        ReadChar _   -> TChar
-        ReadInt _    -> TInt
-        ReadReal _   -> TReal
-        ReadString _ -> TString
-
--- Predefind writing functions have TCType
-instance TCTypeable PWrite where
-    tctypeOf _ = TVoid
 
 -- Maybe have TCType
 instance (TCTypeable a) => TCTypeable (Maybe a) where

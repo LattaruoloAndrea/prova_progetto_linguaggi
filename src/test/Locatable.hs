@@ -58,12 +58,6 @@ instance Locatable LExp where
         Access lexp _   -> locOf lexp
         Name id         -> locOf id
 
-instance Locatable PRead where
-    locOf = prLoc
-
-instance Locatable PWrite where
-    locOf = pwLoc
-
 instance Locatable RExp where
     locOf = reLoc
 
@@ -71,7 +65,6 @@ instance Locatable Stm where
     locOf x = case x of
         StmBlock b      -> locOf b
         StmCall id _    -> locOf id
-        PredW pw _      -> locOf pw
         Assign _ op _   -> locOf op
         StmL lexp       -> locOf lexp
         If rexp _       -> locOf rexp

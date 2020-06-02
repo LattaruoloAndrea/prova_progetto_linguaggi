@@ -28,13 +28,8 @@ toErrT :: a -> Err a -> ErrT a
 toErrT _ (Ok a)  = OkT a
 toErrT a (Bad s) = BadT a $ DL.fromList $ filter (not . null) $ lines s
 
--- Transform a BNFC-Err in an ErrT
--- a Err value is provided for BadT
--- also, a 'basic' value is provided in case the first one is Bad
-toErrTM :: a -> Err a -> Err a -> ErrT a
-toErrTM _ _ (Ok a)    = OkT a
-toErrTM _ (Ok a') bad = toErrT a' bad
-toErrTM a bad1 bad2   = toErrT a bad2
+badT :: a -> String -> ErrT a
+badT a s = BadT a $ DL.fromList $ filter (not.null) $ lines s
 
 instance Monad ErrT where
   return         = OkT
