@@ -17,7 +17,7 @@ proc addThree(in n:int) in:int{
   return n + 3+p;
 }
 
-proc doublePrint(inout thing:string) in: string {
+proc doublePrint(in thing:int) in: int {
   var p: int = 5;
   param myConst: int = 3;
   var myInt: [5]int = [1,2,3,4,5]; 

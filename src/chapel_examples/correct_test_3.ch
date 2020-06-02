@@ -8,8 +8,9 @@ proc addThree(in n:int) in:int{
   return n + 3+p;
 }
 
-proc doublePrint(inout thing:string) in: string {
+proc doublePrint(inout thing:int) in: int {
   var p: int = 5;
+  thing = p;
   return thing + thing;
 }
 
