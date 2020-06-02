@@ -1,7 +1,6 @@
 module TCType where
 
 import AbsChapel (Intent)
-import Control.Monad (liftM2)
 
 -- Type system
 data TCType 
@@ -83,8 +82,3 @@ supremum x y
     | x `compare'` y == TEqual      = x
     | x `compare'` y == TGreater    = x
     | otherwise                     = TError
-
-
--- Monadic version for folding
-supremumM :: (Monad m) => m TCType -> m TCType -> m TCType
-supremumM = liftM2 supremum
