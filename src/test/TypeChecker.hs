@@ -466,15 +466,16 @@ checkStmCall env (StmCall ident actuals) = do
 
 
 -- Check an assignment statement
+--   * Function-names cannot be on the left of an assignment
 --   * If the left-expression is ill-formed, throw an error
 --   * If the right-expression is ill-formed, throw an error
 --   * If not (leftType >= rightType), throw an error
 --   * If left-expression is immutable, throw an error
 --   * Special check for '%=' and '^='
 --   * Right-expression must be a 'number' (subtype of real) when non-eq assignments are used
---   * Function-names cannot be on the left of an assignment
 checkAssign :: Env -> Stm -> ET.ErrT Stm
 checkAssign env stm@(Assign l op r) = ET.toErrT stm $ do
+    when (isFunction env l)  $ errorAssignFunction $ locOf l
     (tl, l') <- checkLExpError env l
     (tr, r') <- checkRExpError env r
     unless (tr `subtypeOf` tl) $ errorAssignType $ locOf l
@@ -484,7 +485,6 @@ checkAssign env stm@(Assign l op r) = ET.toErrT stm $ do
         AssignPow _ -> unless (tr `subtypeOf` TInt) $ errorAssignPow r tr
         AssignEq  _ -> return ()
         _           -> unless (tr `subtypeOf` TReal) $ errorAssignNotReal r tr
-    when (isFunction env l)  $ errorAssignFunction $ locOf l
     return $ Assign l' op r'
 
 -- Check a left-expression statement

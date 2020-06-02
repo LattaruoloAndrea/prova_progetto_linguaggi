@@ -7,19 +7,22 @@ import TCType
 import Locatable
 import PrintChapel
 
+lengthLimit :: Int
+lengthLimit = 30
+
 showLim :: (Show a) => a -> String
 showLim a = 
     let s = show a
-        s' = take 10 s
-    in (s'++) $ if (length s) > 10
+        s' = take lengthLimit s
+    in (s'++) $ if (length s) > lengthLimit
         then "..."
         else ""
 
 printLim :: (Print a) => a -> String
 printLim a = 
     let s = printTree a
-        s' = take 10 s
-    in (s'++) $ if (length s) > 10
+        s' = take lengthLimit s
+    in (s'++) $ if (length s) > lengthLimit
         then "..."
         else ""
 

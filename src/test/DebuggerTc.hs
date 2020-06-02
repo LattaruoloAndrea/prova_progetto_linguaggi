@@ -109,15 +109,14 @@ run v p s = let ts = myLLexer s in case p ts of
         exitFailure
     EM.Ok  tree -> do
         putStrLn "\nParse Successful!"
-        showTree v tree
+        -- showTree v tree
         case typeCheck tree of
             EM.Bad s -> do
                 putStrLn "\nTypeCheck            Failed...\n"
                 putStrLn s
                 exitFailure
-            EM.Ok prog -> do
+            EM.Ok _ -> do
                 putStrLn "\nTypeCheck Successful!"
-                showTree v prog
                 exitSuccess
 
 
