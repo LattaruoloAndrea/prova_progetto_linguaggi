@@ -111,15 +111,15 @@ Double   : L_doubl  { (tokenLoc $1, ((read . tokenValue) $1) :: Double) }
 String  :: { (Loc, String) }
 String   : L_quoted { (tokenLoc $1, tokenValue $1) }
 
-Program :: { Program }
+Program :: { Program () }
 Program : ListDecl { AbsChapel.Prog $1 }
 
-Decl :: { Decl }
+Decl :: { Decl () }
 Decl : 'proc' Ident '(' ListForm ')' Intent ':' Type Block { AbsChapel.FDecl $2 $4 $6 $8 $9 }
      | 'var' ListVDecl ';' { AbsChapel.VList $2 }
      | 'param' ListCDecl ';' { AbsChapel.CList $2 }
 
-Form :: { Form }
+Form :: { Form () }
 Form : Intent Ident ':' Type { AbsChapel.Form $1 $2 $4 }
 
 Intent :: { Intent }
@@ -131,17 +131,17 @@ Intent : {- empty -} { AbsChapel.In }
        | 'const' 'in' { AbsChapel.ConstIn }
        | 'const' 'ref' { AbsChapel.ConstRef }
 
-VDecl :: { VDecl }
+VDecl :: { VDecl () }
 VDecl : Ident ':' Type { AbsChapel.Solo $1 $3 }
       | Ident ':' Type '=' RExp { AbsChapel.Init $1 $3 $5 }
 
-CDecl :: { CDecl }
+CDecl :: { CDecl () }
 CDecl : Ident ':' Type '=' RExp { AbsChapel.CDecl $1 $3 $5 }
 
-Type :: { Type }
+Type :: { Type () }
 Type : Compound Basic { AbsChapel.Type $1 $2 }
 
-Compound :: { Compound }
+Compound :: { Compound () }
 Compound : {- empty -} { AbsChapel.Simple }
          | Compound '[' RExp ']' { AbsChapel.Array $1 $3 }
          | Compound '*' { AbsChapel.Pointer $1 }
@@ -154,24 +154,24 @@ Basic : 'bool' { AbsChapel.BBool }
       | 'string' { AbsChapel.BString }
       | 'void' { AbsChapel.BVoid }
 
-Block :: { Block }
+Block :: { Block () }
 Block : '{' {- empty -} '}' { AbsChapel.Block (tokenLoc $1) [] [] }
       | '{' ListDecl '}' { AbsChapel.Block (tokenLoc $1) $2 [] }
       | '{' ListStm '}' { AbsChapel.Block (tokenLoc $1) [] $2 }
       | '{' ListDecl ListStm '}' { AbsChapel.Block (tokenLoc $1) $2 $3 }
 
-Stm :: { Stm }
+Stm :: { Stm () }
 Stm : ';' Stm { $2 }
     | Block { AbsChapel.StmBlock $1 }
     | Ident '(' ListRExp ')' ';' { AbsChapel.StmCall $1 $3 }
     
-    | LExp '=' RExp ';' { AbsChapel.Assign $1 (AbsChapel.AssignEq (tokenLoc $2)) $3 }
-    | LExp '+=' RExp ';' { AbsChapel.Assign $1 (AbsChapel.AssignAdd (tokenLoc $2)) $3 }
-    | LExp '-=' RExp ';' { AbsChapel.Assign $1 (AbsChapel.AssignSub (tokenLoc $2)) $3 }
-    | LExp '*=' RExp ';' { AbsChapel.Assign $1 (AbsChapel.AssignMul (tokenLoc $2)) $3 }
-    | LExp '/=' RExp ';' { AbsChapel.Assign $1 (AbsChapel.AssignDiv (tokenLoc $2)) $3 }
+    | LExp '='  RExp ';' { AbsChapel.Assign $1 (AbsChapel.AssignEq  (tokenLoc $2) ()) $3 }
+    | LExp '+=' RExp ';' { AbsChapel.Assign $1 (AbsChapel.AssignAdd (tokenLoc $2) ()) $3 }
+    | LExp '-=' RExp ';' { AbsChapel.Assign $1 (AbsChapel.AssignSub (tokenLoc $2) ()) $3 }
+    | LExp '*=' RExp ';' { AbsChapel.Assign $1 (AbsChapel.AssignMul (tokenLoc $2) ()) $3 }
+    | LExp '/=' RExp ';' { AbsChapel.Assign $1 (AbsChapel.AssignDiv (tokenLoc $2) ()) $3 }
     | LExp '%=' RExp ';' { AbsChapel.Assign $1 (AbsChapel.AssignMod (tokenLoc $2)) $3 }
-    | LExp '^=' RExp ';' { AbsChapel.Assign $1 (AbsChapel.AssignPow (tokenLoc $2)) $3 }
+    | LExp '^=' RExp ';' { AbsChapel.Assign $1 (AbsChapel.AssignPow (tokenLoc $2) ()) $3 }
 
     | LExp ';' { AbsChapel.StmL $1 }
 
@@ -186,49 +186,49 @@ Stm : ';' Stm { $2 }
     | 'for' Ident 'in' Range 'do' Stm { AbsChapel.For $2 $4 $6 }
     | 'for' Ident 'in' Range Block { AbsChapel.For $2 $4 (AbsChapel.StmBlock $5) }
     | 'return' ';' { AbsChapel.JmpStm (AbsChapel.Return (tokenLoc $1)) }
-    | 'return' RExp ';' { AbsChapel.JmpStm (AbsChapel.ReturnE (tokenLoc $1) $2) }
+    | 'return' RExp ';' { AbsChapel.JmpStm (AbsChapel.ReturnE (tokenLoc $1) $2 ()) }
     | 'break' ';' { AbsChapel.JmpStm (AbsChapel.Break (tokenLoc $1)) }
     | 'continue' ';' { AbsChapel.JmpStm (AbsChapel.Continue (tokenLoc $1)) }
 
-Range :: { Range }
+Range :: { Range () }
 Range : '{' RExp '..' RExp '}' { AbsChapel.Range (tokenLoc $3) $2 $4 }
 
-LExp :: { LExp }
-LExp : '*' LExp { AbsChapel.Deref $2 }
+LExp :: { LExp () }
+LExp : '*' LExp { AbsChapel.Deref $2 () }
 --     | LExp IncDecOp { AbsChapel.Post $1 $2 }
 --     | IncDecOp LExp { AbsChapel.Pre $1 $2 }
-     | LExp '[' RExp ']' { AbsChapel.Access $1 $3 }
-     | Ident { AbsChapel.Name $1 }
+     | LExp '[' RExp ']' { AbsChapel.Access $1 $3 () }
+     | Ident { AbsChapel.Name $1 () }
 
      | '(' LExp ')' { $2 }
 
-RExp :: { RExp }
-RExp : RExp '||' RExp { AbsChapel.Or (tokenLoc $2) $1 $3 }
-     | RExp '&&' RExp { AbsChapel.And (tokenLoc $2) $1 $3 }
-     | '!' RExp { AbsChapel.Not (tokenLoc $1) $2 }
+RExp :: { RExp () }
+RExp : RExp '||' RExp { AbsChapel.Or (tokenLoc $2) $1 $3 () }
+     | RExp '&&' RExp { AbsChapel.And (tokenLoc $2) $1 $3 () }
+     | '!' RExp { AbsChapel.Not (tokenLoc $1) $2 () }
 
-     | RExp '<' RExp { AbsChapel.Comp (tokenLoc $2) $1 AbsChapel.Lt $3 }
-     | RExp '<=' RExp { AbsChapel.Comp (tokenLoc $2) $1 AbsChapel.Leq $3 }
-     | RExp '==' RExp { AbsChapel.Comp (tokenLoc $2) $1 AbsChapel.Eq $3 }
-     | RExp '!=' RExp { AbsChapel.Comp (tokenLoc $2) $1 AbsChapel.Neq $3 }
-     | RExp '>=' RExp { AbsChapel.Comp (tokenLoc $2) $1 AbsChapel.Geq $3 }
-     | RExp '>' RExp { AbsChapel.Comp (tokenLoc $2) $1 AbsChapel.Gt $3 }
+     | RExp '<' RExp { AbsChapel.Comp (tokenLoc $2) $1 (AbsChapel.Lt ()) $3 () }
+     | RExp '<=' RExp { AbsChapel.Comp (tokenLoc $2) $1 (AbsChapel.Leq ()) $3 () }
+     | RExp '==' RExp { AbsChapel.Comp (tokenLoc $2) $1 (AbsChapel.Eq ()) $3 () }
+     | RExp '!=' RExp { AbsChapel.Comp (tokenLoc $2) $1 (AbsChapel.Neq ()) $3 () }
+     | RExp '>=' RExp { AbsChapel.Comp (tokenLoc $2) $1 (AbsChapel.Geq ()) $3 () }
+     | RExp '>' RExp { AbsChapel.Comp (tokenLoc $2) $1 (AbsChapel.Gt ()) $3 () }
 
-     | RExp '+' RExp { AbsChapel.Arith (tokenLoc $2) $1 AbsChapel.Add $3 }
-     | RExp '-' RExp { AbsChapel.Arith (tokenLoc $2) $1 AbsChapel.Sub $3 }
-     | RExp '*' RExp { AbsChapel.Arith (tokenLoc $2) $1 AbsChapel.Mul $3 }
-     | RExp '/' RExp { AbsChapel.Arith (tokenLoc $2) $1 AbsChapel.Div $3 }
-     | RExp '%' RExp { AbsChapel.Arith (tokenLoc $2) $1 AbsChapel.Mod $3 }
-     | RExp '^' RExp { AbsChapel.Arith (tokenLoc $2) $1 AbsChapel.Pow $3 }
+     | RExp '+' RExp { AbsChapel.Arith (tokenLoc $2) $1 (AbsChapel.Add ()) $3 () }
+     | RExp '-' RExp { AbsChapel.Arith (tokenLoc $2) $1 (AbsChapel.Sub ()) $3 () }
+     | RExp '*' RExp { AbsChapel.Arith (tokenLoc $2) $1 (AbsChapel.Mul ()) $3 () }
+     | RExp '/' RExp { AbsChapel.Arith (tokenLoc $2) $1 (AbsChapel.Div ()) $3 () }
+     | RExp '%' RExp { AbsChapel.Arith (tokenLoc $2) $1 AbsChapel.Mod $3 () }
+     | RExp '^' RExp { AbsChapel.Arith (tokenLoc $2) $1 (AbsChapel.Pow ()) $3 () }
      
-     | '+' RExp %prec SIGN { AbsChapel.Sign (tokenLoc $1) AbsChapel.Pos $2 }
-     | '-' RExp %prec SIGN { AbsChapel.Sign (tokenLoc $1) AbsChapel.Neg $2 }
+     | '+' RExp %prec SIGN { AbsChapel.Sign (tokenLoc $1) (AbsChapel.Pos ()) $2 () }
+     | '-' RExp %prec SIGN { AbsChapel.Sign (tokenLoc $1) (AbsChapel.Neg ()) $2 () }
 
-     | '&' LExp { AbsChapel.RefE (tokenLoc $1) $2 }
-     | LExp { AbsChapel.RLExp (locOf $1) $1 }
-     | '[' ListRExp ']' { AbsChapel.ArrList (tokenLoc $1) $2 }
-     | Ident '(' ListRExp ')' { AbsChapel.FCall (locOf $1) $1 $3 }
-     | Literal { AbsChapel.Lit (fst $1) (snd $1) }
+     | '&' LExp { AbsChapel.RefE (tokenLoc $1) $2 () }
+     | LExp { AbsChapel.RLExp (locOf $1) $1 () }
+     | '[' ListRExp ']' { AbsChapel.ArrList (tokenLoc $1) $2 () }
+     | Ident '(' ListRExp ')' { AbsChapel.FCall (locOf $1) $1 $3 () }
+     | Literal { AbsChapel.Lit (fst $1) (snd $1) () }
 
      | '(' RExp ')' { $2 }
 
@@ -243,26 +243,26 @@ Literal : 'false' { (tokenLoc $1, AbsChapel.LBool False) }
         | Double { (fst $1, AbsChapel.LReal (snd $1)) }
         | String { (fst $1, AbsChapel.LString (snd $1)) }
 
-ListForm :: { [Form] }
+ListForm :: { [Form ()] }
 ListForm : {- empty -} { [] }
          | Form { (:[]) $1 }
          | Form ',' ListForm { (:) $1 $3 }
 
-ListDecl :: { [Decl] }
+ListDecl :: { [Decl ()] }
 ListDecl : Decl { (:[]) $1 }
          | Decl ListDecl { (:) $1 $2 }
 
-ListVDecl :: { [VDecl] }
+ListVDecl :: { [VDecl ()] }
 ListVDecl : VDecl { (:[]) $1 } | VDecl ',' ListVDecl { (:) $1 $3 }
 
-ListCDecl :: { [CDecl] }
+ListCDecl :: { [CDecl ()] }
 ListCDecl : CDecl { (:[]) $1 } | CDecl ',' ListCDecl { (:) $1 $3 }
 
-ListStm :: { [Stm] }
+ListStm :: { [Stm ()] }
 ListStm : Stm { (:[]) $1 }
         | Stm ListStm { (:) $1 $2 }
 
-ListRExp :: { [RExp] }
+ListRExp :: { [RExp ()] }
 ListRExp : {- empty -} { [] }
          | RExp { (:[]) $1 }
          | RExp ',' ListRExp { (:) $1 $3 }
