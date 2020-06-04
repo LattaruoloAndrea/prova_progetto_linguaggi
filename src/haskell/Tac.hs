@@ -17,7 +17,7 @@ data LAddr
     | RefTo Addr
     deriving (Read, Show, Eq, Ord)
 
-data Over = B | C | I | R | S
+data Over = B | C | I | R | S | P
     deriving (Read, Show, Eq, Ord)
 
 data CompOp
@@ -50,7 +50,8 @@ data UnOp
 data TAC
     = Bin LAddr LAddr BinOp LAddr           -- x = y bop z
     | Un  LAddr UnOp  LAddr                 -- x = uop y
-    | Nil LAddr LAddr                       -- x = y
+    | Nil LAddr LAddr Over                  -- x = y
+    | Lit LAddr Literal Over                -- x = non_array_literal
     | Goto Label                            -- goto label
     | If LAddr Label                        -- if x goto label
     | IfFalse LAddr Label                   -- ifFalse x goto label

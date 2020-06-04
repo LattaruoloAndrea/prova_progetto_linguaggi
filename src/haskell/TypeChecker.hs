@@ -208,7 +208,7 @@ checkCDecl env c@(CDecl id t r) = ET.toErrT (env, toTCT c) $ let tc = tctypeOf t
         Nothing -> errorNotConst id r
         Just x  -> do
             env' <- makeConst env id x
-            return (env', CDecl id (toTCT t) r')
+            return (env', CDecl id (toTCT t) $ coerce tc (Lit (locOf r') x tr))
 
 
 -- Extends the environment with a new variable (if possible)
@@ -218,8 +218,9 @@ checkCDecl env c@(CDecl id t r) = ET.toErrT (env, toTCT c) $ let tc = tctypeOf t
 checkVDecl :: Env -> VDecl () -> ET.ErrT (Env, VDecl TCType)
 checkVDecl env v = case v of
     Solo id t   -> do
-        env' <- ET.toErrT env $ makeMutable env id (tctypeOf t)
-        return (env', Solo id (toTCT t))
+        let t' = tctypeOf t
+        env' <- ET.toErrT env $ makeMutable env id t'
+        return (env', Init id (toTCT t) $ Lit (locOf id) (getDefault t') t')
 
     Init id t r -> 
         let tc = tctypeOf t 
