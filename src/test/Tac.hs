@@ -1,6 +1,6 @@
 module Tac where
 
-import AbsChapel (Loc, Literal, CompOp)
+import AbsChapel (Loc, Literal)
 
 data Addr
     = AName String Loc
@@ -20,6 +20,15 @@ data LAddr
 data Over = B | C | I | R | S
     deriving (Read, Show, Eq, Ord)
 
+data CompOp
+    = Lt
+    | Leq
+    | Eq
+    | Neq
+    | Geq
+    | Gt
+    deriving (Read, Show, Eq, Ord)
+
 data BinOp
     = Rel CompOp Over
     | Add Over
@@ -27,7 +36,7 @@ data BinOp
     | Mul Over
     | Div Over
     | Mod
-    | Pow
+    | Pow Over
     | Or
     | And
     deriving (Read, Show, Eq, Ord)
@@ -39,7 +48,7 @@ data UnOp
     deriving (Show)
 
 data TAC
-    = Bin LAddr BinOp LAddr LAddr           -- x = y bop z
+    = Bin LAddr LAddr BinOp LAddr           -- x = y bop z
     | Un  LAddr UnOp  LAddr                 -- x = uop y
     | Nil LAddr LAddr                       -- x = y
     | Goto Label                            -- goto label

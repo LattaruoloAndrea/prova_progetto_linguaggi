@@ -3,15 +3,28 @@ module TacGenerator where
 import Tac
 import Control.Monad.Trans.State
 import Control.Monad (foldM)
-import Control.Applicative (liftA2)
+import Control.Applicative (liftA, liftA2)
 import Locatable
+import TCType
+import TCInstances
 import qualified AbsChapel as A
 import qualified Data.DList as DL
 
-type Stream = DL.DList TAC  -- The list of TAC instructions
+
+type ProgramT   = A.Program TCType
+type DeclT      = A.Decl TCType
+type CDeclT     = A.CDecl TCType
+type RExpT      = A.RExp TCType
+
+
+type Stream = DL.DList TAC          -- The list of TAC instructions
 
 type SGen a = State (Int, Int) a    -- The state is (counter_tempaddr, code)
 
+
+-- compose a list of transformation to obtain the "concatanation" transformation
+streamCat :: [SGen (Stream -> Stream)] -> SGen (Stream -> Stream)
+streamCat = foldr (liftA2 (.)) (return id)
 
 newTemp :: SGen LAddr
 newTemp = do
@@ -26,37 +39,39 @@ genNil :: LAddr -> LAddr -> Stream -> Stream
 genNil l r = mappend $ DL.fromList [Nil l r]
 
 
-genTAC :: A.Program -> [TAC]
+genTAC :: ProgramT -> [TAC]
 genTAC program = DL.toList $ fst $ runState (genProgram program) (0, 0)
 
 
-genProgram :: A.Program -> SGen Stream
-genProgram (A.Prog decls) = foldM (flip genDecl) mempty decls
+genProgram :: ProgramT -> SGen Stream
+genProgram (A.Prog decls) = do
+    let contMs = map genDecl decls
+    cont <- foldl (liftA2 (.)) (return id) contMs
+    return $ cont mempty
 
 
-genDecl :: A.Decl -> Stream -> SGen Stream
-genDecl decl = \stream -> case decl of
-    A.FDecl _ _ _ _ _ -> return stream
+genDecl :: DeclT -> SGen (Stream -> Stream)
+genDecl decl = case decl of
+    A.FDecl _ _ _ _ _ -> return id
 
-    A.VList _ -> return stream
+    A.VList _ -> return id
 
-    A.CList cs -> do
-        let contMs = map genCDecl cs
-        cont <- foldr1 (liftA2 (.)) contMs
-        return $ (stream `mappend`) $ cont $ DL.fromList []
+    A.CList cs ->
+        let contMs = map genCDecl $ reverse cs
+        in  streamCat contMs
 
 
-genCDecl :: A.CDecl -> SGen (Stream -> Stream)
+genCDecl :: CDeclT -> SGen (Stream -> Stream)
 genCDecl (A.CDecl id t r) = do
     (contR, addrR) <- genRExp r
     let addrC    = addrFromId id
         contTac  = genNil addrC addrR
-        contDecl = \stream -> (stream `mappend`) $ contTac . contR $ mempty
+        contDecl = contTac . contR
     return contDecl
 
 
 
-genRExp :: A.RExp -> SGen (Stream -> Stream, LAddr)
+genRExp :: RExpT -> SGen (Stream -> Stream, LAddr)
 genRExp r = do
     tmp <- newTemp
-    return ((mempty `mappend`), tmp)
+    return (mappend mempty, tmp)   -- mempty will be substituted by code for r

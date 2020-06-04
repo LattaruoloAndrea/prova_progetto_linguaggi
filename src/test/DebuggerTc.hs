@@ -97,10 +97,10 @@ type Verbosity = Int
 putStrV :: Verbosity -> String -> IO ()
 putStrV v s = when (v > 1) $ putStrLn s
 
-runFile :: Verbosity -> ParseFun Program -> FilePath -> IO ()
+runFile :: Verbosity -> ParseFun (Program ()) -> FilePath -> IO ()
 runFile v p f = putStrLn f >> readFile f >>= run v p
 
-run :: Verbosity -> ParseFun Program -> String -> IO ()
+run :: Verbosity -> ParseFun (Program ()) -> String -> IO ()
 run v p s = let ts = myLLexer s in case p ts of
     EM.Bad s    -> do
         putStrLn "\nParse              Failed...\n"

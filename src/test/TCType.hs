@@ -17,6 +17,10 @@ data TCType
     deriving (Eq)
 
 
+toTCT :: (Functor f) => f a -> f TCType
+toTCT = fmap (const TVoid) 
+
+
 -- extract a tctype from other data types
 class TCTypeable a where
     tctypeOf :: a -> TCType

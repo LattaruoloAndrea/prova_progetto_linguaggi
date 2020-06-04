@@ -133,14 +133,14 @@ _ `litMod` _ = Nothing -- undefined for non integer operands
 
 -- Arithmetic dispatcher
 
-litArith :: ArithOp -> LiteralOperator
+litArith :: (ArithOp t) -> LiteralOperator
 litArith x = case x of
-    Add -> litAdd
-    Sub -> litSub
-    Mul -> litMul
-    Div -> litDiv
-    Mod -> litMod
-    Pow -> litPow
+    Add _ -> litAdd
+    Sub _ -> litSub
+    Mul _ -> litMul
+    Div _ -> litDiv
+    Mod   -> litMod
+    Pow _ -> litPow
 
 
 
@@ -180,16 +180,16 @@ overloadCompare x y = case (tctypeOf x) `supremum` (tctypeOf y) of
 
 
 -- Comparison operator dispatcher
-litComp :: CompOp -> LiteralComparison
+litComp :: (CompOp t) -> LiteralComparison
 litComp op = \x y -> let rel = x `overloadCompare` y in case rel of
     LitNC -> Nothing
     _     -> Just $ case op of
-        Lt  -> rel == LitLT
-        Leq -> rel == LitLT || rel == LitEQ
-        Eq  -> rel == LitEQ
-        Neq -> rel /= LitEQ
-        Geq -> rel /= LitLT
-        Gt  -> rel == LitGT
+        Lt  _ -> rel == LitLT
+        Leq _ -> rel == LitLT || rel == LitEQ
+        Eq  _ -> rel == LitEQ
+        Neq _ -> rel /= LitEQ
+        Geq _ -> rel /= LitLT
+        Gt  _ -> rel == LitGT
 
 
 
@@ -210,36 +210,36 @@ litAccess arr@(LArr lits) i = do
 -- Returns a literal if r is a compile-time constant expression,
 -- Nothing otherwise.
 -- (Precondition): r is semantically correct
-constexpr :: Env -> RExp -> Maybe Literal
+constexpr :: Env -> RExp t -> Maybe Literal
 constexpr env r = case r of
-    Or _ r1 r2 -> do
+    Or _ r1 r2 _ -> do
         (LBool b1) <- constexpr env r1
         (LBool b2) <- constexpr env r2
         return . LBool $ b1 || b2
 
-    And _ r1 r2 -> do
+    And _ r1 r2 _ -> do
         (LBool b1) <- constexpr env r1
         (LBool b2) <- constexpr env r2
         return . LBool $ b1 && b2
     
-    Not _ r -> do
+    Not _ r _ -> do
         (LBool b) <- constexpr env r
         return . LBool $ not b
         
-    Comp _ r1 op r2 -> do
+    Comp _ r1 op r2 _ -> do
         l1 <- constexpr env r1
         l2 <- constexpr env r2
         b  <- litComp op l1 l2
         return . LBool $ b
 
-    Arith _ r1 op r2 -> do
+    Arith _ r1 op r2 _ -> do
         l1 <- constexpr env r1
         l2 <- constexpr env r2
         litArith op l1 l2
 
-    Sign _ Pos r -> constexpr env r
+    Sign _ (Pos _) r _ -> constexpr env r
 
-    Sign _ Neg r -> do
+    Sign _ (Neg _) r _ -> do
         l <- constexpr env r
         case l of
             LChar a -> return . LInt . toInteger $ -(ord a)
@@ -247,9 +247,9 @@ constexpr env r = case r of
             LReal a -> return . LReal $ -a
             _       -> Nothing
 
-    RLExp _ l -> constexprL env l
+    RLExp _ l _ -> constexprL env l
     
-    ArrList _ rs -> do
+    ArrList _ rs _ -> do
         let lits = map (constexpr env) rs                -- take list of Maybe literals recursively
         let t    = foldl1 supremum $ map tctypeOf lits   -- take unifier type
         guard (t /= TError)                              -- safety check
@@ -262,20 +262,20 @@ constexpr env r = case r of
 
         return $ LArr [ conv x | (Just x) <- lits ]
 
-    Lit _ lit   -> Just lit
+    Lit _ lit _ -> Just lit
 
     _ -> Nothing
 
 
-constexprL :: Env -> LExp -> Maybe Literal
+constexprL :: Env -> LExp t -> Maybe Literal
 constexprL env lexp = case lexp of
-    Deref l     -> Nothing
+    Deref l _    -> Nothing
 
-    Access l r  -> do
+    Access l r _ -> do
         arr <- constexprL env l     -- take literal array
         i <- constexpr env r        -- take literal index
         litAccess arr i             -- return the accessed value
 
-    Name ident  -> do
+    Name ident _ -> do
         (Const _ _ lit) <- EM.errToMaybe $ lookConst ident env
         return lit

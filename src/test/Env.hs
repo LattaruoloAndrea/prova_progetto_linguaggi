@@ -68,21 +68,21 @@ isFun (Fun _ _ _ _) = True
 isFun _             = False
 
 
-isLExp :: RExp -> Bool
-isLExp (RLExp _ _)  = True
-isLExp _            = False
+isLExp :: RExp t -> Bool
+isLExp (RLExp _ _ _)  = True
+isLExp _              = False
 
 
 -- Returns the mutability of an LExp
 -- If the entry does not exist, it is assumed to be mutable
 -- (although it would be better to check the existence first)
-isMutable :: Env -> LExp -> Mutability
+isMutable :: Env -> LExp t -> Mutability
 isMutable env l = case l of
-    Deref l     -> isMutable env l
+    Deref l _    -> isMutable env l
 
-    Access l _  -> isMutable env l
+    Access l _ _ -> isMutable env l
 
-    Name ident  -> case lookEntry ident env of
+    Name ident _ -> case lookEntry ident env of
         Just entry  -> isMut entry
         _           -> False
 
@@ -90,9 +90,9 @@ isMutable env l = case l of
 -- Returns True if a name is a function in the current environment
 -- If the name is a Const or Var, False
 -- Otherwise, if the name is not defined it is assumed True (for ease of error-checking)
-isFunction :: Env -> LExp -> Bool
+isFunction :: Env -> LExp t -> Bool
 isFunction env l = case l of
-    Name ident -> case lookEntry ident env of
+    Name ident _ -> case lookEntry ident env of
         Just entry  -> isFun entry
         Nothing     -> True
     
@@ -100,7 +100,7 @@ isFunction env l = case l of
 
 
 -- Convert from an AbsChapel.Form data to Param data
-formToParam :: Form -> Param
+formToParam :: Form t -> Param
 formToParam (Form it (Ident l n) ty) = Param l n it $ tctypeOf ty
 
 -- Convert a Param to an Entry-Var (immutable when ConstIn or ConstRef modality)
@@ -120,6 +120,11 @@ lookEntry (Ident _ id) env = join $ head' $ dropWhile isNothing $ map (M.lookup 
 head' :: [a] -> Maybe a
 head' []        = Nothing
 head' (x:xs)    = Just x
+
+lookName :: Ident -> Env -> EM.Err Entry
+lookName id env = case lookEntry id env of
+    Nothing -> errorNameDoesNotExist id
+    Just x -> return x
 
 -- Take the Ok TCType from the deepest entry mapped from id (if it exists), otherwise Bad
 lookType :: Ident -> Env -> EM.Err TCType
