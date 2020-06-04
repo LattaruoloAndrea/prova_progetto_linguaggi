@@ -42,37 +42,37 @@ badLoc loc reason = EM.Bad $ (show loc) ++ ": Error! " ++ reason ++ "."
 
 
 
-errorLogicOperand :: String -> RExp -> TCType -> EM.Err a
+errorLogicOperand :: String -> RExp t -> TCType -> EM.Err a
 errorLogicOperand op r t =
     badLoc (locOf r) $ "The operand '" ++ (printLim r) ++ "' in a " ++ op ++ " expression should have type bool, instead has type " ++ (show t)
 
-errorOr :: RExp -> TCType -> EM.Err a
+errorOr :: RExp t -> TCType -> EM.Err a
 errorOr = errorLogicOperand "OR"
 
-errorAnd :: RExp -> TCType -> EM.Err a
+errorAnd :: RExp t -> TCType -> EM.Err a
 errorAnd = errorLogicOperand "AND"
 
-errorNot :: RExp -> TCType -> EM.Err a
+errorNot :: RExp t -> TCType -> EM.Err a
 errorNot = errorLogicOperand "NOT"
 
 
 
-errorBinary :: (Show binop) => binop -> RExp -> RExp -> TCType -> TCType -> EM.Err b
+errorBinary :: (Show binop) => binop -> RExp t -> RExp t -> TCType -> TCType -> EM.Err b
 errorBinary op r1 r2 t1 t2 =
     badLoc (locOf r1) $ "Operands '" ++ (printLim r1) ++ "' (type: " ++ (show t1) ++ ") and '" ++ (printLim r2) ++ "' (type: " ++ (show t2) ++ ") are not compatible in a " ++ (show op) ++ " expression"
 
-errorArithmetic :: (Show binop) => binop -> RExp -> RExp -> TCType -> TCType -> EM.Err b
+errorArithmetic :: (Show binop) => binop -> RExp t -> RExp t -> TCType -> TCType -> EM.Err b
 errorArithmetic op r1 r2 t1 t2 =
     badLoc (locOf r1) $ "Operands '" ++ (printLim r1) ++ "' (type: " ++ (show t1) ++ ") and '" ++ (printLim r2) ++ "' (type: " ++ (show t2) ++ ") are not a subtype of real in a " ++ (show op) ++ " expression"
 
-errorArithOperandInt :: RExp -> TCType -> EM.Err a
+errorArithOperandInt :: RExp t -> TCType -> EM.Err a
 errorArithOperandInt r t =
     badLoc (locOf r) $ "Operand '" ++ (printLim r) ++ "' should have type int, but found " ++ (show t)
 
 
 
 
-errorSignNotNumber :: RExp -> TCType -> EM.Err a
+errorSignNotNumber :: RExp t -> TCType -> EM.Err a
 errorSignNotNumber r t =
     badLoc (locOf r) $ "Signed expression '" ++ (printLim r) ++ "' must be a number, found " ++ (show t)
 
@@ -85,17 +85,17 @@ errorArrayElementsCompatibility :: Loc -> EM.Err a
 errorArrayElementsCompatibility loc =
     badLoc loc "Types in the array initializer list are not compatible"
 
-errorArrayIndex :: RExp -> EM.Err a
+errorArrayIndex :: RExp t -> EM.Err a
 errorArrayIndex r =
     badLoc (locOf r) $ "Array index '" ++ (printLim r) ++ "' should have type integer in an ARRAY ACCESS"
 
-errorArrayNot :: LExp -> EM.Err a
+errorArrayNot :: LExp t -> EM.Err a
 errorArrayNot lexp =
     badLoc (locOf lexp) $ "Left expression '" ++ (printLim lexp) ++ "' is not an array in an ARRAY ACCESS"
 
 
 
-errorNotAPointer :: LExp -> EM.Err a
+errorNotAPointer :: LExp t -> EM.Err a
 errorNotAPointer lexp = 
     badLoc (locOf lexp) $ "Trying to dereference '" ++ (printLim lexp) ++ "' which is not a pointer"
 
@@ -120,11 +120,11 @@ errorNameAlreadyDeclared (Ident loc id) whr =
 
 
 
-errorRangeStart :: Loc -> RExp -> TCType -> EM.Err a
+errorRangeStart :: Loc -> RExp t -> TCType -> EM.Err a
 errorRangeStart loc st t =
     badLoc loc $ "Start of range '" ++ (printLim st) ++ "' should be of type int, instead have type " ++ (show t)
 
-errorRangeEnd :: Loc -> RExp -> TCType -> EM.Err a
+errorRangeEnd :: Loc -> RExp t -> TCType -> EM.Err a
 errorRangeEnd loc en t =
     badLoc loc $ "End of range '" ++ (printLim en) ++ "' should be of type int, instead have type " ++ (show t)
 
@@ -141,7 +141,7 @@ errorConstTypeMismatch = errorDeclTypeMismatch "CONST"
 errorVarTypeMismatch :: Ident -> TCType -> TCType -> EM.Err a
 errorVarTypeMismatch = errorDeclTypeMismatch "VAR"
 
-errorNotConst :: Ident -> RExp -> EM.Err a
+errorNotConst :: Ident -> RExp t -> EM.Err a
 errorNotConst id r =
     badLoc (locOf id) $ "Initializer expression '" ++ (printLim r) ++ "' is not a constant expression"
 
@@ -163,7 +163,7 @@ errorReturnIntent :: Loc -> Intent -> EM.Err a
 errorReturnIntent loc it =
     badLoc loc $ "Return intent must be either 'in' or 'ref', found '" ++ (printLim it) ++ "'"
 
-errorReturnRef :: RExp -> EM.Err a
+errorReturnRef :: RExp t -> EM.Err a
 errorReturnRef r =
     badLoc (locOf r) $ "Returned expression '" ++ (printLim r) ++ "' must be a left-expression"
 
@@ -200,7 +200,7 @@ errorContinueOutside = errorOutside "continue"
 
 
 
-errorGuard :: RExp -> TCType -> EM.Err a
+errorGuard :: RExp t -> TCType -> EM.Err a
 errorGuard r t =
     badLoc (locOf r) $ "Type mismatch in a guard. Expected type bool, found " ++ (show t)
 
@@ -211,19 +211,19 @@ errorAssignType :: Loc -> EM.Err a
 errorAssignType loc =
     badLoc loc $ "Type mismatch in an assignment"
 
-errorAssignImmutable :: LExp -> EM.Err a
+errorAssignImmutable :: LExp t -> EM.Err a
 errorAssignImmutable l =
     badLoc (locOf l) $ "Cannot modify '" ++ (printLim l) ++ "' because it's immutable"
 
-errorAssignMod :: LExp -> TCType -> EM.Err a
+errorAssignMod :: LExp t -> TCType -> EM.Err a
 errorAssignMod l t =
     badLoc (locOf l) $ "Left expression '" ++ (printLim l) ++ "' in a mod assignment should have type int, found " ++ (show t)
 
-errorAssignPow :: RExp -> TCType -> EM.Err a
+errorAssignPow :: RExp t -> TCType -> EM.Err a
 errorAssignPow r t =
     badLoc (locOf r) $ "Right expression '" ++ (printLim r) ++ "' in a pow assignment should have type int, found " ++ (show t)
 
-errorAssignNotReal :: RExp -> TCType -> EM.Err a
+errorAssignNotReal :: RExp t -> TCType -> EM.Err a
 errorAssignNotReal r t = 
     badLoc (locOf r) $ "Right expression '" ++ (printLim r) ++ "' should be a number, found " ++ (show t)
 
@@ -241,20 +241,20 @@ errorCallWrongNumber (Ident loc id) la lp=
 
 
 
-errorPassingTypeSub :: RExp -> TCType -> TCType -> EM.Err a
+errorPassingTypeSub :: RExp t -> TCType -> TCType -> EM.Err a
 errorPassingTypeSub r t tp =
     badLoc (locOf r) $ "Type mismatch: type " ++ (show t) ++ " of actual argument '" ++ (printLim r) ++ "' is not a subtype of " ++ (show tp)
 
-errorPassingTypeSuper :: RExp -> TCType -> TCType -> EM.Err a
+errorPassingTypeSuper :: RExp t -> TCType -> TCType -> EM.Err a
 errorPassingTypeSuper r t tp =
     badLoc (locOf r) $ "Type mismatch: type " ++ (show t) ++ " of actual argument '" ++ (printLim r) ++ "' is not a supertype of " ++ (show tp)
 
-errorPassingTypeSame :: RExp -> TCType -> TCType -> EM.Err a
+errorPassingTypeSame :: RExp t -> TCType -> TCType -> EM.Err a
 errorPassingTypeSame r t tp =
     badLoc (locOf r) $ "Type mismatch: type " ++ (show t) ++ " of actual argument '" ++ (printLim r) ++ "' is not the same as " ++ (show tp)
 
 
-errorPassingLExp :: RExp -> EM.Err a
+errorPassingLExp :: RExp t -> EM.Err a
 errorPassingLExp r =
     badLoc (locOf r) $ "Expression '" ++ (printLim r) ++ "' must be a left-expression"
 

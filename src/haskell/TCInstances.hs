@@ -1,3 +1,5 @@
+{-# LANGUAGE FlexibleInstances #-}
+
 module TCInstances where
 
 import TCType
@@ -16,12 +18,12 @@ instance TCTypeable Basic where
 
 -- Type have TCType
 -- it is required that an Array has already an integer literal for size
-instance TCTypeable Type where
+instance TCTypeable (Type t) where
     tctypeOf (Type c b) = helper c b where
         helper c b = case c of
             Simple      -> tctypeOf b
             Pointer c'  -> TPoint $ helper c' b
-            Array c' (Lit _ (LInt d)) -> TArr (fromInteger d :: Int) $ helper c' b
+            Array c' (Lit _ (LInt d) t) -> TArr (fromInteger d :: Int) $ helper c' b
             _           -> TError
 
 
@@ -47,3 +49,15 @@ instance TCTypeable Literal where
 instance (TCTypeable a) => TCTypeable (Maybe a) where
     tctypeOf (Just x) = tctypeOf x
     tctypeOf Nothing  = TError
+
+
+-- (RExp TCType) have TCType
+instance TCTypeable (RExp TCType) where
+    tctypeOf = reTy
+
+-- (LExp TCType) have TCType
+instance TCTypeable (LExp TCType) where
+    tctypeOf x = case x of
+        Deref  _ t   -> t
+        Access _ _ t -> t
+        Name   _ t   -> t

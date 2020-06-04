@@ -23,45 +23,45 @@ class Locatable a where -- Minimal complete definition => locOf
 instance Locatable Ident where
     locOf = idLoc
 
-instance Locatable Decl where
+instance Locatable (Decl t) where
     locOf x = case x of
         FDecl id _ _ _ _ -> locOf id
         VList vs         -> locOf $ head vs -- list should be non-empty
         CList cs         -> locOf $ head cs -- list should be non-empty
 
-instance Locatable VDecl where
+instance Locatable (VDecl t) where
     locOf x = case x of
         Solo id _   -> locOf id
         Init id _ _ -> locOf id
 
-instance Locatable CDecl where
+instance Locatable (CDecl t) where
     locOf (CDecl id _ _) = locOf id
 
-instance Locatable Form where
+instance Locatable (Form t) where
     locOf (Form _ id _) = locOf id
 
-instance Locatable Block where
+instance Locatable (Block t) where
     locOf = bLoc
 
-instance Locatable Jump where
+instance Locatable (Jump t) where
     locOf = jmpLoc
 
-instance Locatable Range where
+instance Locatable (Range t) where
     locOf = rngLoc
 
-instance Locatable AssignOp where
+instance Locatable (AssignOp t) where
     locOf = asLoc
 
-instance Locatable LExp where
+instance Locatable (LExp t) where
     locOf x = case x of
-        Deref lexp      -> locOf lexp
-        Access lexp _   -> locOf lexp
-        Name id         -> locOf id
+        Deref lexp _    -> locOf lexp
+        Access lexp _ _ -> locOf lexp
+        Name id _       -> locOf id
 
-instance Locatable RExp where
+instance Locatable (RExp t) where
     locOf = reLoc
 
-instance Locatable Stm where
+instance Locatable (Stm t) where
     locOf x = case x of
         StmBlock b      -> locOf b
         StmCall id _    -> locOf id

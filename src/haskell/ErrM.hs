@@ -14,6 +14,10 @@ errToMaybe :: Err a -> Maybe a
 errToMaybe (Ok x)   = Just x
 errToMaybe (Bad _)  = Nothing
 
+maybeToErr :: String -> Maybe a -> Err a
+maybeToErr _ (Just x) = Ok x
+maybeToErr s Nothing  = Bad s
+
 fromOk :: Err a -> a
 fromOk (Ok a ) = a
 

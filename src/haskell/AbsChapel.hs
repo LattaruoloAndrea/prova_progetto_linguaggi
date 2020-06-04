@@ -12,118 +12,124 @@ instance Show Loc where
 data Ident = Ident {idLoc :: Loc, idName :: String}
   deriving (Eq, Ord, Show, Read)
 
-data Program = Prog [Decl]
+data Program t = Prog [Decl t]
   deriving (Eq, Ord, Show, Read)
 
-data Decl
-    = FDecl Ident [Form] Intent Type Block
-    | VList [VDecl]
-    | CList [CDecl]
+data Decl t
+    = FDecl Ident [Form t] Intent (Type t) (Block t)
+    | VList [VDecl t]
+    | CList [CDecl t]
   deriving (Eq, Ord, Show, Read)
 
-data Form = Form Intent Ident Type
+data Form t = Form Intent Ident (Type t)
   deriving (Eq, Ord, Show, Read)
 
 data Intent = In | Out | InOut | Ref | ConstIn | ConstRef
   deriving (Eq, Ord, Show, Read)
 
-data VDecl = Solo Ident Type | Init Ident Type RExp
+data VDecl t
+  = Solo Ident (Type t)
+  | Init Ident (Type t) (RExp t)
   deriving (Eq, Ord, Show, Read)
 
-data CDecl = CDecl Ident Type RExp
+data CDecl t = CDecl Ident (Type t) (RExp t)
   deriving (Eq, Ord, Show, Read)
 
-data Type = Type Compound Basic
+data Type t = Type (Compound t) Basic
   deriving (Eq, Ord, Show, Read)
 
-data Compound = Simple | Array Compound RExp | Pointer Compound
+data Compound t
+  = Simple
+  | Array (Compound t) (RExp t)
+  | Pointer (Compound t)
   deriving (Eq, Ord, Show, Read)
 
 data Basic = BBool | BChar | BInt | BReal | BString | BVoid
   deriving (Eq, Ord, Show, Read)
 
-data Block = Block {bLoc :: Loc, decls :: [Decl], stms :: [Stm]}
+data Block t = Block {bLoc :: Loc, decls :: [Decl t], stms :: [Stm t]}
   deriving (Eq, Ord, Show, Read)
 
-data Stm
-    = StmBlock Block
-    | StmCall Ident [RExp]
-    | Assign LExp AssignOp RExp
-    | StmL LExp
-    | If RExp Stm
-    | IfElse RExp Stm Stm
-    | While RExp Stm
-    | DoWhile Stm RExp
-    | For Ident Range Stm
-    | JmpStm Jump
+data Stm t
+    = StmBlock (Block t)
+    | StmCall Ident [RExp t]
+    | Assign (LExp t) (AssignOp t) (RExp t)
+    | StmL (LExp t)
+    | If (RExp t) (Stm t)
+    | IfElse (RExp t) (Stm t) (Stm t)
+    | While (RExp t) (Stm t)
+    | DoWhile (Stm t) (RExp t)
+    | For Ident (Range t) (Stm t)
+    | JmpStm (Jump t)
   deriving (Eq, Ord, Show, Read)
 
-data Jump
+data Jump t
   = Return    {jmpLoc :: Loc}
-  | ReturnE   {jmpLoc :: Loc, retE :: RExp}
+  | ReturnE   {jmpLoc :: Loc, retE :: RExp t, retTy :: t}
   | Break     {jmpLoc :: Loc}
   | Continue  {jmpLoc :: Loc}
   deriving (Eq, Ord, Show, Read)
 
-data Range = Range {rngLoc :: Loc, start :: RExp, end :: RExp}
+data Range t = Range {rngLoc :: Loc, start :: RExp t, end :: RExp t}
   deriving (Eq, Ord, Show, Read)
 
-data LExp
-    = Deref   LExp
+data LExp t
+    = Deref   (LExp t) t
     -- | Post LExp IncDecOp
     -- | Pre IncDecOp LExp
-    | Access  LExp RExp
-    | Name    Ident
+    | Access  (LExp t) (RExp t) t
+    | Name    Ident t
   deriving (Eq, Ord, Show, Read)
 
-data RExp
-    = Or      {reLoc :: Loc, lhs :: RExp, rhs :: RExp}
-    | And     {reLoc :: Loc, lhs :: RExp, rhs :: RExp}
-    | Not     {reLoc :: Loc, rhs :: RExp}
-    | Comp    {reLoc :: Loc, lhs :: RExp, comp :: CompOp, rhs :: RExp}
-    | Arith   {reLoc :: Loc, lhs :: RExp, arith :: ArithOp, rhs :: RExp}
-    | Sign    {reLoc :: Loc, sgn :: SignOp, rhs :: RExp}
-    | RefE    {reLoc :: Loc, rhsL :: LExp}
-    | RLExp   {reLoc :: Loc, rhsL :: LExp}
-    | ArrList {reLoc :: Loc, rList :: [RExp]}
-    | FCall   {reLoc :: Loc, fName :: Ident, rList :: [RExp]}
-    | Lit     {reLoc :: Loc, lit :: Literal}
+data RExp t
+    = Or      {reLoc :: Loc, lhs :: RExp t, rhs :: RExp t, reTy :: t}
+    | And     {reLoc :: Loc, lhs :: RExp t, rhs :: RExp t, reTy :: t}
+    | Not     {reLoc :: Loc, rhs :: RExp t, reTy :: t}
+    | Comp    {reLoc :: Loc, lhs :: RExp t, comp :: CompOp t, rhs :: RExp t, reTy :: t}
+    | Arith   {reLoc :: Loc, lhs :: RExp t, arith :: ArithOp t, rhs :: RExp t, reTy :: t}
+    | Sign    {reLoc :: Loc, sgn :: SignOp t, rhs :: RExp t, reTy :: t}
+    | RefE    {reLoc :: Loc, rhsL :: LExp t, reTy :: t}
+    | RLExp   {reLoc :: Loc, rhsL :: LExp t, reTy :: t}
+    | ArrList {reLoc :: Loc, rList :: [RExp t], reTy :: t}
+    | FCall   {reLoc :: Loc, fName :: Ident, rList :: [RExp t], reTy :: t}
+    | Lit     {reLoc :: Loc, lit :: Literal, reTy :: t}
+    | Coerce  {reWho :: RExp t, reTy :: t}
   deriving (Eq, Ord, Show, Read)
 
-data ArithOp 
-  = Add
-  | Sub
-  | Mul
-  | Div
+data ArithOp t
+  = Add t
+  | Sub t
+  | Mul t
+  | Div t
   | Mod
-  | Pow
+  | Pow t
   deriving (Eq, Ord, Show, Read)
 
-data AssignOp
-    = AssignEq  {asLoc :: Loc}
-    | AssignAdd {asLoc :: Loc}
-    | AssignSub {asLoc :: Loc}
-    | AssignMul {asLoc :: Loc}
-    | AssignDiv {asLoc :: Loc}
+data AssignOp t
+    = AssignEq  {asLoc :: Loc, asTy :: t}
+    | AssignAdd {asLoc :: Loc, asTy :: t}
+    | AssignSub {asLoc :: Loc, asTy :: t}
+    | AssignMul {asLoc :: Loc, asTy :: t}
+    | AssignDiv {asLoc :: Loc, asTy :: t}
     | AssignMod {asLoc :: Loc}
-    | AssignPow {asLoc :: Loc}
+    | AssignPow {asLoc :: Loc, asTy :: t}
   deriving (Eq, Ord, Show, Read)
 
-data CompOp
-    = Lt
-    | Leq
-    | Eq
-    | Neq
-    | Geq
-    | Gt
+data CompOp t
+    = Lt  t
+    | Leq t
+    | Eq  t
+    | Neq t
+    | Geq t
+    | Gt  t
   deriving (Eq, Ord, Show, Read)
 
 -- data IncDecOp = Inc | Dec
 --   deriving (Eq, Ord, Show, Read)
 
-data SignOp 
-  = Pos
-  | Neg
+data SignOp t
+  = Pos t
+  | Neg t
   deriving (Eq, Ord, Show, Read)
 
 data Literal
@@ -132,5 +138,129 @@ data Literal
     | LInt Integer
     | LReal Double
     | LString String
+    | LNull
     | LArr [Literal]
   deriving (Eq, Ord, Show, Read)
+
+
+-- Functor instances ///////////////////////////////////////////////
+
+instance Functor Program where
+  fmap f (Prog ls) = Prog $ map (fmap f) ls
+
+instance Functor Decl where
+  fmap f decl = case decl of
+    FDecl a b c d e -> FDecl a (map (fmap f) b) c (fmap f d) (fmap f e)
+    VList a         -> VList $ map (fmap f) a
+    CList a         -> CList $ map (fmap f) a
+
+instance Functor Form where
+  fmap f (Form it id t) = Form it id (fmap f t)
+
+instance Functor VDecl where
+  fmap f v = case v of
+    Solo a t    -> Solo a (fmap f t)
+    Init a t r  -> Init a (fmap f t) (fmap f r)
+
+instance Functor CDecl where
+  fmap f (CDecl id t r) = CDecl id (fmap f t) (fmap f r)
+
+instance Functor Type where
+  fmap f (Type c b) = Type (fmap f c) b
+
+instance Functor Compound where
+  fmap f c = case c of
+    Simple    -> Simple
+    Array a b -> Array (fmap f a) (fmap f b)
+    Pointer a -> Pointer (fmap f a)
+
+instance Functor Block where
+  fmap f (Block l d s) = Block l (map (fmap f) d) (map (fmap f) s)
+
+instance Functor Stm where
+  fmap f s = case s of
+    StmBlock a    -> StmBlock (fmap f a)
+    StmCall a b   -> StmCall a (map (fmap f) b)
+    Assign a b c  -> Assign (fmap f a) (fmap f b) (fmap f c)
+    StmL a        -> StmL (fmap f a)
+    If a b        -> If (fmap f a) (fmap f b)
+    IfElse a b c  -> IfElse (fmap f a) (fmap f b) (fmap f c)
+    While a b     -> While (fmap f a) (fmap f b)
+    DoWhile a b   -> DoWhile (fmap f a) (fmap f b)
+    For a b c     -> For a (fmap f b) (fmap f c)
+    JmpStm a      -> JmpStm (fmap f a)
+
+instance Functor Jump where
+  fmap f r = case r of
+    Return  a     -> Return a
+    ReturnE a b t -> ReturnE a (fmap f b) (f t)
+    Break   a     -> Break a
+    Continue a    -> Continue a
+
+instance Functor Range where
+  fmap f (Range l st en) = Range l (fmap f st) (fmap f en)
+
+instance Functor LExp where
+  fmap f l = case l of
+    Deref a t     -> Deref (fmap f a) (f t)
+    Access a b t  -> Access (fmap f a) (fmap f b) (f t)
+    Name a t      -> Name a (f t)
+
+instance Functor RExp where
+  fmap f r = case r of
+    Or a b c t      -> Or a (fmap f b) (fmap f c) (f t)
+    And a b c t     -> And a (fmap f b) (fmap f c) (f t)
+    Not a b t       -> Not a (fmap f b) (f t)
+    Comp a b c d t  -> Comp a (fmap f b) (fmap f c) (fmap f d) (f t)
+    Arith a b c d t -> Arith a (fmap f b) (fmap f c) (fmap f d) (f t)
+    Sign a b c t    -> Sign a (fmap f b) (fmap f c) (f t)
+    RefE a b t      -> RefE a (fmap f b) (f t)
+    RLExp a b t     -> RLExp a (fmap f b) (f t)
+    ArrList a b t   -> ArrList a (map (fmap f) b) (f t)
+    FCall a b c t   -> FCall a b (map (fmap f) c) (f t)
+    Lit a b t       -> Lit a b (f t)
+    Coerce a t      -> Coerce (fmap f a) (f t)
+
+instance Functor ArithOp where
+  fmap f op =
+    case op of
+      Add t -> Add (f t)
+      Sub t -> Sub (f t)
+      Mul t -> Mul (f t)
+      Div t -> Div (f t)
+      Mod   -> Mod
+      Pow t -> Pow (f t)
+
+instance Functor AssignOp where
+  fmap f op = case op of
+    AssignEq  l t -> AssignEq  l (f t)
+    AssignAdd l t -> AssignAdd l (f t)
+    AssignSub l t -> AssignSub l (f t)
+    AssignMul l t -> AssignMul l (f t)
+    AssignDiv l t -> AssignDiv l (f t)
+    AssignMod l   -> AssignMod l
+    AssignPow l t -> AssignPow l (f t)
+
+instance Functor CompOp where
+  fmap f op = case op of
+    Lt  t -> Lt  (f t)
+    Leq t -> Leq (f t)
+    Eq  t -> Eq  (f t)
+    Neq t -> Neq (f t)
+    Geq t -> Geq (f t)
+    Gt  t -> Gt  (f t)
+
+instance Functor SignOp where
+  fmap f (Pos t) = Pos (f t)
+  fmap f (Neg t) = Neg (f t)
+
+
+set :: (Functor f) => b -> f a -> f b
+set b = fmap (const b)
+
+
+coerce :: Eq t => t -> RExp t -> RExp t
+coerce t r =
+  if reTy r /= t
+  then Coerce r t
+  else r
