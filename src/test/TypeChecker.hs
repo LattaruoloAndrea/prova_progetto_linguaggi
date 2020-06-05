@@ -237,18 +237,19 @@ checkVDecl env v = case v of
 
 -- Type t inference for right expressions: all cases are delegated to minor functions
 inferRExp :: Env -> RExp () -> EM.Err (RExp TCType)
-inferRExp env rexp = case rexp of
-    Or _ _ _ _      -> inferOr env rexp
-    And _ _ _ _     -> inferAnd env rexp
-    Not _ _ _       -> inferNot env rexp
-    Comp _ _ _ _ _  -> inferComp env rexp
-    Arith _ _ _ _ _ -> inferArith env rexp
-    Sign _ _ _ _    -> inferSign env rexp
-    RefE _ _ _      -> inferRefE env rexp
-    RLExp _ _ _     -> inferRLExp env rexp
-    ArrList _ _ _   -> inferArrList env rexp
-    FCall _ _ _ _   -> inferFCall env rexp
-    Lit _ _ _       -> inferLit rexp
+inferRExp env rexp = (case rexp of
+    Or _ _ _ _      -> inferOr
+    And _ _ _ _     -> inferAnd
+    Not _ _ _       -> inferNot
+    Comp _ _ _ _ _  -> inferComp
+    Arith _ _ _ _ _ -> inferArith
+    Sign _ _ _ _    -> inferSign
+    RefE _ _ _      -> inferRefE
+    RLExp _ _ _     -> inferRLExp
+    ArrList _ _ _   -> inferArrList
+    FCall _ _ _ _   -> inferFCall
+    Lit _ _ _       -> inferLit)
+    env rexp
 
 
 -- Infer logical operators //////////////////////////////////////////////////////////
@@ -359,8 +360,8 @@ inferFCall env (FCall loc id@(Ident l n) rs _) = do
 
 
 -- Type t of a literal is induced by the typeclass instance
-inferLit :: RExp () -> EM.Err (RExp TCType)
-inferLit (Lit loc l _) = return $ Lit loc l (tctypeOf l)
+inferLit :: Env -> RExp () -> EM.Err (RExp TCType)
+inferLit _ (Lit loc l _) = return $ Lit loc l (tctypeOf l)
 
 
 

@@ -61,3 +61,24 @@ instance TCTypeable (LExp TCType) where
         Deref  _ t   -> t
         Access _ _ t -> t
         Name   _ t   -> t
+
+
+-- (CompOp TCType) have TCType
+instance TCTypeable (CompOp TCType) where
+    tctypeOf x = case x of
+        Lt  t -> t
+        Leq t -> t
+        Eq  t -> t
+        Neq t -> t
+        Geq t -> t
+        Gt  t -> t
+
+-- (ArithOp TCType) have TCType
+instance TCTypeable (ArithOp TCType) where
+    tctypeOf x = case x of
+        Add t -> t
+        Sub t -> t
+        Mul t -> t
+        Div t -> t
+        Mod   -> TInt
+        Pow t -> t
