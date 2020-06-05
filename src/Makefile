@@ -1,13 +1,14 @@
-.PHONY: all clean debugger
+.PHONY: all tac type clean
 
-all: TestParser
+all: TestTac TestType clean
 
-debugger: TestType
+tac: TestTac
+type: TestType
 
-TestType: test/*.hs
+TestTac: test/TestTac.hs haskell/*.hs
 	ghc --make $^ -o $@
 
-TestParser: haskell/*.hs
+TestType: test/TestType.hs haskell/*.hs
 	ghc --make $^ -o $@
 
 clean:
