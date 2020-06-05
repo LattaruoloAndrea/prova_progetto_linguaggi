@@ -22,6 +22,7 @@ getAddr l = case l of
     A a     -> a
     Arr a _ -> a
     RefTo a -> a
+    
 
 data Over = B | C | I | R | S | P
     deriving (Read, Show, Eq, Ord)
