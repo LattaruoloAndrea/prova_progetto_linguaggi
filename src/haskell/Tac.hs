@@ -17,20 +17,26 @@ data LAddr
     | RefTo Addr
     deriving (Read, Show, Eq, Ord)
 
+getAddr :: LAddr -> Addr
+getAddr l = case l of
+    A a     -> a
+    Arr a _ -> a
+    RefTo a -> a
+
 data Over = B | C | I | R | S | P
     deriving (Read, Show, Eq, Ord)
 
 data CompOp
-    = Lt
-    | Leq
-    | Eq
-    | Neq
-    | Geq
-    | Gt
+    = Lt    Over
+    | Leq   Over
+    | Eq    Over
+    | Neq   Over
+    | Geq   Over
+    | Gt    Over
     deriving (Read, Show, Eq, Ord)
 
 data BinOp
-    = Rel CompOp Over
+    = Rel CompOp
     | Add Over
     | Sub Over
     | Mul Over
