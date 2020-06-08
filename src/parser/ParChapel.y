@@ -163,7 +163,7 @@ Block : '{' {- empty -} '}' { AbsChapel.Block (tokenLoc $1) [] [] }
 Stm :: { Stm () }
 Stm : ';' Stm { $2 }
     | Block { AbsChapel.StmBlock $1 }
-    | Ident '(' ListRExp ')' ';' { AbsChapel.StmCall $1 $3 }
+    | Ident '(' ListRExp ')' ';' { AbsChapel.StmCall $1 $3 [] }
     
     | LExp '='  RExp ';' { AbsChapel.Assign $1 (AbsChapel.AssignEq  (tokenLoc $2) ()) $3 }
     | LExp '+=' RExp ';' { AbsChapel.Assign $1 (AbsChapel.AssignAdd (tokenLoc $2) ()) $3 }
@@ -227,7 +227,7 @@ RExp : RExp '||' RExp { AbsChapel.Or (tokenLoc $2) $1 $3 () }
      | '&' LExp { AbsChapel.RefE (tokenLoc $1) $2 () }
      | LExp { AbsChapel.RLExp (locOf $1) $1 () }
      | '[' ListRExp ']' { AbsChapel.ArrList (tokenLoc $1) $2 () }
-     | Ident '(' ListRExp ')' { AbsChapel.FCall (locOf $1) $1 $3 () }
+     | Ident '(' ListRExp ')' { AbsChapel.FCall (locOf $1) $1 $3 [] () }
      | Literal { AbsChapel.Lit (fst $1) (snd $1) () }
 
      | '(' RExp ')' { $2 }

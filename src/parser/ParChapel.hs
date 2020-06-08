@@ -669,7 +669,7 @@ happyReduction_37 (happy_x_5 `HappyStk`
 	 = case happyOut4 happy_x_1 of { (HappyWrap4 happy_var_1) -> 
 	case happyOut29 happy_x_3 of { (HappyWrap29 happy_var_3) -> 
 	happyIn19
-		 (AbsChapel.StmCall happy_var_1 happy_var_3
+		 (AbsChapel.StmCall happy_var_1 happy_var_3 []
 	) `HappyStk` happyRest}}
 
 happyReduce_38 = happyReduce 4# 15# happyReduction_38
@@ -1186,7 +1186,7 @@ happyReduction_84 (happy_x_4 `HappyStk`
 	 = case happyOut4 happy_x_1 of { (HappyWrap4 happy_var_1) -> 
 	case happyOut29 happy_x_3 of { (HappyWrap29 happy_var_3) -> 
 	happyIn22
-		 (AbsChapel.FCall (locOf happy_var_1) happy_var_1 happy_var_3 ()
+		 (AbsChapel.FCall (locOf happy_var_1) happy_var_1 happy_var_3 [] ()
 	) `HappyStk` happyRest}}
 
 happyReduce_85 = happySpecReduce_1  18# happyReduction_85
