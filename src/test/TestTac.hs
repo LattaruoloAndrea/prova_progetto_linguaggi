@@ -118,7 +118,7 @@ run v p s = let ts = myLLexer s in case p ts of
                 exitFailure
             EM.Ok prog -> do
                 putStrLn "\nTypeCheck Successful!"
-                putStrLn "\nThree Address Code:"
+                putStrLn "\nThree Address Code:\n\n"
                 let tacCode = genTAC prog
                 mapM_ (putStrLn . show) tacCode
                 exitSuccess
