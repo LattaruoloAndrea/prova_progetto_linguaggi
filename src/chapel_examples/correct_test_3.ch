@@ -1,24 +1,12 @@
-proc fibonacci(n : int) : int {
-  // if n <= 1 then return n;
-  var x: int, y: int;
-  if((x<10) && (y>500.0)) {
-    var x: int = 0;
-  }
-
-  return fibonacci(n-1) + fibonacci(n-2);
+proc main() : void {
+  var x:int =1+1, y: real = 0.45*2;
+  var alpha: bool = true || false;
+  return;
 }
 
-// proc addThree(in n:int) in:int{
-//   param p: int = 5;
-//   return n + 3+p;
-// }
-
-// proc doublePrint(inout thing:int) in: int {
-//   var p: int = 5;
-//   thing = p;
-//   return thing + thing;
-// }
-
-// proc defaultsProc(in x: int,ref y: real): real {
-//   return x+y;
-// }
+proc fib(n: int): int {
+  if n <= 1 then
+    return n;
+  else
+    return fib(n-1) + fib(n-2);
+}
