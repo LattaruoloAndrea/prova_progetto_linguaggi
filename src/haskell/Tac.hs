@@ -20,9 +20,9 @@ data LAddr
 getAddr :: LAddr -> Addr
 getAddr l = case l of
     A a     -> a
-    Arr a _ -> a
+    Arr _ a -> a
     RefTo a -> a
-    
+
 
 data Over = B | C | I | R | S | P
     deriving (Read, Show, Eq, Ord)
@@ -60,6 +60,7 @@ data TAC
     | Nil LAddr LAddr Over                  -- x = y
     | Lit LAddr Literal Over                -- x = non_array_literal
     | Goto Label                            -- goto label
+    | Lab Label                             -- label: ...
     | If LAddr Label                        -- if x goto label
     | IfFalse LAddr Label                   -- ifFalse x goto label
     | IfRel LAddr CompOp LAddr Label        -- if x rel y goto label

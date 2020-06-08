@@ -230,7 +230,7 @@ checkVDecl env v = case v of
                 r' <- inferRExp env r
                 let tr = tctypeOf r'
                 unless (tr `subtypeOf` tc) $ errorVarTypeMismatch id tc tr
-                return (env', Init id (toTCT t) r')
+                return (env', Init id (toTCT t) (coerce tc r'))
             EM.Bad s    -> ET.badT (env, toTCT v) s
 
 
