@@ -22,6 +22,8 @@ type ArithOpT   = A.ArithOp TCType
 type CompOpT    = A.CompOp TCType
 type AssignOpT  = A.AssignOp TCType
 type BlockT     = A.Block TCType
+type Intent     = A.Intent
+type JumpT      = A.Jump TCType
 
 
 type Stream = DL.DList TAC          -- The list of TAC instructions
@@ -36,9 +38,6 @@ nilCont x y ov = mappend $ DL.fromList [Nil x y ov]
 
 refCont :: LAddr -> LAddr -> Stream -> Stream
 refCont x y = mappend $ DL.fromList [Ref x y]
-
-litCont :: LAddr -> A.Literal -> Over -> Stream -> Stream
-litCont x lit ov = mappend $ DL.fromList [Lit x lit ov]
 
 binCont :: BinOp -> LAddr -> LAddr -> LAddr -> Stream -> Stream
 binCont bop x y z = mappend $ DL.fromList [Bin x y bop z]
@@ -63,6 +62,15 @@ coerceCont ov = unCont $ Coerce ov
 
 gotoCont :: Label -> Stream -> Stream
 gotoCont lab = mappend $ DL.fromList [Goto lab]
+
+callCont :: LAddr -> Int -> Stream -> Stream
+callCont a n = mappend $ DL.fromList [Call a n]
+
+fcallCont :: LAddr -> LAddr -> Int -> Stream -> Stream
+fcallCont x f n = mappend $ DL.fromList [FCall x f n]
+
+paramCont :: LAddr -> Stream -> Stream
+paramCont x = mappend $ DL.fromList [Par x]
 
 arithCont :: ArithOpT -> LAddr -> LAddr -> LAddr -> Stream -> Stream
 arithCont op = binCont $ case op of
@@ -90,6 +98,15 @@ ifFalseCont addr lab = mappend $ DL.fromList [IfFalse addr lab]
 
 ifRelCont :: LAddr -> CompOp -> LAddr -> Label -> Stream -> Stream
 ifRelCont a1 op a2 lab = mappend $ DL.fromList [IfRel a1 op a2 lab]
+
+
+
+returnCont :: Stream -> Stream
+returnCont = mappend $ DL.fromList [Return]
+
+returnECont :: LAddr -> Stream -> Stream
+returnECont x = mappend $ DL.fromList [ReturnE x]
+
 
 toCompOp :: CompOpT -> CompOp
 toCompOp op = case op of
@@ -233,7 +250,7 @@ genRExp r = case r of
     A.RefE _ _ _      -> genRefE r
     A.RLExp _ _ _     -> genRLExp r
     A.ArrList _ _ _   -> return (id, A . ATemp $ "t_arraylist")
-    A.FCall _ _ _ _   -> return (id, A . ATemp $ "t_fcall")
+    A.FCall _ _ _ _ _ -> genFCall r
     A.Lit _ _ _       -> genLit r
     A.Coerce _ _      -> genCoerce r
 
@@ -248,15 +265,15 @@ genLExp l = case l of
 genStm :: StmT -> SGen (Stream -> Stream)
 genStm s = case s of
     A.StmBlock _      -> genStmBlock s
-    A.StmCall  _ _    -> return id
+    A.StmCall  _ _ _  -> genStmCall s
     A.Assign   _ _ _  -> genAssign s
     A.StmL     _      -> return id
     A.If       _ _    -> genIf s
-    A.IfElse   _ _ _  -> return id
+    A.IfElse   _ _ _  -> genIfElse s
     A.While    _ _    -> genWhile s
     A.DoWhile  _ _    -> genDoWhile s
-    A.For      _ _ _  -> return id
-    A.JmpStm   _      -> return id
+    A.For      _ _ _  -> genFor s
+    A.JmpStm   _      -> genJmpStm s
 
 
 
@@ -324,13 +341,20 @@ genCoerce (A.Coerce r t) = do
     addrT <- newTemp
     return (contR . coerceCont (overFromTC t) addrT addrR, addrT)
 
+
+genFCall :: RExpT -> SGen (Stream -> Stream, LAddr)
+genFCall (A.FCall loc ident rs its rt) = do
+    contParams <- streamCat $ map genParam $ zip rs its
+    addrT <- newTemp
+    let f = addrFromId ident
+        n = length rs
+    return (contParams . fcallCont addrT f n, addrT)
+
+
 -- Generate continuation for literal expressions: @TODO Pointers/Arrays/Strings
 genLit :: RExpT -> SGen (Stream -> Stream, LAddr)
-genLit (A.Lit loc lit t) = 
-    case t of
-        _           -> do
-            addrT <- newTemp
-            return (litCont addrT lit $ overFromTC t, addrT)
+genLit (A.Lit loc lit t) = case t of
+    _ -> return (id, A $ ALit lit)
 
 
 
@@ -359,11 +383,25 @@ genStmBlock (A.StmBlock block) = genBlock block
 
 genBlock :: BlockT -> SGen (Stream -> Stream)
 genBlock block = do
-    let ds = map genDecl $ reverse $ A.decls block
-        ss = map genStm  $ reverse $ A.stms  block
+    let ds = map genDecl $ A.decls block
+        ss = map genStm $ A.stms  block
     contDecl <- streamCat ds
     contStms <- streamCat ss
     return $ contDecl . contStms
+
+
+genStmCall :: StmT -> SGen (Stream -> Stream)
+genStmCall (A.StmCall ident rs its) = do
+    contParams <- streamCat $ map genParam $ zip rs its
+    let f = addrFromId ident
+        n = length rs
+    return $ contParams . callCont f n
+
+genParam :: (RExpT, Intent) -> SGen (Stream -> Stream)
+genParam (r, it) = do
+    (contR, addrR) <- genRExp r
+    return $ contR . paramCont addrR
+
 
 
 genAssign :: StmT -> SGen (Stream -> Stream)
@@ -404,6 +442,16 @@ genIf (A.If guard body) = do
     contGuard <- genGuard guard fall labE 
     return $ contGuard . attachEnd labE contBody
 
+
+genIfElse :: StmT -> SGen (Stream -> Stream)
+genIfElse (A.IfElse guard s1 s2) = do
+    labE <- newLabel
+    cont1 <- genStm s1
+    cont2 <- genStm s2
+    contG <- genGuard guard fall labE
+    return $ contG . cont1 . attachStart labE cont2
+
+
 genWhile :: StmT -> SGen (Stream -> Stream)
 genWhile (A.While guard stm) = do
     labG <- newLabel
@@ -424,6 +472,31 @@ genDoWhile (A.DoWhile stm guard) = do
     let contGuard' = attachEnd labE $ attachStart labG contGuard
         contBody'  = attachStart labS contBody
     return $ contBody' . contGuard'
+
+genFor :: StmT -> SGen (Stream -> Stream)
+genFor (A.For ident rng stm) = do
+    contAss <- genStm ass
+    contWh  <- genStm wh
+    return $ contAss . contWh
+    where
+        loc = A.Loc 0 0
+        s = A.start rng
+        t = tctypeOf s
+        ass = A.Assign (A.Name ident t) (A.AssignEq loc t) s
+        guard = A.Comp loc (A.RLExp loc (A.Name ident t) t) (A.Leq t) (A.end rng) t
+        wh = A.While guard stm
+
+
+genJmpStm :: StmT -> SGen (Stream -> Stream)
+genJmpStm (A.JmpStm jmp) = genJump jmp
+
+genJump :: JumpT -> SGen (Stream -> Stream)
+genJump jmp = case jmp of
+    A.Return _      -> return returnCont
+    A.ReturnE _ r _ -> do
+        (contR, addrR) <- genRExp r
+        return $ contR . returnECont addrR
+    _ -> return id
 
 
 genGuard :: RExpT -> Label -> Label -> SGen (Stream -> Stream)
@@ -457,7 +530,7 @@ genGuard r ifTrue ifFalse = case r of
 
     A.Not _ r _         -> genGuard r ifFalse ifTrue
 
-    A.Lit _ (A.LBool False) _ -> return $ gotoCont ifFalse
-    A.Lit _ (A.LBool True)  _ -> return $ gotoCont ifTrue
+    A.Lit _ (A.LBool False) _ -> return $ if ifFalse == fall then id else gotoCont ifFalse
+    A.Lit _ (A.LBool True)  _ -> return $ if ifTrue == fall then id else gotoCont ifTrue
 
     _ -> return id -- Function calls

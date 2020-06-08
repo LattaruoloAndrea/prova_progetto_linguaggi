@@ -164,7 +164,7 @@ instance Print (A.Block t) where
 instance Print (A.Stm t) where
   prt i e = case e of
     A.StmBlock block -> prPrec i 0 (concatD [prt 0 block])
-    A.StmCall id rexps -> prPrec i 0 (concatD [prt 0 id, doc (showString "("), prt 0 rexps, doc (showString ")"), doc (showString ";")])
+    A.StmCall id rexps _ -> prPrec i 0 (concatD [prt 0 id, doc (showString "("), prt 0 rexps, doc (showString ")"), doc (showString ";")])
     A.Assign lexp assignop rexp -> prPrec i 0 (concatD [prt 0 lexp, prt 0 assignop, prt 0 rexp, doc (showString ";")])
     A.StmL lexp -> prPrec i 0 (concatD [prt 0 lexp, doc (showString ";")])
     A.If rexp stm -> prPrec i 0 (concatD [doc (showString "if"), prt 0 rexp, doc (showString "then"), prt 0 stm])
@@ -207,9 +207,9 @@ instance Print (A.RExp t) where
     A.RefE _ lexp _ -> prPrec i 0 (concatD [doc (showString "&"), prt 0 lexp])
     A.RLExp _ lexp _ -> prPrec i 0 (concatD [prt 0 lexp])
     A.ArrList _ rexps _ -> prPrec i 0 (concatD [doc (showString "["), prt 0 rexps, doc (showString "]")])
-    A.FCall _ id rexps _ -> prPrec i 0 (concatD [prt 0 id, doc (showString "("), prt 0 rexps, doc (showString ")")])
+    A.FCall _ id rexps _ _ -> prPrec i 0 (concatD [prt 0 id, doc (showString "("), prt 0 rexps, doc (showString ")")])
     A.Lit _ literal _ -> prPrec i 0 (concatD [prt 0 literal])
-    A.Coerce _ _ -> id
+    A.Coerce rexp _ -> prt i rexp
   prtList _ [] = concatD []
   prtList _ [x] = concatD [prt 0 x]
   prtList _ (x:xs) = concatD [prt 0 x, doc (showString ","), prt 0 xs]

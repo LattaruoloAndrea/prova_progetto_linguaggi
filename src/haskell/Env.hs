@@ -55,6 +55,12 @@ instance TCTypeable Param where
 paramsOf :: Entry -> [Param]
 paramsOf (Fun _ ps _ _) = ps
 
+intentsOf :: [Param] -> [Intent]
+intentsOf ps = map intentOf ps
+
+intentOf :: Param -> Intent
+intentOf (Param _ _ it _) = it
+
 isMut :: Entry -> Mutability
 isMut (Var _ _ m)   = m
 isMut (Const _ _ _) = False

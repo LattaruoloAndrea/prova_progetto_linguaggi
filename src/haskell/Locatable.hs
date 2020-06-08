@@ -64,7 +64,7 @@ instance Locatable (RExp t) where
 instance Locatable (Stm t) where
     locOf x = case x of
         StmBlock b      -> locOf b
-        StmCall id _    -> locOf id
+        StmCall id _ _  -> locOf id
         Assign _ op _   -> locOf op
         StmL lexp       -> locOf lexp
         If rexp _       -> locOf rexp

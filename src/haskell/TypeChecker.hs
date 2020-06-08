@@ -33,17 +33,20 @@ getDefault t = case t of
     TPoint _    -> LNull
     TArr d t'   -> LArr $ map getDefault $ replicate d t'
 
+predLoc :: Loc
+predLoc = Loc (-1) (-1)
+
 -- List of predefined functions
 predList :: [(String, Entry)]
 predList = [
-    ("readChar",    Fun (Loc 0 0) [] In TChar),
-    ("readInt",     Fun (Loc 0 0) [] In TInt),
-    ("readReal",    Fun (Loc 0 0) [] In TReal),
-    ("readString",  Fun (Loc 0 0) [] In TString),
-    ("writeChar",   Fun (Loc 0 0) [Param (Loc 0 1) "x" In TChar] In TVoid),
-    ("writeInt",    Fun (Loc 0 0) [Param (Loc 0 1) "x" In TInt] In TVoid),
-    ("writeReal",   Fun (Loc 0 0) [Param (Loc 0 1) "x" In TReal] In TVoid),
-    ("writeString", Fun (Loc 0 0) [Param (Loc 0 1) "x" In TString] In TVoid)]
+    ("readChar",    Fun predLoc [] In TChar),
+    ("readInt",     Fun predLoc [] In TInt),
+    ("readReal",    Fun predLoc [] In TReal),
+    ("readString",  Fun predLoc [] In TString),
+    ("writeChar",   Fun predLoc [Param (Loc 0 1) "x" In TChar] In TVoid),
+    ("writeInt",    Fun predLoc [Param (Loc 0 1) "x" In TInt] In TVoid),
+    ("writeReal",   Fun predLoc [Param (Loc 0 1) "x" In TReal] In TVoid),
+    ("writeString", Fun predLoc [Param (Loc 0 1) "x" In TString] In TVoid)]
 
 -- Initial environment (with the global context)
 startEnv :: Env
@@ -247,7 +250,7 @@ inferRExp env rexp = (case rexp of
     RefE _ _ _      -> inferRefE
     RLExp _ _ _     -> inferRLExp
     ArrList _ _ _   -> inferArrList
-    FCall _ _ _ _   -> inferFCall
+    FCall _ _ _ _ _ -> inferFCall
     Lit _ _ _       -> inferLit)
     env rexp
 
@@ -352,11 +355,11 @@ inferRLExp env (RLExp loc l _) = do
 -- Function calls have type of the return
 --   * Check of well formed call is delegated to checkCall
 inferFCall :: Env -> RExp () -> EM.Err (RExp TCType)
-inferFCall env (FCall loc id@(Ident l n) rs _) = do
+inferFCall env (FCall loc id@(Ident l n) rs _ _) = do
     let cc = checkCall env id rs
-    (rs', l') <- ET.fromErrT cc
+    (rs', its, l') <- ET.fromErrT cc
     rt  <- lookType id env
-    return $ FCall loc (Ident l' n) rs' rt
+    return $ FCall loc (Ident l' n) rs' its rt
 
 
 -- Type t of a literal is induced by the typeclass instance
@@ -422,7 +425,7 @@ checkLExpError = checkExpError inferLExp
 checkStm :: Env -> Stm () -> ET.ErrT (Stm TCType)
 checkStm env stm = case stm of
     StmBlock _      -> checkBlock env stm
-    StmCall  _ _    -> checkStmCall env stm
+    StmCall  _ _ _  -> checkStmCall env stm
     Assign   _ _ _  -> checkAssign env stm
     StmL     _      -> checkStmL env stm
     If       _ _    -> checkIf env stm
@@ -480,10 +483,10 @@ checkPassing env (r, Param loc id it tp) =
 --   * Function must exist in the scope, otherwise Env.lookFun will throw an error
 --   * If actual and formal parameters lists have not the same length, throw an error
 --   * If actual and formal types and intents are not compatible, throw an error
-checkCall :: Env -> Ident -> [RExp ()] -> ET.ErrT ([RExp TCType], Loc)
+checkCall :: Env -> Ident -> [RExp ()] -> ET.ErrT ([RExp TCType], [Intent], Loc)
 checkCall env ident actuals =
     let actuals' = map toTCT actuals
-    in  ET.toErrT (actuals', locOf ident) $ do
+    in  ET.toErrT (actuals', [], locOf ident) $ do
         actuals' <- mapM (inferRExp env) actuals
         f <- lookFun ident env
         let la = length actuals'
@@ -491,12 +494,12 @@ checkCall env ident actuals =
             lp = length params
         unless (la == lp) $ errorCallWrongNumber ident la lp
         ET.fromErrT $ foldM checkPassing env $ zip actuals' params
-        return (actuals', locOf f)
+        return (actuals', intentsOf params, locOf f)
 
 checkStmCall :: Env -> Stm () -> ET.ErrT (Stm TCType)
-checkStmCall env (StmCall id@(Ident l n) actuals) = do
-    (rs, l') <- checkCall env id actuals
-    return $ StmCall (Ident l' n) rs
+checkStmCall env (StmCall id@(Ident l n) actuals _) = do
+    (rs, its, l') <- checkCall env id actuals
+    return $ StmCall (Ident l' n) rs its
 
 
 -- Check an assignment statement
