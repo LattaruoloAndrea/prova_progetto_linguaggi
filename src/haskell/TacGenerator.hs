@@ -176,11 +176,11 @@ labelFromId :: A.Ident -> Label
 labelFromId (A.Ident loc name) = Label $ name ++ "@" ++ (show $ A.line loc) ++ "," ++ (show $ A.column loc)
 
 
-newLabel :: SGen Label
-newLabel = do
+newLabel :: String -> SGen Label
+newLabel s = do
     (v, l) <- get
     put (v, l+1)
-    return . Label $ "L" ++ (show l)
+    return . Label $ s ++ (show l)
 
 attachStart :: Label -> (Stream -> Stream) -> (Stream -> Stream)
 attachStart lab cont = instr . cont
@@ -223,8 +223,10 @@ genDecl decl = case decl of
 genFDecl :: DeclT -> SGen (Stream -> Stream)
 genFDecl (A.FDecl id forms it rt body) = do
     let preamble = labCont $ labelFromId id
+    labEnd <- newLabel "endFun"
     contBody <- genBlock body
-    return $ preamble . contBody
+    let postamble = labCont $ labEnd
+    return $ \stream -> mappend stream $ preamble . contBody . postamble $ mempty
 
 
 genCDecl :: CDeclT -> SGen (Stream -> Stream)
@@ -488,7 +490,7 @@ genAssign (A.Assign lexp op rexp) = do
 
 genIf :: StmT -> SGen (Stream -> Stream)
 genIf (A.If guard body) = do
-    labE <- newLabel
+    labE <- newLabel "ifFalse"
     contBody <- genStm body
     contGuard <- genGuard guard fall labE 
     return $ contGuard . attachEnd labE contBody
@@ -496,7 +498,7 @@ genIf (A.If guard body) = do
 
 genIfElse :: StmT -> SGen (Stream -> Stream)
 genIfElse (A.IfElse guard s1 s2) = do
-    labE <- newLabel
+    labE <- newLabel "ifFalse"
     cont1 <- genStm s1
     cont2 <- genStm s2
     contG <- genGuard guard fall labE
@@ -505,8 +507,8 @@ genIfElse (A.IfElse guard s1 s2) = do
 
 genWhile :: StmT -> SGen (Stream -> Stream)
 genWhile (A.While guard stm) = do
-    labG <- newLabel
-    labE <- newLabel
+    labG <- newLabel "loopGuard"
+    labE <- newLabel "loopExit"
     contGuard <- genGuard guard fall labE
     contBody <- genStm stm
     let contGuard' = attachStart labG contGuard
@@ -515,9 +517,9 @@ genWhile (A.While guard stm) = do
 
 genDoWhile :: StmT -> SGen (Stream -> Stream)
 genDoWhile (A.DoWhile stm guard) = do
-    labS <- newLabel
-    labG <- newLabel
-    labE <- newLabel
+    labS <- newLabel "loopBody"
+    labG <- newLabel "loopGuard"
+    labE <- newLabel "loopExit"
     contGuard <- genGuard guard labS fall
     contBody <- genStm stm
     let contGuard' = attachEnd labE $ attachStart labG contGuard
@@ -564,7 +566,7 @@ genGuard r ifTrue ifFalse = case r of
                 _                       -> ifRelCont addr1 (toCompOp op) addr2 ifTrue . gotoCont ifFalse
     
     A.Or _ r1 r2 _      -> do
-        lab   <- newLabel
+        lab   <- newLabel "trueOr"
         let ifTrue' = if ifTrue == fall then lab else ifTrue
         cont1 <- genGuard r1 ifTrue' fall
         cont2 <- genGuard r2 ifTrue  ifFalse
@@ -572,7 +574,7 @@ genGuard r ifTrue ifFalse = case r of
         return $ cont1 . cont2 . extra
 
     A.And _ r1 r2 _     -> do
-        lab <- newLabel
+        lab <- newLabel "falseAnd"
         let ifFalse' = if ifFalse == fall then lab else ifFalse
         cont1 <- genGuard r1 fall ifFalse'
         cont2 <- genGuard r2 fall ifFalse
