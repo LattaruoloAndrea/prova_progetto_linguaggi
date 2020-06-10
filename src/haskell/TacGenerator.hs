@@ -167,6 +167,11 @@ newRef = return . RefTo . getAddr
 addrFromId :: A.Ident -> LAddr
 addrFromId (A.Ident loc name) = A $ AName name loc
 
+
+addrFromInteger :: Integer -> LAddr
+addrFromInteger = A . ALit . A.LInt
+
+
 labelFromId :: A.Ident -> Label
 labelFromId (A.Ident loc name) = Label $ name ++ "@" ++ (show $ A.line loc) ++ "," ++ (show $ A.column loc)
 
@@ -249,7 +254,7 @@ genRExp r = case r of
     A.Sign _ _ _ _    -> genSign r
     A.RefE _ _ _      -> genRefE r
     A.RLExp _ _ _     -> genRLExp r
-    A.ArrList _ _ _   -> return (id, A . ATemp $ "t_arraylist")
+    A.ArrList _ _ _   -> genArrList r
     A.FCall _ _ _ _ _ -> genFCall r
     A.Lit _ _ _       -> genLit r
     A.Coerce _ _      -> genCoerce r
@@ -258,7 +263,7 @@ genRExp r = case r of
 genLExp :: LExpT -> SGen (Stream -> Stream, LAddr)
 genLExp l = case l of
     A.Deref  _ _   -> genDeref l
-    A.Access _ _ _ -> return (id, A . ATemp $ "t_arrayaccess")
+    A.Access _ _ _ -> genAccess l
     A.Name   _ _   -> genName l
 
 
@@ -335,6 +340,30 @@ genRLExp (A.RLExp loc l t) = do
     addrT <- newTemp
     return (contL . nilCont addrT addrL (overFromTC t), addrT)
 
+
+genArrList :: RExpT -> SGen (Stream -> Stream, LAddr)
+genArrList arr@(A.ArrList loc rs t) = do
+    addrT <- newTemp
+    let ls  = linearize arr
+        n   = length ls
+        t'  = tctypeOf $ head ls
+        sz  = sizeof $ t'
+        a   = getAddr addrT
+        intToAddr = \n -> ALit . A.LInt $ toInteger n
+        helper = \(n, rexp) -> do
+            (contR, addrR) <- genRExp rexp
+            return $ contR . nilCont (Arr a $ intToAddr $ n * sz) addrR (overFromTC t')
+        linearize (A.ArrList _ rs _) = concatMap linearize rs
+        linearize r                  = [r]
+    cont <- streamCat $ map helper $ zip [0 .. (n-1)] ls
+    return (cont, addrT)
+        
+
+
+
+
+
+
 genCoerce :: RExpT -> SGen (Stream -> Stream, LAddr)
 genCoerce (A.Coerce r t) = do
     (contR, addrR) <- genRExp r
@@ -365,13 +394,35 @@ genLit (A.Lit loc lit t) = case t of
 
 genDeref :: LExpT -> SGen (Stream -> Stream, LAddr)
 genDeref (A.Deref l t) = do
-    (contL, addrL) <- genLExp l
+    (contL, addrL) <- genLExp l 
     addrRef <- newRef addrL
     return (contL . id, addrRef)
 
 
+genAccess :: LExpT -> SGen (Stream -> Stream, LAddr)
+genAccess (A.Access l r t) = do
+    (contL, addrL) <- genLExp l
+    (contR, addrR) <- genRExp r
+    addrT <- newTemp
+    let sz = sizeof t
+        addrO = case addrL of
+            Arr b o -> A o
+            _       -> A . ALit . A.LInt $ 0
+        addrS = addrFromInteger $ toInteger sz
+        contT1 = arithCont (A.Mul TInt) addrT addrS addrR
+        contT2 = arithCont (A.Add TInt) addrT addrT addrO
+        aL = getAddr addrL
+        aT = getAddr addrT
+    return (contL . contR . contT1 . contT2, Arr aL aT)
+
+
 genName :: LExpT -> SGen (Stream -> Stream, LAddr)
-genName (A.Name ident t) = return (id, addrFromId ident)
+genName (A.Name ident t) = return (id, addr)
+    where
+        tmp = addrFromId ident
+        addr = case t of
+            TArr _ _ -> Arr (getAddr tmp) (getAddr $ addrFromInteger 0)
+            _        -> tmp
 
 
 

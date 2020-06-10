@@ -20,7 +20,7 @@ data LAddr
 getAddr :: LAddr -> Addr
 getAddr l = case l of
     A a     -> a
-    Arr _ a -> a
+    Arr a _ -> a
     RefTo a -> a
 
 
