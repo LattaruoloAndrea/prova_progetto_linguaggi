@@ -77,7 +77,7 @@ data TAC
     | Return                                -- return
     | ReturnE LAddr                         -- return x
     | Stat Static                           -- static data
-
+    | Comment String                        -- # some comment..
 
 
 class Overloaded a where
@@ -198,6 +198,7 @@ instance Show TAC where
         Return              -> "return"
         ReturnE x           -> "return " ++ (show x)
         Stat s              -> show s
+        Comment s           -> "\n\t# " ++ s
         where
             tt = if isLab instr then "" else "\t"
             isLab (Lab _) = True

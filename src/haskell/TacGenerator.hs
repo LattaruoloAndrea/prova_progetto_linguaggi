@@ -108,6 +108,9 @@ returnCont = mappend $ DL.fromList [Return]
 returnECont :: LAddr -> Stream -> Stream
 returnECont x = mappend $ DL.fromList [ReturnE x]
 
+commentCont :: String -> Stream -> Stream
+commentCont s = mappend $ DL.fromList [Comment s]
+
 
 toCompOp :: CompOpT -> CompOp
 toCompOp op = case op of
@@ -240,7 +243,7 @@ genProgram (A.Prog decls) = do
     cont <- streamCat contMs
     sdata <- getStatic
     let sdata' = DL.fromList . reverse . map Stat $ sdata 
-    return $ cont sdata'
+    return $ cont mempty `mappend` commentCont "Static Data\n" sdata'
 
 
 genDecl :: DeclT -> SGen (Stream -> Stream)
