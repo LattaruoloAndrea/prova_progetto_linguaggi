@@ -17,6 +17,9 @@ data LAddr
     | RefTo Addr
     deriving (Read, Eq, Ord)
 
+data Static = SStr LAddr String
+    deriving (Read, Eq, Ord)
+
 getAddr :: LAddr -> Addr
 getAddr l = case l of
     A a     -> a
@@ -73,13 +76,12 @@ data TAC
     | FCall LAddr LAddr Int                 -- x = fcall fun, n
     | Return                                -- return
     | ReturnE LAddr                         -- return x
+    | Stat Static                           -- static data
 
 
 
 class Overloaded a where
     overT :: a -> Over
-
-
 
 instance Overloaded CompOp where
     overT op = case op of
@@ -131,6 +133,10 @@ instance Show LAddr where
         A a     -> show a
         Arr b o -> (show b) ++ "[" ++ (show o) ++ "]"
         RefTo a -> "*" ++ (show a)
+
+
+instance Show Static where
+    show (SStr addr val) = (show addr) ++ "\t\t" ++ (show val)
 
 
 instance Show Over where
@@ -191,6 +197,7 @@ instance Show TAC where
         FCall x f n         -> (show x) ++ " := " ++ "fcall " ++ (show f) ++ " " ++ (show n)
         Return              -> "return"
         ReturnE x           -> "return " ++ (show x)
+        Stat s              -> show s
         where
             tt = if isLab instr then "" else "\t"
             isLab (Lab _) = True

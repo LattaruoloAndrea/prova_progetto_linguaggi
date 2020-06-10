@@ -28,7 +28,8 @@ type JumpT      = A.Jump TCType
 
 type Stream = DL.DList TAC          -- The list of TAC instructions
 
-type SGen a = State (Int, Int) a    -- The state is (counter_tempaddr, code)
+-- The state is (counter_tempaddr, counter_label, label_break, label_continue, list_static_data)
+type SGen a = State (Int, Int, Label, Label, [Static]) a
 
 fall :: Label
 fall = Label ""
@@ -155,8 +156,8 @@ overFromTC t = case t of
 
 newTemp :: SGen LAddr
 newTemp = do
-    (v, l) <- get
-    put (v+1, l)
+    (v, l, b, c, s) <- get
+    put (v+1, l, b, c, s)
     return . A . ATemp . ("t"++) $ show v
 
 newRef :: LAddr -> SGen LAddr
@@ -178,9 +179,43 @@ labelFromId (A.Ident loc name) = Label $ name ++ "@" ++ (show $ A.line loc) ++ "
 
 newLabel :: String -> SGen Label
 newLabel s = do
-    (v, l) <- get
-    put (v, l+1)
+    (v, l, b, c, ss) <- get
+    put (v, l+1, b, c, ss)
     return . Label $ s ++ (show l)
+
+setBreak :: Label -> SGen ()
+setBreak lab = do
+    (v, l, b, c, s) <- get
+    put (v, l, lab, c, s)
+
+getBreak :: SGen Label
+getBreak = do
+    (_, _, b, _, _) <- get
+    return b
+
+setContinue :: Label -> SGen ()
+setContinue lab = do
+    (v, l, b, c, s) <- get
+    put (v, l, b, lab, s)
+
+
+getContinue :: SGen Label
+getContinue = do
+    (_, _, _, c, _) <- get
+    return c
+
+addSStr :: String -> SGen LAddr
+addSStr s = do
+    (v, l, b, c, ss) <- get
+    let addr = (A . ATemp $ "ptr$str" ++ (show . length $ ss))
+        sstr = SStr addr s
+    put (v, l, b, c, sstr : ss)
+    return addr
+
+getStatic :: SGen [Static]
+getStatic = do
+    (_, _, _, _, ss) <- get
+    return ss
 
 attachStart :: Label -> (Stream -> Stream) -> (Stream -> Stream)
 attachStart lab cont = instr . cont
@@ -196,14 +231,16 @@ attachGuard lab cont = cont . gotoCont lab
 
 
 genTAC :: ProgramT -> [TAC]
-genTAC program = DL.toList $ fst $ runState (genProgram program) (0, 0)
+genTAC program = DL.toList $ fst $ runState (genProgram program) (0, 0, fall, fall, [])
 
 
 genProgram :: ProgramT -> SGen Stream
 genProgram (A.Prog decls) = do
     let contMs = map genDecl decls
     cont <- streamCat contMs
-    return $ cont mempty
+    sdata <- getStatic
+    let sdata' = DL.fromList . reverse . map Stat $ sdata 
+    return $ cont sdata'
 
 
 genDecl :: DeclT -> SGen (Stream -> Stream)
@@ -384,10 +421,27 @@ genFCall (A.FCall loc ident rs its rt) = do
 
 -- Generate continuation for literal expressions: @TODO Pointers/Arrays/Strings
 genLit :: RExpT -> SGen (Stream -> Stream, LAddr)
-genLit (A.Lit loc lit t) = case t of
-    _ -> return (id, A $ ALit lit)
-
-
+genLit (A.Lit loc lit t) = case lit of
+    A.LString s -> do
+        addrS <- addSStr s
+        return (id, addrS)
+    A.LArr ls -> do
+        addrT <- newTemp
+        let linearize (A.LArr ls) = concatMap linearize ls
+            linearize l                  = [l]
+            ls' = linearize lit
+            n = length ls
+            t' = tctypeOf . head $ ls'
+            sz = sizeof t'
+            addrS = addrFromInteger . toInteger $ sz
+            a   = getAddr addrT
+            intToAddr = \n -> ALit . A.LInt $ toInteger n
+            helper = \(n, lit) -> do
+                (contR, addrR) <- genLit $ A.Lit (A.Loc 0 0) lit t'
+                return $ contR . nilCont (Arr a $ intToAddr $ n * sz) addrR (overFromTC t')
+        cont <- streamCat $ map helper $ zip [0 .. (n-1)] ls
+        return (cont, addrT)
+    _ -> return (id, A . ALit $ lit)
 
 
 
@@ -510,7 +564,13 @@ genWhile (A.While guard stm) = do
     labG <- newLabel "loopGuard"
     labE <- newLabel "loopExit"
     contGuard <- genGuard guard fall labE
+    oldBreak <- getBreak
+    setBreak labE
+    oldContinue <- getContinue
+    setContinue labG
     contBody <- genStm stm
+    setBreak oldBreak
+    setContinue oldContinue
     let contGuard' = attachStart labG contGuard
         contBody'  = attachEnd labE $ attachGuard labG contBody
     return $ contGuard' . contBody'
@@ -521,7 +581,13 @@ genDoWhile (A.DoWhile stm guard) = do
     labG <- newLabel "loopGuard"
     labE <- newLabel "loopExit"
     contGuard <- genGuard guard labS fall
+    oldBreak <- getBreak
+    setBreak labE
+    oldContinue <- getContinue
+    setContinue labG
     contBody <- genStm stm
+    setBreak oldBreak
+    setContinue oldContinue
     let contGuard' = attachEnd labE $ attachStart labG contGuard
         contBody'  = attachStart labS contBody
     return $ contBody' . contGuard'
@@ -549,7 +615,12 @@ genJump jmp = case jmp of
     A.ReturnE _ r _ -> do
         (contR, addrR) <- genRExp r
         return $ contR . returnECont addrR
-    _ -> return id
+    A.Break _ -> do
+        break <- getBreak
+        return $ gotoCont break
+    A.Continue _ -> do
+        cont <- getContinue
+        return $ gotoCont cont
 
 
 genGuard :: RExpT -> Label -> Label -> SGen (Stream -> Stream)
