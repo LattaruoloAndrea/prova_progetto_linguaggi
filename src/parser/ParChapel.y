@@ -143,8 +143,8 @@ Type : Compound Basic { AbsChapel.Type $1 $2 }
 
 Compound :: { Compound () }
 Compound : {- empty -} { AbsChapel.Simple }
-         | Compound '[' RExp ']' { AbsChapel.Array $1 $3 }
-         | Compound '*' { AbsChapel.Pointer $1 }
+         | '[' RExp ']' Compound  { AbsChapel.Array $4 $2 }
+         | '*' Compound { AbsChapel.Pointer $2 }
 
 Basic :: { Basic }
 Basic : 'bool' { AbsChapel.BBool }
