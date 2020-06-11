@@ -42,7 +42,7 @@ proc myFunc4(): *string
 }
 
 
-proc myFunc5(): [4][4]int
+proc myFunc6(): [4][4]int
 {
 	var domani: [4][4]int;
 	return domani;
