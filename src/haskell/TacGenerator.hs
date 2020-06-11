@@ -9,6 +9,8 @@ import TCType
 import TCInstances
 import qualified AbsChapel as A
 import qualified Data.DList as DL
+import qualified Data.Map.Lazy as M
+import Data.Maybe
 
 
 type ProgramT   = A.Program TCType
@@ -22,14 +24,19 @@ type ArithOpT   = A.ArithOp TCType
 type CompOpT    = A.CompOp TCType
 type AssignOpT  = A.AssignOp TCType
 type BlockT     = A.Block TCType
+type Ident      = A.Ident
 type Intent     = A.Intent
 type JumpT      = A.Jump TCType
+type FormT      = A.Form TCType
 
 
 type Stream = DL.DList TAC          -- The list of TAC instructions
+type Id     = String
+type EnvT   = M.Map Id Intent
+type EnvF   = M.Map Id [(Ident, TCType)]
 
--- The state is (counter_tempaddr, counter_label, label_break, label_continue, list_static_data)
-type SGen a = State (Int, Int, Label, Label, [Static]) a
+-- The state is (counter_tempaddr, counter_label, label_break, label_continue, id_fun, list_static_data, table_intents, table_res)
+type SGen a = State (Int, Int, Label, Label, Id, [Static], EnvT, EnvF) a
 
 fall :: Label
 fall = Label ""
@@ -159,8 +166,8 @@ overFromTC t = case t of
 
 newTemp :: SGen LAddr
 newTemp = do
-    (v, l, b, c, s) <- get
-    put (v+1, l, b, c, s)
+    (v, l, b, c, i, s, e, f) <- get
+    put (v+1, l, b, c, i, s, e, f)
     return . A . ATemp . ("t"++) $ show v
 
 newRef :: LAddr -> SGen LAddr
@@ -182,42 +189,109 @@ labelFromId (A.Ident loc name) = Label $ name ++ "@" ++ (show $ A.line loc) ++ "
 
 newLabel :: String -> SGen Label
 newLabel s = do
-    (v, l, b, c, ss) <- get
-    put (v, l+1, b, c, ss)
+    (v, l, b, c, i, ss, e, f) <- get
+    put (v, l+1, b, c, i, ss, e, f)
     return . Label $ s ++ (show l)
 
 setBreak :: Label -> SGen ()
 setBreak lab = do
-    (v, l, b, c, s) <- get
-    put (v, l, lab, c, s)
+    (v, l, b, c, i, s, e, f) <- get
+    put (v, l, lab, c, i, s, e, f)
 
 getBreak :: SGen Label
 getBreak = do
-    (_, _, b, _, _) <- get
+    (_, _, b, _, _, _, _, _) <- get
     return b
 
 setContinue :: Label -> SGen ()
 setContinue lab = do
-    (v, l, b, c, s) <- get
-    put (v, l, b, lab, s)
+    (v, l, b, c, i, s, e, f) <- get
+    put (v, l, b, lab, i, s, e, f)
 
 
 getContinue :: SGen Label
 getContinue = do
-    (_, _, _, c, _) <- get
+    (_, _, _, c, _, _, _, _) <- get
     return c
+
+setFunction :: Id -> SGen ()
+setFunction fun = do
+    (v, l, b, c, i, s, e, f) <- get
+    put (v, l, b, c, fun, s, e, f)
+
+getFunction :: SGen Id
+getFunction = do
+    (_, _, _, _, f, _, _, _) <- get
+    return f
 
 addSStr :: String -> SGen LAddr
 addSStr s = do
-    (v, l, b, c, ss) <- get
+    (v, l, b, c, i, ss, e, f) <- get
     let addr = (A . ATemp $ "ptr$str" ++ (show . length $ ss))
         sstr = SStr addr s
-    put (v, l, b, c, sstr : ss)
+    put (v, l, b, c, i, sstr : ss, e, f)
     return addr
+
+getEnvT :: SGen EnvT
+getEnvT = do
+    (_, _, _, _, _, _, e, _) <- get
+    return e
+
+pushEnvT :: EnvT -> SGen EnvT
+pushEnvT env = do
+    (a, b, c, d, i, e, old, f) <- get
+    put (a, b, c, d, i, e, env, f)
+    return old
+
+pushScopeT :: [FormT] -> SGen EnvT
+pushScopeT fs =
+    let
+        scope env = foldr (\(k, v) e -> M.insert k v e) env $ zip [A.idName id | (A.Form _ id _) <- fs] [it | (A.Form it _ _) <- fs]
+    in do
+        env <- getEnvT
+        pushEnvT $ scope env
+
+lookNameT :: Id -> SGen (Maybe Intent)
+lookNameT s = do
+    env <- getEnvT
+    return $ M.lookup s env
+
+intentOf :: Id -> SGen Intent
+intentOf name = do
+    intent <- lookNameT name
+    case intent of
+        Just x  -> return x
+        Nothing -> return A.In
+
+
+getEnvF :: SGen EnvF
+getEnvF = do
+    (_, _, _, _, _, _, _, f) <- get
+    return f
+
+pushEnvF :: EnvF -> SGen EnvF
+pushEnvF env = do
+    (a, b, c, d, i, e, f, old) <- get
+    put (a, b, c, d, i, e, f, env)
+    return old
+
+pushFun :: DeclT -> SGen EnvF
+pushFun (A.FDecl (A.Ident loc name) forms _ _ _) = do
+    old <- getEnvF
+    let resF = filter (\(A.Form it _ _) -> it == A.Out || it == A.InOut) forms
+        idF  = map (\(A.Form _ ident ty) -> (ident, tctypeOf ty)) resF
+        new  = M.insert name idF old
+    pushEnvF new
+
+lookNameF :: Id -> SGen (Maybe [(Ident, TCType)])
+lookNameF id = do
+    env <- getEnvF
+    return $ M.lookup id env
+
 
 getStatic :: SGen [Static]
 getStatic = do
-    (_, _, _, _, ss) <- get
+    (_, _, _, _, _, ss, _, _) <- get
     return ss
 
 attachStart :: Label -> (Stream -> Stream) -> (Stream -> Stream)
@@ -232,9 +306,29 @@ attachGuard :: Label -> (Stream -> Stream) -> (Stream -> Stream)
 attachGuard lab cont = cont . gotoCont lab
 
 
+copyTo :: (LAddr, TCType) -> LAddr -> SGen (Stream -> Stream)
+(source, t) `copyTo` dest = return $ case t of
+    TArr n t' ->
+        let ls = linearize t
+            t' = head ls
+            sz = toInteger $ sizeof t'
+            linearize (TArr n t) = concatMap linearize $ take n $ repeat t
+            linearize t          = [t]
+            copyElem = \n ->
+                let off     = getAddr $ addrFromInteger $ n * sz
+                    baseS   = getAddr source
+                    baseD   = getAddr dest
+                    s       = Arr baseS off
+                    d       = Arr baseD off
+                in  nilCont d s $ overFromTC t'
+        in  foldr (.) id $ map copyElem $ [0 .. (toInteger $ length ls)]
+    
+    _         -> nilCont dest source $ overFromTC t
+
+
 
 genTAC :: ProgramT -> [TAC]
-genTAC program = DL.toList $ fst $ runState (genProgram program) (0, 0, fall, fall, [])
+genTAC program = DL.toList $ fst $ runState (genProgram program) (0, 0, fall, fall, "", [], mempty, mempty)
 
 
 genProgram :: ProgramT -> SGen Stream
@@ -261,12 +355,38 @@ genDecl decl = case decl of
 
 
 genFDecl :: DeclT -> SGen (Stream -> Stream)
-genFDecl (A.FDecl id forms it rt body) = do
-    let preamble = labCont $ labelFromId id
+genFDecl f@(A.FDecl ident forms it rt body) = do
+    localInit <- streamCat $ map initializer forms
+    let labStart = labCont $ labelFromId ident
+        preamble = labStart . localInit
     labEnd <- newLabel "endFun"
+    oldT <- pushScopeT forms
+    oldF <- pushFun f
+    oldI <- getFunction
+    setFunction $ A.idName ident
     contBody <- genBlock body
+    pushEnvT oldT
+    pushEnvF oldF
+    setFunction oldI
     let postamble = labCont $ labEnd
     return $ \stream -> mappend stream $ preamble . contBody . postamble $ mempty
+    where
+        initializer (A.Form it ident@(A.Ident loc name) ty) =
+            case it of
+                A.In        -> caseIn
+                A.Out       -> caseOut
+                A.InOut     -> caseOut
+                A.Ref       -> caseRef
+                A.ConstIn   -> caseIn
+            where
+                caseIn  = return id
+                caseOut = do
+                    let addr = A $ AName (name ++ "$local$copy") loc
+                    contCopy <- (addrFromId ident, tctypeOf ty) `copyTo` addr
+                    return contCopy
+                caseRef = return id
+
+        
 
 
 genCDecl :: CDeclT -> SGen (Stream -> Stream)
@@ -476,12 +596,28 @@ genAccess (A.Access l r t) = do
 
 
 genName :: LExpT -> SGen (Stream -> Stream, LAddr)
-genName (A.Name ident t) = return (id, addr)
+genName (A.Name ident@(A.Ident loc name) t) = do
+    it <- intentOf $ A.idName ident
+    case it of
+        A.In      -> caseIn
+        A.Out     -> caseOut
+        A.InOut   -> caseOut
+        A.Ref     -> caseRef
+        A.ConstIn -> caseIn
+        A.ConstRef -> caseRef
     where
-        tmp = addrFromId ident
-        addr = case t of
-            TArr _ _ -> Arr (getAddr tmp) (getAddr $ addrFromInteger 0)
-            _        -> tmp
+        caseIn = return $ let addr = AName name loc in case t of
+            TArr _ _ -> (id, Arr addr (getAddr $ addrFromInteger 0))
+            _        -> (id, A addr)
+        
+        caseOut = return $ let addr = AName (name ++ "$local$copy") loc in case t of
+            TArr _ _ -> (id, Arr addr (getAddr $ addrFromInteger 0))
+            _        -> (id, A addr)
+        caseRef = let addrN = RefTo $ AName name loc in case t of
+            TArr _ _ -> do
+                addrT <- newTemp
+                return (nilCont addrT addrN P, Arr (getAddr addrT) (getAddr $ addrFromInteger 0))
+            _        -> return (id, addrN)
 
 
 
@@ -614,16 +750,33 @@ genJmpStm (A.JmpStm jmp) = genJump jmp
 
 genJump :: JumpT -> SGen (Stream -> Stream)
 genJump jmp = case jmp of
-    A.Return _      -> return returnCont
+    A.Return _      -> do
+        contCopy <- copyBack
+        return $ contCopy . returnCont
     A.ReturnE _ r _ -> do
+        contCopy <- copyBack
         (contR, addrR) <- genRExp r
-        return $ contR . returnECont addrR
+        return $ contCopy . contR . returnECont addrR
     A.Break _ -> do
         break <- getBreak
         return $ gotoCont break
     A.Continue _ -> do
         cont <- getContinue
         return $ gotoCont cont
+    where
+        copyBack = do
+            idF <- getFunction
+            mayF <- lookNameF idF
+            let idents  = fromMaybe [] mayF
+                contsM  = map helper idents
+            streamCat contsM
+        helper = \(A.Ident loc name, t) -> do
+            let addrLocal = A $ AName (name ++ "$local$copy") loc
+                addrForm  = A $ AName name loc
+            (addrLocal, t) `copyTo` addrForm
+
+
+                
 
 
 genGuard :: RExpT -> Label -> Label -> SGen (Stream -> Stream)

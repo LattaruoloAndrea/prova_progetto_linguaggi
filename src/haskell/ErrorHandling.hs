@@ -93,6 +93,14 @@ errorArrayNot :: LExp t -> EM.Err a
 errorArrayNot lexp =
     badLoc (locOf lexp) $ "Left expression '" ++ (printLim lexp) ++ "' is not an array in an ARRAY ACCESS"
 
+errorArrayNonIntegerSize :: RExp t -> TCType -> EM.Err a
+errorArrayNonIntegerSize rexp t =
+    badLoc (locOf rexp) $ "Size of an array must be an integer constant, but found '" ++ (printLim rexp) ++ "' of type " ++ (show t)
+
+errorArrayNonConstantSize :: RExp t -> EM.Err a
+errorArrayNonConstantSize rexp =
+    badLoc (locOf rexp) $ "Size of an array must be an integer constant, but '" ++ (printLim rexp) ++ "' is not"
+
 
 
 errorNotAPointer :: LExp t -> EM.Err a

@@ -157,7 +157,7 @@ checkReturnPaths ls = foldr helper False ls
             _                       -> False
 
 
--- Check that a parameters passed by res/valres are assigned to a value in all execution paths
+-- Check that parameters passed by res/valres are assigned to a value in all execution paths
 checkRes :: Env -> Ident -> [Param] -> [Stm ()] -> ET.ErrT ()
 checkRes env id params ss = foldl (>>) (return ()) errs
     where
@@ -168,12 +168,13 @@ checkRes env id params ss = foldl (>>) (return ()) errs
                     else ET.toErrT () $ errorMissingAssignRes (locOf x) (idName id) n
         helper  = \x@(Param _ n _ _) ss ->
             let helper' = \s acc -> case s of   -- Roughly the same structure of return-paths
-                    JmpStm (Return _)           -> False
-                    JmpStm (ReturnE _ _ _)      -> False
-                    Assign (Name ident _) _ _   -> acc || (idName ident) == n
-                    IfElse _ s1 s2              -> acc || (helper x [s1]) && (helper x [s2])
-                    StmBlock b                  -> acc || (helper x $ stms b)
-                    _                           -> acc
+                    JmpStm (Return _)                       -> False
+                    JmpStm (ReturnE _ _ _)                  -> False
+                    Assign (Name ident _) _ _               -> acc || (idName ident) == n
+                    Assign (Access (Name ident _) _ _) _ _  -> acc || (idName ident) == n
+                    IfElse _ s1 s2                          -> acc || (helper x [s1]) && (helper x [s2])
+                    StmBlock b                              -> acc || (helper x $ stms b)
+                    _                                       -> acc
             in foldr helper' False ss
 
 -- Check for a function definition:
@@ -182,19 +183,27 @@ checkRes env id params ss = foldl (>>) (return ()) errs
 --   * check that all res/valres parameters will reach an assignment in every exec path
 --   * check that the body with the formal parameters added in is valid
 checkFDecl :: Env -> Decl () -> ET.ErrT (Env, Decl TCType)
-checkFDecl env (FDecl id forms it ty blk) =
-    let params          = map formToParam forms             -- create Params from Forms
-        resCandidates   = filter (\(Param _ _ it _) -> it == Out || it == InOut) params -- Get params passed by res/valres
-        entries         = map paramToEntry params           -- create EnvEntries from Params
-        env1            = pushFun env (tctypeOf ty) it
-        makeEntry' = \e p -> ET.toErrT e $ makeEntry e p -- return the old env if something goes wrong
-    in do
-        unlessT () (it==In || it==Ref) $ errorReturnIntent (locOf id) it
-        whenT ()  (tctypeOf ty /= TVoid && (not $ checkReturnPaths $ stms blk)) $ errorReturnMissing id
-        checkRes env1 id resCandidates $ stms blk
-        env2 <- foldM makeEntry' env1 $ zip [identFromParam p | p <- params] entries  -- fold the entry insertion given the list (id, entry)
-        (env3, blk') <- checkScope env2 blk
-        return (popContext env3, FDecl id (map toTCT forms) it (toTCT ty) blk')
+checkFDecl env f@(FDecl id forms it ty blk) = ET.toErrT (env, toTCT f) $ do
+    let helperForm (Form it id t) = do
+            t' <- checkType env t
+            return (Form it id t')
+    forms' <- mapM helperForm forms
+    ty' <- checkType env ty
+    ET.fromErrT $ extra forms' ty'
+    where
+        extra forms' ty' = 
+            let params          = map formToParam forms             -- create Params from Forms
+                resCandidates   = filter (\(Param _ _ it _) -> it == Out || it == InOut) params -- Get params passed by res/valres
+                entries         = map paramToEntry params           -- create EnvEntries from Params
+                env1            = pushFun env (tctypeOf ty) it
+                makeEntry' = \e p -> ET.toErrT e $ makeEntry e p -- return the old env if something goes wrong
+            in do
+                unlessT () (it==In || it==Ref) $ errorReturnIntent (locOf id) it
+                whenT   () (tctypeOf ty /= TVoid && (not $ checkReturnPaths $ stms blk)) $ errorReturnMissing id
+                checkRes env1 id resCandidates $ stms blk
+                env2 <- foldM makeEntry' env1 $ zip [identFromParam p | p <- params] entries  -- fold the entry insertion given the list (id, entry)
+                (env3, blk') <- checkScope env2 blk
+                return (popContext env3, FDecl id forms' it ty' blk')
 
 
 -- Extends the environment with a new compile-time constant (if possibile)
@@ -203,15 +212,17 @@ checkFDecl env (FDecl id forms it ty blk) =
 --
 -- constexpr is defined in module CompileTime
 checkCDecl :: Env -> CDecl () -> ET.ErrT (Env, CDecl TCType)
-checkCDecl env c@(CDecl id t r) = ET.toErrT (env, toTCT c) $ let tc = tctypeOf t in do
-    r' <- inferRExp env r                 -- Error purpose: check that r is semantically correct
-    let tr = tctypeOf r'
-    unless (tr `subtypeOf` tc) $ errorConstTypeMismatch id tc tr
-    case constexpr env r of
-        Nothing -> errorNotConst id r
-        Just x  -> do
-            env' <- makeConst env id x
-            return (env', CDecl id (toTCT t) $ coerce tc (Lit (locOf r') x tr))
+checkCDecl env c@(CDecl id t r) = checkTypeCase env t r (toTCT c) f
+    where
+        f t' r = ET.toErrT (env, toTCT c) $ let tc = tctypeOf t' in do
+            r' <- inferRExp env r                 -- Error purpose: check that r is semantically correct
+            let tr = tctypeOf r'
+            unless (tr `subtypeOf` tc) $ errorConstTypeMismatch id tc tr
+            case constexpr env r of
+                Nothing -> errorNotConst id r
+                Just x  -> do
+                    env' <- makeConst env id x
+                    return (env', CDecl id t' $ coerce tc (Lit (locOf r') x tr))
 
 
 -- Extends the environment with a new variable (if possible)
@@ -220,21 +231,54 @@ checkCDecl env c@(CDecl id t r) = ET.toErrT (env, toTCT c) $ let tc = tctypeOf t
 --  * If duplicate declaration occures, BadT env
 checkVDecl :: Env -> VDecl () -> ET.ErrT (Env, VDecl TCType)
 checkVDecl env v = case v of
-    Solo id t   -> do
-        let t' = tctypeOf t
-        env' <- ET.toErrT env $ makeMutable env id t'
-        return (env', Init id (toTCT t) $ Lit (locOf id) (getDefault t') t')
+    Solo id t   -> checkTypeCase env t () (toTCT v) f
+        where
+            f t' _ = do
+                let tv = tctypeOf t'
+                env' <- ET.toErrT env $ makeMutable env id tv
+                return (env', Init id t' $ Lit (locOf id) (getDefault tv) tv)
 
-    Init id t r -> 
-        let tc = tctypeOf t 
-            mk = makeMutable env id tc
-        in case mk of
-            EM.Ok env'  -> ET.toErrT (env', Solo id (toTCT t)) $ do
+    Init id t r -> checkTypeCase env t r (toTCT v) g
+        where
+            g t' r = do
+                let tc = tctypeOf t' 
+                    mk = makeMutable env id tc
+                case mk of
+                    EM.Ok env'  -> ET.toErrT (env', Solo id t') $ do
+                        r' <- inferRExp env r
+                        let tr = tctypeOf r'
+                        unless (tr `subtypeOf` tc) $ errorVarTypeMismatch id tc tr
+                        return (env', Init id t' (coerce tc r'))
+                    EM.Bad s    -> ET.badT (env, toTCT v) s
+
+
+
+
+checkTypeCase :: Env -> Type () -> a -> b -> (Type TCType -> a -> ET.ErrT (Env, b)) -> ET.ErrT (Env, b)
+checkTypeCase env t a ifBad ifOk = case checkType env t of
+    EM.Bad s -> ET.badT (env, ifBad) s
+    EM.Ok t' -> ifOk t' a
+
+
+
+checkType :: Env -> Type () -> EM.Err (Type TCType)
+checkType env (Type c b) = do
+    c' <- helper env c
+    return $ Type c' b
+    where
+        helper env c = case c of
+            Simple      -> return Simple
+            Pointer c'  -> do
+                c'' <- helper env c'
+                return $ Pointer c''
+            Array c' r  -> do
+                c'' <- helper env c'
                 r' <- inferRExp env r
                 let tr = tctypeOf r'
-                unless (tr `subtypeOf` tc) $ errorVarTypeMismatch id tc tr
-                return (env', Init id (toTCT t) (coerce tc r'))
-            EM.Bad s    -> ET.badT (env, toTCT v) s
+                unless (tr `subtypeOf` TInt) $ errorArrayNonIntegerSize r tr
+                case constexpr env r' of
+                    Just x  -> return $ Array c'' $ Lit (locOf r) (toLInt x) TInt
+                    Nothing -> errorArrayNonConstantSize r
 
 
 
