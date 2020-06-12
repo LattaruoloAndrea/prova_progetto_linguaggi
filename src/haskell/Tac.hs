@@ -189,7 +189,7 @@ instance Show TAC where
         IfRel x rel y lab   -> "if " ++ (show x) ++ " " ++ (show rel) ++ " " ++ (show y) ++ " goto " ++ (show lab)
         CopyL x y z         -> (show x) ++ "[ " ++ (show y) ++ " ]" ++ " := " ++ (show z)
         CopyR x y z         -> (show x) ++ " := " ++ (show y) ++ "[ " ++ (show z) ++ " ]"
-        Ref x y             -> (show x) ++ " :=addr " ++ (show y)
+        Ref x y             -> (show x) ++ " :=addr &" ++ (show y)
         DerefL x y          -> "*" ++ (show x) ++ " := " ++ (show y)
         DerefR x y          -> (show x) ++ " := " ++ "*" ++ (show y)
         Par x               -> "param " ++ (show x)

@@ -305,25 +305,37 @@ attachEnd lab cont = cont . instr
 attachGuard :: Label -> (Stream -> Stream) -> (Stream -> Stream)
 attachGuard lab cont = cont . gotoCont lab
 
+addrFromArr :: LAddr -> SGen (Stream -> Stream, LAddr)
+addrFromArr addr = let t = TArr 0 TVoid in case addr of
+    Arr b o -> do
+        tmp <- newTemp
+        return (arithCont (A.Add t) tmp (A b) (A o), tmp)
+    _ -> return (id, addr)
+
+
 
 copyTo :: (LAddr, TCType) -> LAddr -> SGen (Stream -> Stream)
-(source, t) `copyTo` dest = return $ case t of
-    TArr n t' ->
+(source, t) `copyTo` dest = case t of
+    TArr n t' -> do
         let ls = linearize t
             t' = head ls
             sz = toInteger $ sizeof t'
             linearize (TArr n t) = concatMap linearize $ take n $ repeat t
             linearize t          = [t]
-            copyElem = \n ->
+        (extra, baseS) <- case source of
+            Arr b o -> do
+                tmp <- newTemp
+                return (arithCont (A.Add t) tmp (A b) (A o), getAddr tmp)
+            _       -> return (id, getAddr source)
+        let copyElem = \n ->
                 let off     = getAddr $ addrFromInteger $ n * sz
-                    baseS   = getAddr source
                     baseD   = getAddr dest
                     s       = Arr baseS off
                     d       = Arr baseD off
                 in  nilCont d s $ overFromTC t'
-        in  foldr (.) id $ map copyElem $ [0 .. (toInteger $ length ls)]
+        return $ (extra .) $ foldr (.) id $ map copyElem $ [0 .. (toInteger $ (length ls - 1))]
     
-    _         -> nilCont dest source $ overFromTC t
+    _         -> return $ nilCont dest source $ overFromTC t
 
 
 
@@ -378,6 +390,7 @@ genFDecl f@(A.FDecl ident forms it rt body) = do
                 A.InOut     -> caseOut
                 A.Ref       -> caseRef
                 A.ConstIn   -> caseIn
+                A.ConstRef  -> caseRef
             where
                 caseIn  = return id
                 caseOut = do
@@ -499,8 +512,16 @@ genRefE (A.RefE loc l t) = do
 genRLExp :: RExpT -> SGen (Stream -> Stream, LAddr)
 genRLExp (A.RLExp loc l t) = do
     (contL, addrL) <- genLExp l
-    addrT <- newTemp
-    return (contL . nilCont addrT addrL (overFromTC t), addrT)
+    case addrL of
+        A _ -> return (contL, addrL)
+        _   -> do
+            addrT <- newTemp
+            (extra, addrL') <- case (addrL, t) of
+                (Arr b o, TArr _ _) -> do
+                    tmp <- newTemp
+                    return (arithCont (A.Add t) tmp (A b) (A o), tmp)
+                _ -> return (id, addrL)
+            return (contL . extra . nilCont addrT addrL' (overFromTC t), addrT)
 
 
 genArrList :: RExpT -> SGen (Stream -> Stream, LAddr)
@@ -542,7 +563,7 @@ genFCall (A.FCall loc ident rs its rt) = do
     return (contParams . fcallCont addrT f n, addrT)
 
 
--- Generate continuation for literal expressions: @TODO Pointers/Arrays/Strings
+-- Generate continuation for literal expressions
 genLit :: RExpT -> SGen (Stream -> Stream, LAddr)
 genLit (A.Lit loc lit t) = case lit of
     A.LString s -> do
@@ -553,7 +574,7 @@ genLit (A.Lit loc lit t) = case lit of
         let linearize (A.LArr ls) = concatMap linearize ls
             linearize l                  = [l]
             ls' = linearize lit
-            n = length ls
+            n = length ls'
             t' = tctypeOf . head $ ls'
             sz = sizeof t'
             addrS = addrFromInteger . toInteger $ sz
@@ -562,7 +583,7 @@ genLit (A.Lit loc lit t) = case lit of
             helper = \(n, lit) -> do
                 (contR, addrR) <- genLit $ A.Lit (A.Loc 0 0) lit t'
                 return $ contR . nilCont (Arr a $ intToAddr $ n * sz) addrR (overFromTC t')
-        cont <- streamCat $ map helper $ zip [0 .. (n-1)] ls
+        cont <- streamCat $ map helper $ zip [0 .. (n-1)] ls'
         return (cont, addrT)
     _ -> return (id, A . ALit $ lit)
 
@@ -606,18 +627,9 @@ genName (A.Name ident@(A.Ident loc name) t) = do
         A.ConstIn -> caseIn
         A.ConstRef -> caseRef
     where
-        caseIn = return $ let addr = AName name loc in case t of
-            TArr _ _ -> (id, Arr addr (getAddr $ addrFromInteger 0))
-            _        -> (id, A addr)
-        
-        caseOut = return $ let addr = AName (name ++ "$local$copy") loc in case t of
-            TArr _ _ -> (id, Arr addr (getAddr $ addrFromInteger 0))
-            _        -> (id, A addr)
-        caseRef = let addrN = RefTo $ AName name loc in case t of
-            TArr _ _ -> do
-                addrT <- newTemp
-                return (nilCont addrT addrN P, Arr (getAddr addrT) (getAddr $ addrFromInteger 0))
-            _        -> return (id, addrN)
+        caseIn = return (id, addrFromId ident)
+        caseOut = return (id, A $ AName (name ++ "$local$copy") loc)
+        caseRef = return (id, RefTo $ AName name loc)
 
 
 
@@ -644,9 +656,37 @@ genStmCall (A.StmCall ident rs its) = do
     return $ contParams . callCont f n
 
 genParam :: (RExpT, Intent) -> SGen (Stream -> Stream)
-genParam (r, it) = do
-    (contR, addrR) <- genRExp r
-    return $ contR . paramCont addrR
+genParam (r, it) = case it of
+    A.In        -> caseIn
+    A.Out       -> caseOut
+    A.InOut     -> caseOut
+    A.Ref       -> caseRef
+    A.ConstIn   -> caseIn
+    A.ConstRef  -> caseRef
+    where
+        t = tctypeOf r
+        caseIn = do
+            (contR, addrR) <- genRExp r
+            (extra, addrR') <- case t of
+                TArr _ _ -> do
+                    tmp <- newTemp
+                    contCopy <- (addrR, t) `copyTo` tmp
+                    return (contCopy, tmp)
+                _ -> return (id, addrR)
+
+            return $ contR . extra . paramCont addrR'
+        
+        caseRef = let lexp = A.rhsL r in do -- r must be an RLExp
+            (contL, addrL) <- genLExp lexp
+            (extra, addrL') <- case addrL of
+                A _     -> do
+                    tmp <- newTemp
+                    return (refCont tmp addrL, tmp)
+                Arr _ _ -> addrFromArr addrL
+                RefTo _ -> return (id, addrL)
+            return $ contL . extra . paramCont addrL'
+
+        caseOut = caseRef
 
 
 
