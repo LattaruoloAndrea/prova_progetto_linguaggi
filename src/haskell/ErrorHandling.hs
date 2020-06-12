@@ -153,6 +153,15 @@ errorNotConst :: Ident -> RExp t -> EM.Err a
 errorNotConst id r =
     badLoc (locOf id) $ "Initializer expression '" ++ (printLim r) ++ "' is not a constant expression"
 
+errorTypeVoid :: String -> Ident -> EM.Err a
+errorTypeVoid s (Ident loc name) =
+    badLoc loc $ s ++ " '" ++ name ++ "' cannot be of type void"
+
+errorVariableVoid :: Ident -> EM.Err a
+errorVariableVoid = errorTypeVoid "Variable"
+
+errorConstantVoid :: Ident -> EM.Err a
+errorConstantVoid = errorTypeVoid "Constant"
 
 
 errorReturnLoop :: Loc -> EM.Err a
@@ -246,7 +255,13 @@ errorCallWrongNumber :: Ident -> Int -> Int -> EM.Err a
 errorCallWrongNumber (Ident loc id) la lp=
     badLoc loc $ "Wrong number of parameters in a function call for '" ++ id ++ "': expected " ++ (show lp) ++ ", found " ++ (show la)
 
+errorCallNotAProcedure :: Ident -> TCType -> EM.Err a
+errorCallNotAProcedure id t =
+    badLoc (locOf id) $ "'" ++ (idName id) ++ "' cannot be used as a statement: '" ++ (idName id) ++ "' is a function with return type " ++ (show t) ++ ", not a procedure"
 
+errorCallNotAFunction :: RExp t -> EM.Err a
+errorCallNotAFunction call@(FCall loc id _ _ _) =
+    badLoc loc $ "Expression '" ++ (printLim call) ++ "' is a function call, but '" ++ (idName id) ++ "' is a procedure"
 
 
 errorPassingTypeSub :: RExp t -> TCType -> TCType -> EM.Err a

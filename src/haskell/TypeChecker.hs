@@ -212,7 +212,9 @@ checkFDecl env f@(FDecl id forms it ty blk) = ET.toErrT (env, toTCT f) $ do
 --
 -- constexpr is defined in module CompileTime
 checkCDecl :: Env -> CDecl () -> ET.ErrT (Env, CDecl TCType)
-checkCDecl env c@(CDecl id t r) = checkTypeCase env t r (toTCT c) f
+checkCDecl env c@(CDecl id t r) = do
+    pp <- checkTypeCase env t r (toTCT c) f
+    whenT pp (tctypeOf t == TVoid) $ errorConstantVoid id
     where
         f t' r = ET.toErrT (env, toTCT c) $ let tc = tctypeOf t' in do
             r' <- inferRExp env r                 -- Error purpose: check that r is semantically correct
@@ -231,14 +233,18 @@ checkCDecl env c@(CDecl id t r) = checkTypeCase env t r (toTCT c) f
 --  * If duplicate declaration occures, BadT env
 checkVDecl :: Env -> VDecl () -> ET.ErrT (Env, VDecl TCType)
 checkVDecl env v = case v of
-    Solo id t   -> checkTypeCase env t () (toTCT v) f
+    Solo id t   -> do
+        pp <- checkTypeCase env t () (toTCT v) f
+        whenT pp (tctypeOf t == TVoid) $ errorVariableVoid id
         where
             f t' _ = do
                 let tv = tctypeOf t'
                 env' <- ET.toErrT env $ makeMutable env id tv
                 return (env', Init id t' $ Lit (locOf id) (getDefault tv) tv)
 
-    Init id t r -> checkTypeCase env t r (toTCT v) g
+    Init id t r -> do
+        pp <- checkTypeCase env t r (toTCT v) g
+        whenT pp (tctypeOf t == TVoid) $ errorVariableVoid id
         where
             g t' r = do
                 let tc = tctypeOf t' 
@@ -399,10 +405,11 @@ inferRLExp env (RLExp loc l _) = do
 -- Function calls have type of the return
 --   * Check of well formed call is delegated to checkCall
 inferFCall :: Env -> RExp () -> EM.Err (RExp TCType)
-inferFCall env (FCall loc id@(Ident l n) rs _ _) = do
+inferFCall env call@(FCall loc id@(Ident l n) rs _ _) = do
     let cc = checkCall env id rs
     (rs', its, l') <- ET.fromErrT cc
     rt  <- lookType id env
+    when (rt == TVoid) $ errorCallNotAFunction call
     return $ FCall loc (Ident l' n) rs' its rt
 
 
@@ -543,6 +550,8 @@ checkCall env ident actuals =
 checkStmCall :: Env -> Stm () -> ET.ErrT (Stm TCType)
 checkStmCall env (StmCall id@(Ident l n) actuals _) = do
     (rs, its, l') <- checkCall env id actuals
+    rt <- ET.toErrT TVoid $ lookType id env
+    unlessT () (rt == TVoid) $ errorCallNotAProcedure id rt
     return $ StmCall (Ident l' n) rs its
 
 
@@ -705,7 +714,7 @@ checkJmp env@(c:cs) jmp = ET.toErrT (toTCT jmp) $ case jmp of
         when (inFor c || inWhile c) $ errorReturnLoop loc
         unless (t `subtypeOf` t') $ errorReturnTypeMismatch loc t t'
         when ((isRef c) && (not (isLExp r))) $ errorReturnRef r
-        return $ ReturnE loc r' t
+        return $ ReturnE loc (coerce t' r') t'
 
     Break loc     -> do
         when (inFor c) $ errorBreakFor loc
