@@ -60,17 +60,12 @@ data TAC
     = Bin LAddr LAddr BinOp LAddr           -- x = y bop z
     | Un  LAddr UnOp  LAddr                 -- x = uop y
     | Nil LAddr LAddr Over                  -- x = y
-    | Lit LAddr Literal Over                -- x = non_array_literal
     | Goto Label                            -- goto label
     | Lab Label                             -- label: ...
     | If LAddr Label                        -- if x goto label
     | IfFalse LAddr Label                   -- ifFalse x goto label
     | IfRel LAddr CompOp LAddr Label        -- if x rel y goto label
-    | CopyL LAddr LAddr LAddr               -- x[y] = z
-    | CopyR LAddr LAddr LAddr               -- x = y[z]
     | Ref LAddr LAddr                       -- x = &y
-    | DerefL LAddr LAddr                    -- *x = y
-    | DerefR LAddr LAddr                    -- x = *y
     | Par LAddr                             -- param x
     | Call LAddr Int                        -- call proc, n
     | FCall LAddr LAddr Int                 -- x = fcall fun, n
@@ -187,11 +182,7 @@ instance Show TAC where
         If x lab            -> "if " ++ (show x) ++ " goto " ++ (show lab)
         IfFalse x lab       -> "ifFalse " ++ (show x) ++ " goto " ++ (show lab)
         IfRel x rel y lab   -> "if " ++ (show x) ++ " " ++ (show rel) ++ " " ++ (show y) ++ " goto " ++ (show lab)
-        CopyL x y z         -> (show x) ++ "[ " ++ (show y) ++ " ]" ++ " := " ++ (show z)
-        CopyR x y z         -> (show x) ++ " := " ++ (show y) ++ "[ " ++ (show z) ++ " ]"
         Ref x y             -> (show x) ++ " :=addr &" ++ (show y)
-        DerefL x y          -> "*" ++ (show x) ++ " := " ++ (show y)
-        DerefR x y          -> (show x) ++ " := " ++ "*" ++ (show y)
         Par x               -> "param " ++ (show x)
         Call f n            -> "call " ++ (show f) ++ " " ++ (show n)
         FCall x f n         -> (show x) ++ " := " ++ "fcall " ++ (show f) ++ " " ++ (show n)
