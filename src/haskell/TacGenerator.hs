@@ -170,8 +170,8 @@ newTemp = do
     put (v+1, l, b, c, i, s, e, f)
     return . A . ATemp . ("t"++) $ show v
 
-newRef :: LAddr -> SGen LAddr
-newRef = return . RefTo . getAddr
+newRef :: LAddr -> LAddr
+newRef = RefTo . getAddr
 
 
 
@@ -506,8 +506,13 @@ genSign (A.Sign loc op r t) = case op of
 genRefE :: RExpT -> SGen (Stream -> Stream, LAddr)
 genRefE (A.RefE loc l t) = do
     (contL, addrL) <- genLExp l
-    addrT <- newTemp
-    return (contL . refCont addrT addrL, addrT)
+    (extra, addrRef) <- case addrL of
+        A _     -> do
+            addrT <- newTemp
+            return (refCont addrT addrL, addrT)
+        Arr _ _ -> addrFromArr addrL
+        RefTo _ -> return (id, A $ getAddr addrL)
+    return (contL . extra, addrRef)
 
 genRLExp :: RExpT -> SGen (Stream -> Stream, LAddr)
 genRLExp (A.RLExp loc l t) = do
@@ -594,9 +599,16 @@ genLit (A.Lit loc lit t) = case lit of
 
 genDeref :: LExpT -> SGen (Stream -> Stream, LAddr)
 genDeref (A.Deref l t) = do
-    (contL, addrL) <- genLExp l 
-    addrRef <- newRef addrL
-    return (contL . id, addrRef)
+    (contL, addrL) <- genLExp l
+    (extra, addrRef) <- case addrL of
+        A _     -> return (id, newRef addrL)
+        Arr _ _ -> do
+            addrT <- newTemp
+            return (nilCont addrT addrL P, newRef addrT)
+        RefTo _ -> do
+            addrT <- newTemp
+            return (nilCont addrT addrL P, newRef addrT)
+    return (contL . extra, addrRef)
 
 
 genAccess :: LExpT -> SGen (Stream -> Stream, LAddr)
@@ -732,10 +744,11 @@ genIf (A.If guard body) = do
 genIfElse :: StmT -> SGen (Stream -> Stream)
 genIfElse (A.IfElse guard s1 s2) = do
     labE <- newLabel "ifFalse"
+    labN <- newLabel "ifExit"
     cont1 <- genStm s1
     cont2 <- genStm s2
     contG <- genGuard guard fall labE
-    return $ contG . cont1 . attachStart labE cont2
+    return $ contG . cont1 . gotoCont labN . (attachEnd labN $ attachStart labE cont2)
 
 
 genWhile :: StmT -> SGen (Stream -> Stream)
@@ -824,13 +837,15 @@ genGuard r ifTrue ifFalse = case r of
     A.Comp _ r1 op r2 _ -> do
         (cont1, addr1) <- genRExp r1
         (cont2, addr2) <- genRExp r2
-        return $ cont1 . cont2 . fallRel addr1 addr2
-        where 
-            fallRel addr1 addr2 = case (ifTrue, ifFalse) of
-                (Label "", Label "")    -> id
-                (_, Label "")           -> ifRelCont addr1 (toCompOp op) addr2 ifTrue
-                (Label "", _)           -> ifRelCont addr1 (opposite $ toCompOp op) addr2 ifFalse
-                _                       -> ifRelCont addr1 (toCompOp op) addr2 ifTrue . gotoCont ifFalse
+        return $ cont1 . cont2 . fallRel addr1 op addr2
+
+    A.FCall _ _ _ _ _ -> do
+        (contR, addrR) <- genRExp r
+        return $ contR . fallIf addrR
+
+    A.RLExp _ _ _ -> do
+        (contR, addrR) <- genRExp r
+        return $ contR . fallIf addrR
     
     A.Or _ r1 r2 _      -> do
         lab   <- newLabel "trueOr"
@@ -852,5 +867,18 @@ genGuard r ifTrue ifFalse = case r of
 
     A.Lit _ (A.LBool False) _ -> return $ if ifFalse == fall then id else gotoCont ifFalse
     A.Lit _ (A.LBool True)  _ -> return $ if ifTrue == fall then id else gotoCont ifTrue
+    
+    _ -> return id
+    
+    where   -- would be nice to abstract this structure
+        fallRel addr1 op addr2 = case (ifTrue, ifFalse) of
+            (Label "", Label "")    -> id
+            (_, Label "")           -> ifRelCont addr1 (toCompOp op) addr2 ifTrue
+            (Label "", _)           -> ifRelCont addr1 (opposite $ toCompOp op) addr2 ifFalse
+            _                       -> ifRelCont addr1 (toCompOp op) addr2 ifTrue . gotoCont ifFalse
 
-    _ -> return id -- Function calls
+        fallIf addr = case (ifTrue, ifFalse) of
+            (Label "", Label "")    -> id
+            (_, Label "")           -> ifCont addr ifTrue
+            (Label "", _)           -> ifFalseCont addr ifFalse
+            _                       -> ifCont addr ifTrue . gotoCont ifFalse
