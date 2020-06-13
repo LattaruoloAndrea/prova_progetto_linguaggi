@@ -145,7 +145,7 @@ data Literal
 
 instance Show Literal where
   show lit = case lit of
-    LBool b   -> show b
+    LBool b   -> if b then "true" else "false"
     LChar c   -> show c
     LInt  i   -> show i
     LReal r   -> show r
