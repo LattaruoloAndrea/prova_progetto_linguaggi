@@ -178,9 +178,13 @@ newRef :: LAddr -> LAddr
 newRef = RefTo . getAddr
 
 
+locOfTemp :: A.Loc
+locOfTemp = A.Loc 0 0
 
 addrFromId :: A.Ident -> LAddr
-addrFromId (A.Ident loc name) = A $ AName name loc
+addrFromId (A.Ident loc name) = if loc == locOfTemp
+    then A $ ATemp name
+    else A $ AName name loc
 
 
 addrFromInteger :: Integer -> LAddr
@@ -357,14 +361,14 @@ genProgram (A.Prog decls) = do
         addrM  = addrFromId $ idMain
     cont <- streamCat contMs
     sdata <- getStatic
-    let sdata' = DL.fromList . reverse . map Stat $ sdata 
-    return $ callCont addrM 0 . exitCont $ cont mempty `mappend` commentCont "Static Data\n" sdata'
+    let sdata' = DL.fromList . reverse . map Stat $ sdata
+    return $ (cont . callCont addrM 0 . exitCont) mempty `mappend` commentCont "Static Data\n" sdata'
 
     where
-        idMain = head $ map fId $ filter isF decls
+        idMain = head $ map fId $ filter isMain decls
         fId (A.FDecl id _ _ _ _) = id
-        isF (A.FDecl _ _ _ _ _) = True
-        isF _ = False
+        isMain (A.FDecl id _ _ _ _) = A.idName id == "main"
+        isMain _ = False
 
 
 genDecl :: DeclT -> SGen (Stream -> Stream)
@@ -439,20 +443,41 @@ genVDecl (A.Init id t r) = do
 
 
 genRExp :: RExpT -> SGen (Stream -> Stream, LAddr)
-genRExp r = case r of
-    A.Or _ _ _ _      -> genOr r
-    A.And _ _ _ _     -> genAnd r
-    A.Not _ _ _       -> genNot r
-    A.Comp _ _ _ _ _  -> genComp r
-    A.Arith _ _ _ _ _ -> genArith r
-    A.Sign _ _ _ _    -> genSign r
-    A.RefE _ _ _      -> genRefE r
-    A.RLExp _ _ _     -> genRLExp r
-    A.ArrList _ _ _   -> genArrList r
-    A.FCall _ _ _ _ _ -> genFCall r
-    A.Lit _ _ _       -> genLit r
-    A.Coerce _ _      -> genCoerce r
+genRExp r = if tctypeOf r == TBool
+    then genLazyEval r
+    else case r of
+        A.Or _ _ _ _      -> genOr r
+        A.And _ _ _ _     -> genAnd r
+        A.Not _ _ _       -> genNot r
+        A.Comp _ _ _ _ _  -> genComp r
+        A.Arith _ _ _ _ _ -> genArith r
+        A.Sign _ _ _ _    -> genSign r
+        A.RefE _ _ _      -> genRefE r
+        A.RLExp _ _ _     -> genRLExp r
+        A.ArrList _ _ _   -> genArrList r
+        A.FCall _ _ _ _ _ -> genFCall r
+        A.Lit _ _ _       -> genLit r
+        A.Coerce _ _      -> genCoerce r
 
+
+genLazyEval :: RExpT -> SGen (Stream -> Stream, LAddr)
+genLazyEval r = case r of
+    A.Lit _ _ _ -> genLit r
+    _           -> do
+        addrT <- newTemp
+        contT <- genIfElse $ stm $ tmpName addrT
+        return (contT, addrT)
+        where
+            tmpName (A (ATemp name)) = name
+            stm name = A.IfElse guard s1 s2
+                where
+                    guard = r
+                    lexp = A.Name ident TBool
+                    loc = locOfTemp
+                    ident = A.Ident locOfTemp name
+                    op = A.AssignEq loc TBool
+                    s1 = A.Assign lexp op $ A.Lit loc (A.LBool True) TBool
+                    s2 = A.Assign lexp op $ A.Lit loc (A.LBool False) TBool
 
 genLExp :: LExpT -> SGen (Stream -> Stream, LAddr)
 genLExp l = case l of
