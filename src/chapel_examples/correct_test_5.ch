@@ -9,7 +9,6 @@ proc myFunction(x:int, y:real) : real {
     var myBool: bool = true;
     if counter == x then myBool = true;
     writeReal(newResult);
-    readInt();
 
   }
   for x in {counter..10} do {
