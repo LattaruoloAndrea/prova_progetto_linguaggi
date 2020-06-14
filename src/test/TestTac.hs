@@ -119,9 +119,13 @@ run v p s = let ts = myLLexer s in case p ts of
             EM.Ok prog -> do
                 putStrLn "\nTypeCheck Successful!"
                 putStrLn "\nThree Address Code:\n\n"
-                let tacCode = genTAC prog
-                mapM_ (putStrLn . show) tacCode
+                let tac = genTAC prog
+                mapM_ putStrLn $ map helper $ zip [1..] $ map show tac
                 exitSuccess
+    where
+      helper (n, t) = if n `mod` 5 == 0
+        then t ++ "\n"
+        else t
 
 
 showTree :: (Show a, Print a) => Int -> a -> IO ()
