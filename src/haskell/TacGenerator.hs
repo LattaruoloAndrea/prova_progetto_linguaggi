@@ -319,27 +319,31 @@ addrFromArr addr = let t = TArr 0 TVoid in case addr of
 
 
 copyTo :: (LAddr, TCType) -> LAddr -> SGen (Stream -> Stream)
-(source, t) `copyTo` dest = case t of
-    TArr n t' -> do
-        let ls = linearize t
-            t' = head ls
-            sz = toInteger $ sizeof t'
-            linearize (TArr n t) = concatMap linearize $ take n $ repeat t
-            linearize t          = [t]
-        (extra, baseS) <- case source of
-            Arr b o -> do
-                tmp <- newTemp
-                return (arithCont (A.Add t) tmp (A b) (A o), getAddr tmp)
-            _       -> return (id, getAddr source)
-        let copyElem = \n ->
-                let off     = getAddr $ addrFromInteger $ n * sz
-                    baseD   = getAddr dest
-                    s       = Arr baseS off
-                    d       = Arr baseD off
-                in  nilCont d s $ overFromTC t'
-        return $ (extra .) $ foldr (.) id $ map copyElem $ [0 .. (toInteger $ (length ls - 1))]
+(source, t) `copyTo` dest = do
+    (extra, dest) <- addrFromArr dest
+    contCopy <- case t of
+        TArr n t' -> do
+            let ls = linearize t
+                t' = head ls
+                sz = toInteger $ sizeof t'
+                linearize (TArr n t) = concatMap linearize $ take n $ repeat t
+                linearize t          = [t]
+            (extra, baseS) <- case source of
+                Arr b o -> do
+                    tmp <- newTemp
+                    return (arithCont (A.Add t) tmp (A b) (A o), getAddr tmp)
+                _       -> return (id, getAddr source)
+            let copyElem = \n ->
+                    let off     = getAddr $ addrFromInteger $ n * sz
+                        baseD   = getAddr dest
+                        s       = Arr baseS off
+                        d       = Arr baseD off
+                    in  nilCont d s $ overFromTC t'
+            return $ (extra .) $ foldr (.) id $ map copyElem $ [0 .. (toInteger $ (length ls - 1))]
+        
+        _         -> return $ nilCont dest source $ overFromTC t
     
-    _         -> return $ nilCont dest source $ overFromTC t
+    return $ extra . contCopy
 
 
 
@@ -724,7 +728,8 @@ genAssign (A.Assign lexp op rexp) = do
     (contL, addrL) <- genLExp lexp
     (contR, addrR) <- genRExp rexp
     (contOp, addrT) <- helper op addrL addrR
-    return $ contL . contR . contOp . nilCont addrL addrT (overFromTC $ tctypeOf lexp)
+    contCopy <- (addrR, tctypeOf $ rexp) `copyTo` addrL
+    return $ contL . contR . contOp . contCopy
     where
         helper op l r = case op of
             A.AssignEq _ _  -> return (id, r)
