@@ -42,6 +42,10 @@ badLoc loc reason = EM.Bad $ (show loc) ++ ": Error! " ++ reason ++ "."
 
 
 
+errorMissingMain :: EM.Err a
+errorMissingMain = EM.Bad $ "Error! Missing 'main' procedure of signature 'void main ()'."
+
+
 errorLogicOperand :: String -> RExp t -> TCType -> EM.Err a
 errorLogicOperand op r t =
     badLoc (locOf r) $ "The operand '" ++ (printLim r) ++ "' in a " ++ op ++ " expression should have type bool, instead has type " ++ (show t)

@@ -75,9 +75,14 @@ foldWrapper' f =
 -- Loading of function names and check of all declarations
 checkProgram :: Env -> Program () -> EM.Err (Program TCType)
 checkProgram env (Prog decls) = ET.fromErrT $ do
+    unlessT () ( hasMain ) $ errorMissingMain
     env1 <- foldM loadFunction env decls
     eds <- foldM (foldWrapper checkDecl) (env1, []) decls
     return . Prog . reverse $ snd eds       -- decls were consed in reverse
+    where
+        hasMain = any helper decls
+        helper (FDecl id ps _ rt _) = idName id == "main" && null ps && tctypeOf rt == TVoid
+        helper _ = False
 
 
 -- Insert function name in the scope (to be used once we enter in a new block to permit mutual-recursion)
@@ -682,7 +687,7 @@ checkRange env (Range loc st en) = do
         te = tctypeOf en'
     unlessT () (ts `subtypeOf` TInt) $ errorRangeStart loc st ts
     unlessT () (te `subtypeOf` TInt) $ errorRangeEnd loc en te
-    return $ Range loc st' en'
+    return $ Range loc (coerce TInt st') (coerce TInt en')
 
 
 -- Check of a jump statement is delegated
