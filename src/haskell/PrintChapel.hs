@@ -261,6 +261,9 @@ instance Print A.Literal where
     A.LString str -> prPrec i 0 (concatD [prt 0 str])
     A.LNull -> prPrec i 0 (concatD [doc (showString "null")])
     A.LArr ls -> prPrec i 0 (concatD [doc (showString "["), prt 0 ls, doc (showString "]")])
+  prtList _ [] = concatD []
+  prtList _ [x] = concatD [prt 0 x]
+  prtList _ (x:xs) = concatD [prt 0 x, doc (showString ","), prt 0 xs]
 
 -- instance Print A.Boolean where
 --   prt i e = case e of
@@ -285,3 +288,5 @@ instance Print [A.Stm t] where
 instance Print [A.RExp t] where
   prt = prtList
 
+instance Print [A.Literal] where
+  prt = prtList
