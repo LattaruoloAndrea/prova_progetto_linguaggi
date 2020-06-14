@@ -47,26 +47,26 @@ nilCont x y ov = mappend $ DL.fromList [Nil x y ov]
 refCont :: LAddr -> LAddr -> Stream -> Stream
 refCont x y = mappend $ DL.fromList [Ref x y]
 
-binCont :: BinOp -> LAddr -> LAddr -> LAddr -> Stream -> Stream
-binCont bop x y z = mappend $ DL.fromList [Bin x y bop z]
+binCont :: BinOp -> Over -> LAddr -> LAddr -> LAddr -> Stream -> Stream
+binCont bop ov x y z = mappend $ DL.fromList [Bin x y bop z ov]
 
-unCont :: UnOp -> LAddr -> LAddr -> Stream -> Stream
-unCont uop x y = mappend $ DL.fromList [Un x uop y]
+unCont :: UnOp -> Over -> LAddr -> LAddr -> Stream -> Stream
+unCont uop ov x y = mappend $ DL.fromList [Un x uop y ov]
 
 orCont :: LAddr -> LAddr -> LAddr -> Stream -> Stream
-orCont = binCont Or
+orCont = binCont Or B
 
 andCont :: LAddr -> LAddr -> LAddr -> Stream -> Stream
-andCont = binCont And
+andCont = binCont And B
 
 notCont :: LAddr -> LAddr -> Stream -> Stream
-notCont = unCont Not
+notCont = unCont Not B
 
 negCont :: Over -> LAddr -> LAddr -> Stream -> Stream
-negCont ov = unCont $ Neg ov
+negCont ov = unCont (Neg ov) ov
 
-coerceCont :: Over -> LAddr -> LAddr -> Stream -> Stream
-coerceCont ov = unCont $ Coerce ov
+coerceCont :: Over -> Over -> LAddr -> LAddr -> Stream -> Stream
+coerceCont from to = unCont (Coerce from to) to
 
 gotoCont :: Label -> Stream -> Stream
 gotoCont lab = mappend $ DL.fromList [Goto lab]
@@ -81,17 +81,18 @@ paramCont :: LAddr -> Stream -> Stream
 paramCont x = mappend $ DL.fromList [Par x]
 
 arithCont :: ArithOpT -> LAddr -> LAddr -> LAddr -> Stream -> Stream
-arithCont op = binCont $ case op of
-    A.Add _ -> Add ov
-    A.Sub _ -> Sub ov
-    A.Mul _ -> Mul ov
-    A.Div _ -> Div ov
-    A.Mod   -> Mod
-    A.Pow _ -> Pow ov
+arithCont op = binCont caseOp ov
     where ov = overFromTC $ tctypeOf op
+          caseOp =  case op of
+            A.Add _ -> Add ov
+            A.Sub _ -> Sub ov
+            A.Mul _ -> Mul ov
+            A.Div _ -> Div ov
+            A.Mod   -> Mod
+            A.Pow _ -> Pow ov
 
 compCont :: CompOpT -> LAddr -> LAddr -> LAddr -> Stream -> Stream
-compCont op = binCont . Rel $ toCompOp op
+compCont op = binCont (Rel $ toCompOp op) B
 
 labCont :: Label -> Stream -> Stream
 labCont lab = mappend $ DL.fromList [Lab lab]
@@ -114,6 +115,9 @@ returnCont = mappend $ DL.fromList [Return]
 
 returnECont :: LAddr -> Stream -> Stream
 returnECont x = mappend $ DL.fromList [ReturnE x]
+
+exitCont :: Stream -> Stream
+exitCont = mappend $ DL.fromList [Exit]
 
 commentCont :: String -> Stream -> Stream
 commentCont s = mappend $ DL.fromList [Comment s]
@@ -346,10 +350,17 @@ genTAC program = DL.toList $ fst $ runState (genProgram program) (0, 0, fall, fa
 genProgram :: ProgramT -> SGen Stream
 genProgram (A.Prog decls) = do
     let contMs = map genDecl decls
+        addrM  = addrFromId $ idMain
     cont <- streamCat contMs
     sdata <- getStatic
     let sdata' = DL.fromList . reverse . map Stat $ sdata 
-    return $ cont mempty `mappend` commentCont "Static Data\n" sdata'
+    return $ callCont addrM 0 . exitCont $ cont mempty `mappend` commentCont "Static Data\n" sdata'
+
+    where
+        idMain = head $ map fId $ filter isF decls
+        fId (A.FDecl id _ _ _ _) = id
+        isF (A.FDecl _ _ _ _ _) = True
+        isF _ = False
 
 
 genDecl :: DeclT -> SGen (Stream -> Stream)
@@ -380,8 +391,12 @@ genFDecl f@(A.FDecl ident forms it rt body) = do
     pushEnvT oldT
     pushEnvF oldF
     setFunction oldI
-    let postamble = labCont $ labEnd
+    ret <- genJump $ A.Return (A.Loc 0 0)
+    
+    let extraReturn = if tctypeOf rt == TVoid then ret else id
+        postamble = labCont labEnd . extraReturn
     return $ \stream -> mappend stream $ preamble . contBody . postamble $ mempty
+    
     where
         initializer (A.Form it ident@(A.Ident loc name) ty) =
             case it of
@@ -554,9 +569,11 @@ genArrList arr@(A.ArrList loc rs t) = do
 
 genCoerce :: RExpT -> SGen (Stream -> Stream, LAddr)
 genCoerce (A.Coerce r t) = do
+    let from = overFromTC $ tctypeOf r
+        to   = overFromTC $ t
     (contR, addrR) <- genRExp r
     addrT <- newTemp
-    return (contR . coerceCont (overFromTC t) addrT addrR, addrT)
+    return (contR . coerceCont from to addrT addrR, addrT)
 
 
 genFCall :: RExpT -> SGen (Stream -> Stream, LAddr)
@@ -786,16 +803,16 @@ genDoWhile (A.DoWhile stm guard) = do
 
 genFor :: StmT -> SGen (Stream -> Stream)
 genFor (A.For ident rng stm) = do
-    contAss <- genStm ass
-    contWh  <- genStm wh
-    return $ contAss . contWh
-    where
-        loc = A.Loc 0 0
-        s = A.start rng
-        t = tctypeOf s
-        ass = A.Assign (A.Name ident t) (A.AssignEq loc t) s
-        guard = A.Comp loc (A.RLExp loc (A.Name ident t) t) (A.Leq t) (A.end rng) t
-        wh = A.While guard stm
+    (contS, addrS) <- genRExp $ A.start rng
+    (contE, addrE) <- genRExp $ A.end rng
+    labG <- newLabel "forGuard"
+    labE <- newLabel "forExit"
+    contB <- genStm stm
+    let addrI = addrFromId ident
+        contAss = nilCont addrI addrS I
+        contGuard = ifRelCont addrI (Gt I) addrE labE
+        contIncrement = arithCont (A.Add TInt) addrI addrI $ addrFromInteger 1
+    return $ contS . contE . contAss . attachStart labG contGuard . (attachEnd labE . attachGuard labG $ contB . contIncrement)
 
 
 genJmpStm :: StmT -> SGen (Stream -> Stream)

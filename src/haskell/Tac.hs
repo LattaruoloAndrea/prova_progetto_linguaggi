@@ -54,11 +54,11 @@ data BinOp
 data UnOp
     = Neg    Over
     | Not
-    | Coerce Over
+    | Coerce Over Over
 
 data TAC
-    = Bin LAddr LAddr BinOp LAddr           -- x = y bop z
-    | Un  LAddr UnOp  LAddr                 -- x = uop y
+    = Bin LAddr LAddr BinOp LAddr Over      -- x = y bop z
+    | Un  LAddr UnOp  LAddr Over            -- x = uop y
     | Nil LAddr LAddr Over                  -- x = y
     | Goto Label                            -- goto label
     | Lab Label                             -- label: ...
@@ -71,6 +71,7 @@ data TAC
     | FCall LAddr LAddr Int                 -- x = fcall fun, n
     | Return                                -- return
     | ReturnE LAddr                         -- return x
+    | Exit                                  -- exit
     | Stat Static                           -- static data
     | Comment String                        -- # some comment..
 
@@ -101,9 +102,9 @@ instance Overloaded BinOp where
 
 instance Overloaded UnOp where
     overT op = case op of
-        Neg o    -> o
-        Not      -> B
-        Coerce o -> o
+        Neg o       -> o
+        Not         -> B
+        Coerce f t  -> t
 
 
 
@@ -167,15 +168,15 @@ instance Show BinOp where
 
 instance Show UnOp where
     show op = case op of
-        Neg o    -> "neg_" ++ (show o)
-        Not      -> "not"
-        Coerce o -> "convert_to_" ++ (show o)
+        Neg o       -> "neg_" ++ (show o)
+        Not         -> "not"
+        Coerce f t  -> "convert_" ++ (show f) ++ "_to_" ++ (show t)
 
 
 instance Show TAC where
     show instr = (++) tt $ case instr of
-        Bin x y bop z       -> (show x) ++ " :=" ++ (show $ overT bop) ++ " " ++ (show y) ++ " " ++ (show bop) ++ " " ++ (show z)
-        Un  x uop y         -> (show x) ++ " :=" ++ (show $ overT uop) ++ " " ++ (show uop) ++ " " ++ (show y)
+        Bin x y bop z o     -> (show x) ++ " :=" ++ (show o) ++ " " ++ (show y) ++ " " ++ (show bop) ++ " " ++ (show z)
+        Un  x uop y o       -> (show x) ++ " :=" ++ (show o) ++ " " ++ (show uop) ++ " " ++ (show y)
         Nil x y o           -> (show x) ++ " :=" ++ (show o) ++ " " ++ (show y)
         Goto lab            -> "goto " ++ (show lab)
         Lab lab             -> "\n" ++ (show lab) ++ ":"
@@ -188,6 +189,7 @@ instance Show TAC where
         FCall x f n         -> (show x) ++ " := " ++ "fcall " ++ (show f) ++ " " ++ (show n)
         Return              -> "return"
         ReturnE x           -> "return " ++ (show x)
+        Exit                -> "exit"
         Stat s              -> show s
         Comment s           -> "\n\t# " ++ s
         where
