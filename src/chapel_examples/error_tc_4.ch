@@ -6,3 +6,7 @@ proc fibonacci(n : int) : int {
   return myBool;
 }
 // error different type return from initialization
+
+proc main(): void{
+	return;
+}

@@ -32,3 +32,8 @@ proc nyFunction(x:int, y:real) : real {
 
   return newResult; 
   }
+
+
+proc main(): void{
+  return;
+}

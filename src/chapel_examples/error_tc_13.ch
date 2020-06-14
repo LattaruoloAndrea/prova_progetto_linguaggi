@@ -19,4 +19,8 @@ proc nyFunction(x:int, y:real) : real {
 proc gatto() : real {
   return nyFunction(5);     //error number of parameter mismatch
   }
-  
+
+
+proc main(): void{
+  return;
+}
