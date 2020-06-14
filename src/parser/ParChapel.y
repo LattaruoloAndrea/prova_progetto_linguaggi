@@ -115,7 +115,7 @@ Program :: { Program () }
 Program : ListDecl { AbsChapel.Prog $1 }
 
 Decl :: { Decl () }
-Decl : 'proc' Ident '(' ListForm ')' Intent ':' Type Block { AbsChapel.FDecl $2 $4 $6 $8 $9 }
+Decl : 'proc' Ident '(' ListForm ')' ':' Type Block { AbsChapel.FDecl $2 $4 AbsChapel.In $7 $8 }
      | 'var' ListVDecl ';' { AbsChapel.VList $2 }
      | 'param' ListCDecl ';' { AbsChapel.CList $2 }
 
