@@ -18,3 +18,8 @@ param myConstInit: real = 1.5;
 param myConstRealVar: real = -1.234;
 
 param weird: [5]int = [1,2,3,4, myConstInt*5];
+
+
+proc main(): void{
+	return;
+}

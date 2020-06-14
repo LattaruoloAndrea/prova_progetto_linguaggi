@@ -43,4 +43,8 @@ proc nyFunction(x:int, y:real) : real {
       return 0;
     }  
   }
-  //show tow different errors in two different functions
+
+
+proc main(): void{
+  return;
+}

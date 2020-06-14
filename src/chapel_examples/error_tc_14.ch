@@ -34,3 +34,7 @@ proc f1(x:int, y:real) : real {
   return f12("ciao");          // error should return a real
   }
 
+
+proc main(): void{
+  return;
+}

@@ -19,3 +19,7 @@ proc nyFunction(x:int, y:real) : real {
       return 0;
     }  
   }
+  
+proc main(): void{
+  return;
+}

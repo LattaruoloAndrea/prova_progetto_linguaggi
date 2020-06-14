@@ -37,3 +37,7 @@ proc myFunction(x:int, y:real) : real {
 
     
   }
+
+proc main(): void{
+  return;
+}

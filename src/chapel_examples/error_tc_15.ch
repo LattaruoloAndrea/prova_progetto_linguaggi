@@ -76,3 +76,8 @@ proc myFunc3(): bool{
 	var x: bool= myFunc2() && myFunc3() +dd() -dd() +5 *0.1; // error mishmatch types
 	return x;
 }
+
+
+proc main(): void{
+  return;
+}

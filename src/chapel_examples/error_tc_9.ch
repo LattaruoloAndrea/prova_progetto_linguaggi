@@ -15,4 +15,6 @@ proc nyFunction(x:int, y:real) : real {
   x = t; // error on using a var declered inside a block and block ended
   return newResult; 
   }
+
+  //error main() not found!
   
