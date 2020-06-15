@@ -444,7 +444,11 @@ genVDecl (A.Init id t r) = do
 
 genRExp :: RExpT -> SGen (Stream -> Stream, LAddr)
 genRExp r = if tctypeOf r == TBool
-    then genLazyEval r
+    then case r of
+        A.RLExp _ _ _     -> genRLExp r
+        A.FCall _ _ _ _ _ -> genFCall r
+        A.Lit _ _ _       -> genLit r
+        _                 -> genLazyEval r
     else case r of
         A.Or _ _ _ _      -> genOr r
         A.And _ _ _ _     -> genAnd r
@@ -461,23 +465,21 @@ genRExp r = if tctypeOf r == TBool
 
 
 genLazyEval :: RExpT -> SGen (Stream -> Stream, LAddr)
-genLazyEval r = case r of
-    A.Lit _ _ _ -> genLit r
-    _           -> do
-        addrT <- newTemp
-        contT <- genIfElse $ stm $ tmpName addrT
-        return (contT, addrT)
-        where
-            tmpName (A (ATemp name)) = name
-            stm name = A.IfElse guard s1 s2
-                where
-                    guard = r
-                    lexp = A.Name ident TBool
-                    loc = locOfTemp
-                    ident = A.Ident locOfTemp name
-                    op = A.AssignEq loc TBool
-                    s1 = A.Assign lexp op $ A.Lit loc (A.LBool True) TBool
-                    s2 = A.Assign lexp op $ A.Lit loc (A.LBool False) TBool
+genLazyEval r = do
+    addrT <- newTemp
+    contT <- genIfElse $ stm $ tmpName addrT
+    return (contT, addrT)
+    where
+        tmpName (A (ATemp name)) = name
+        stm name = A.IfElse guard s1 s2
+            where
+                guard = r
+                lexp = A.Name ident TBool
+                loc = locOfTemp
+                ident = A.Ident loc name
+                op = A.AssignEq loc TBool
+                s1 = A.Assign lexp op $ A.Lit loc (A.LBool True) TBool
+                s2 = A.Assign lexp op $ A.Lit loc (A.LBool False) TBool
 
 genLExp :: LExpT -> SGen (Stream -> Stream, LAddr)
 genLExp l = case l of
