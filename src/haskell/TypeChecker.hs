@@ -43,10 +43,11 @@ predList = [
     ("readInt",     Fun predLoc [] In TInt),
     ("readReal",    Fun predLoc [] In TReal),
     ("readString",  Fun predLoc [] In TString),
-    ("writeChar",   Fun predLoc [Param (Loc 0 1) "x" In TChar] In TVoid),
-    ("writeInt",    Fun predLoc [Param (Loc 0 1) "x" In TInt] In TVoid),
-    ("writeReal",   Fun predLoc [Param (Loc 0 1) "x" In TReal] In TVoid),
-    ("writeString", Fun predLoc [Param (Loc 0 1) "x" In TString] In TVoid)]
+    ("writeChar",   Fun predLoc [Param predLoc "x" In TChar] In TVoid),
+    ("writeInt",    Fun predLoc [Param predLoc "x" In TInt] In TVoid),
+    ("writeReal",   Fun predLoc [Param predLoc "x" In TReal] In TVoid),
+    ("writeString", Fun predLoc [Param predLoc "x" In TString] In TVoid),
+    ("stringCmp",   Fun predLoc [Param predLoc "x" ConstRef TString, Param predLoc "op" In TInt, Param predLoc "y" ConstRef TString] In TBool)]
 
 -- Initial environment (with the global context)
 startEnv :: Env
@@ -191,6 +192,7 @@ checkFDecl :: Env -> Decl () -> ET.ErrT (Env, Decl TCType)
 checkFDecl env f@(FDecl id forms it ty blk) = ET.toErrT (env, toTCT f) $ do
     let helperForm (Form it id t) = do
             t' <- checkType env t
+            when (tctypeOf t' == TVoid) $ errorParameterVoid id
             return (Form it id t')
     forms' <- mapM helperForm forms
     ty' <- checkType env ty
@@ -350,7 +352,19 @@ inferComp env (Comp loc r1 op r2 _) = do
         t2 = tctypeOf r2'
         t = supremum t1 t2
     when (t == TError) $ errorBinary op r1 r2 t1 t2
-    return $ Comp loc (coerce t r1') (set t op) (coerce t r2') TBool
+    case t of
+        TString  -> return $ FCall loc (Ident predLoc "stringCmp") [coerce t r1', opToNum, coerce t r2'] [ConstRef, In, ConstRef] TBool
+        _        -> return $ Comp loc (coerce t r1') (set t op) (coerce t r2') TBool
+    where
+        opToNum = Lit loc (LInt n) TInt
+        n = case op of
+            Lt  _ -> 0
+            Leq _ -> 1
+            Eq  _ -> 2
+            Neq _ -> 3
+            Geq _ -> 4
+            Gt  _ -> 5
+            
 
 -- For arithmetic operators we need "numeric" operands (i.e. subtype of real)
 -- extra conditions for '%' (operands both subtype of int) and '^' (exponent subtype of int)
@@ -368,15 +382,16 @@ inferArith env (Arith loc r1 op r2 _) = do
                   (unless (t2 `subtypeOf` TInt) $ errorArithOperandInt r2 t2)
         Pow _ ->   unless (t2 `subtypeOf` TInt) $ errorArithOperandInt r2 t2
         _     ->  return ()
-    return $ Arith loc (coerce t r1') (set t op) (coerce t r2') t
+    let t' = supremum t TInt
+    return $ Arith loc (coerce t' r1') (set t' op) (coerce t' r2') t'
 
 
 inferSign :: Env -> RExp () -> EM.Err (RExp TCType)
 inferSign env rexp@(Sign loc op r _) = do
     r' <- inferRExp env r
-    let t = tctypeOf r'
+    let t = tctypeOf r' `supremum` TInt
     unless (t `subtypeOf` TReal) $ errorSignNotNumber rexp t
-    return $ Sign loc (set t op) r' t
+    return $ Sign loc (set t op) (coerce t r') t
 
 -- ArrayList type is the supremum of the inferred types inside the list
 --   * Empty array throws an error
@@ -395,6 +410,7 @@ inferArrList env (ArrList loc rs _) = case rs of
 -- Reference to a left-expression have type pointer to..
 inferRefE :: Env -> RExp () -> EM.Err (RExp TCType)
 inferRefE env (RefE loc l _) = do
+    unless (isMutable env l) $ errorRefToImmutable l
     l' <- inferLExp env l
     let t = tctypeOf l'
     return $ RefE loc l' (TPoint t)
@@ -523,17 +539,32 @@ checkScope env block = do
 checkPassing :: Env -> (RExp TCType, Param) -> ET.ErrT Env
 checkPassing env (r, Param loc id it tp) =
     let t = tctypeOf r in case it of
-        In          ->  unlessT env (t `subtypeOf` tp)  $ errorPassingTypeSub r t tp
-        Out         -> (unlessT env (tp `subtypeOf` t)  $ errorPassingTypeSuper r t tp) >> 
-                       (unlessT env (isLExp r)          $ errorPassingLExp r)
-        InOut       -> (unlessT env (t == tp)           $ errorPassingTypeSame r t tp) >>
-                       (unlessT env (isLExp r)          $ errorPassingLExp r)
-        Ref         -> (unlessT env (t == tp)           $ errorPassingTypeSame r t tp) >>
-                       (unlessT env (isLExp r)          $ errorPassingLExp r)
-        ConstIn     ->  unlessT env (t `subtypeOf` tp)  $ errorPassingTypeSub r t tp
-        ConstRef    -> (unlessT env (t == tp)           $ errorPassingTypeSame r t tp) >>
-                       (unlessT env (isLExp r)          $ errorPassingLExp r)
+        In          ->  unlessT env (t `subtypeOf` tp) $ errorPassingTypeSub r t tp
+        
+        Out         -> do
+            unlessT env (tp `subtypeOf` t) $ errorPassingTypeSuper r t tp 
+            unlessT env (isLExp r) $ errorPassingLExp r
+            caseImmutable
+        
+        InOut       -> do
+            unlessT env (t == tp) $ errorPassingTypeSame r t tp
+            unlessT env (isLExp r) $ errorPassingLExp r
+            caseImmutable
+            
+        Ref         -> do
+            unlessT env (t == tp) $ errorPassingTypeSame r t tp
+            unlessT env (isLExp r) $ errorPassingLExp r
+            caseImmutable
 
+        ConstIn     ->  unlessT env (t `subtypeOf` tp)  $ errorPassingTypeSub r t tp
+        
+        ConstRef    -> do
+            unlessT env (t == tp) $ errorPassingTypeSame r t tp
+            unlessT env (isLExp r) $ errorPassingLExp r
+    where
+        caseImmutable = case r of
+            (RLExp _ l _) -> unlessT env (isMutable env l) $ errorPassingImmutable it r
+            _             -> return env
 
 -- Check of a function call:
 --   * Function must exist in the scope, otherwise Env.lookFun will throw an error

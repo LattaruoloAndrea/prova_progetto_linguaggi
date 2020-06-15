@@ -81,6 +81,9 @@ errorSignNotNumber r t =
     badLoc (locOf r) $ "Signed expression '" ++ (printLim r) ++ "' must be a number, found " ++ (show t)
 
 
+errorRefToImmutable :: LExp t -> EM.Err a
+errorRefToImmutable l =
+    badLoc (locOf l) $ "Invalid reference to an immutable expression: '" ++ (printLim l) ++ "' is immutable"
 
 errorArrayEmpty :: Loc -> EM.Err a
 errorArrayEmpty loc = badLoc loc "Empty array initializer"
@@ -166,6 +169,9 @@ errorVariableVoid = errorTypeVoid "Variable"
 
 errorConstantVoid :: Ident -> EM.Err a
 errorConstantVoid = errorTypeVoid "Constant"
+
+errorParameterVoid :: Ident -> EM.Err a
+errorParameterVoid = errorTypeVoid "Parameter"
 
 
 errorReturnLoop :: Loc -> EM.Err a
@@ -284,6 +290,11 @@ errorPassingTypeSame r t tp =
 errorPassingLExp :: RExp t -> EM.Err a
 errorPassingLExp r =
     badLoc (locOf r) $ "Expression '" ++ (printLim r) ++ "' must be a left-expression"
+
+errorPassingImmutable :: Intent -> RExp t -> EM.Err a
+errorPassingImmutable it r =
+    badLoc (locOf r) $ "Cannot pass '" ++ (printLim r) ++ "' with intent " ++ (printLim it) ++ " because it's immutable"
+
 
 
 
