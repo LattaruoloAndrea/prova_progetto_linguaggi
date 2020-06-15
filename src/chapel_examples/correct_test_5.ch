@@ -1,5 +1,5 @@
 param myConst: int = 3;
-var myInt: [5][5][5][5][5][5][5]int;
+var myInt: [2][2][1][1][1][2][2]int;
 var myBool: bool = false;
 
 proc myFunction(x:int, y:real) : real {
@@ -12,7 +12,7 @@ proc myFunction(x:int, y:real) : real {
 
   }
   for x in {counter..10} do {
-    writeInt(myInt[5][5][5][5][5][5][5]);
+    writeInt(myInt[x / x][1][x / 10][0][0][1][1]);
   }
   return newResult; 
   }

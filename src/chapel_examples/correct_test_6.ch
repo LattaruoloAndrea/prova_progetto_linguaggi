@@ -2,6 +2,7 @@ param myConst: int = 3;
 var myInt: [5]int = [1,2,3,4,5];
 var myBool: bool = false;
 
+
 proc nyFunction(x:int, y:real) : real {
   
   var newResult: real = 0.0;
@@ -31,7 +32,7 @@ proc nyFunction(x:int, y:real) : real {
    }
 
   return newResult; 
-  }
+}
 
 
 proc main(): void{

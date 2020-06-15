@@ -28,9 +28,6 @@ proc defaultsProc(in x: int,ref y: real): real {
   return x+y;
 }
 
-var myyVoid: *void;
-//var myyVoidTwo: ***void = 10^2^2^2;
-
 proc sumProc( x: int, y: real): real {
   return x+y;
 }
