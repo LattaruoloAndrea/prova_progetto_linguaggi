@@ -12,9 +12,9 @@ var myString: string = "ciao";
 
 proc check_type(): void{
 
-	myChar = myChar + myChar; // error not defined
-	myBool = myBool + myBool; //  error not defined
-	myString = myChar + myChar; // error not defined
+	myChar = myChar + myChar; // error type mismatch
+	myBool = myBool + myBool; //  error type mismatch
+	myString = myChar + myChar; // error type mismatch
 
 	return;
 }

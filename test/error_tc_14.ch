@@ -1,7 +1,7 @@
 param Const1: int = 3;
 param Const2: real = Const1 + 0.5;
 param Const3: int = Const4 + 2;
-param Const4: real = Const3 + 0.5; //error mutual definition + type mismatch
+param Const4: real = Const3 + 0.5; //error mutual definition
 var k: int = 7;
 param Const5: int = k + 3;       // error variables are mutable
 var myBool: bool = false;

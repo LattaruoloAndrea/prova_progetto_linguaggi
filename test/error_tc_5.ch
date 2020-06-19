@@ -10,9 +10,9 @@ proc myFunction(x:int, y:real) : real {
   myFunction(true, true); // error type parameter
   while myInt { // error not bool 
     var myBool: bool = true;
-    if counter == x then myBool = 5;
+    if counter == x then myBool = 5; //error mismatch
     writeReal("Ciao"); // error not real
-    readInt();
+    readInt(); //wrong use of readInt
     x = readReal();
 
   }
