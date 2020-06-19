@@ -34,12 +34,10 @@ proc check_type(): void{
 	myBool = myInt; //error not compatible
 	myBool = myString; //error not compatible
 
-	myChar = myChar + myChar; // error not defined
 	myChar = myBool + myBool; //  error not compatible
 	myChar = myBool + myInt; //  error not compatible
 
 	myBool = myChar + myChar; // error not compatible
-	myBool = myBool + myBool; //  error not defined
 	myBool = myBool + myInt; //  error not compatible
 
 	myInt = myBool + myBool; // correct
@@ -52,7 +50,6 @@ proc check_type(): void{
 	myReal = myChar + myChar; // correct
 
 	myString = myReal + myInt; // error compatibility btw types
-	myString = myChar + myChar; // error not defined
 
 
 	return;
