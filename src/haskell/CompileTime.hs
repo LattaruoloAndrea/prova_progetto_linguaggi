@@ -13,20 +13,18 @@ import qualified ErrM as EM
 -- Literal coercions /////////////////////////////////////////////////////////////
 
 toLInt :: Literal -> Literal
+toLInt (LBool a)    = LInt . toInteger $ if a then 1 else 0
 toLInt (LChar a)    = LInt . toInteger . ord $ a
 toLInt i@(LInt _)   = i
 -- undefined patterns
 
 toLReal :: Literal -> Literal
+toLReal b@(LBool a) = toLReal . toLInt $ b
 toLReal c@(LChar a) = toLReal . toLInt $ c
 toLReal (LInt a)    = LReal . fromInteger $ a
 toLReal r@(LReal _) = r
 -- undefined patterns
 
-toLString :: Literal -> Literal
-toLString (LChar a)     = LString [a]
-toLString s@(LString _) = s
--- undefined patterns
 
 -- Binary operation overloading abstractions ///////////////////////////////////////
 type LIntOperator    = Literal -> Literal -> Maybe Literal
@@ -49,10 +47,13 @@ realBinary op = \x y -> case (x,y) of
 -- overload abstracts the process of overloading given an int and a real version of an operator
 overload :: LIntOperator -> LRealOperator -> LiteralOperator
 overload intOp realOp = \x y -> case (x, y) of
+    (LBool _, _)        -> overload intOp realOp (toLInt x) y
     (LChar _, _)        -> overload intOp realOp (toLInt x) y
+    (LInt _, LBool _)   -> x `intOp` (toLInt y)
     (LInt _, LChar _)   -> x `intOp` (toLInt y)
     (LInt _, LInt _)    -> x `intOp` y
     (LInt _, LReal _)   -> overload intOp realOp (toLReal x) y
+    (LReal _, LBool _)  -> x `realOp` (toLReal y)
     (LReal _, LChar _)  -> x `realOp` (toLReal y)
     (LReal _, LInt _)   -> x `realOp` (toLReal y)
     (LReal _, LReal _)  -> x `realOp` y
@@ -108,9 +109,11 @@ litDiv = overload intDiv realDiv
 -- Concrete exponentiation ///////////////////////////////////////////////////////////
 
 litPow :: LiteralOperator
+x `litPow` b@(LBool _) = x `litPow` (toLInt b)
 x `litPow` c@(LChar _) = x `litPow` (toLInt c)
 
 x `litPow` y@(LInt e) = case x of
+    LBool _     -> (toLInt x) `litPow` y
     LChar _     -> (toLInt x) `litPow` y
     LInt a      -> Just . LInt $ a ^ e
     LReal a     -> Just . LReal $ a ^ e
@@ -121,9 +124,11 @@ _ `litPow` _ = Nothing -- undefined for non integer exponent
 -- Concrete remainder ///////////////////////////////////////////////////////////////
 
 litMod :: LiteralOperator
+b@(LBool _) `litMod` x = (toLInt b) `litMod` x
 c@(LChar _) `litMod` x = (toLInt c) `litMod` x
 
 i@(LInt a) `litMod` x = case x of
+    LBool _     -> i `litMod` (toLInt x)
     LChar _     -> i `litMod` (toLInt x)
     LInt  n     -> Just . LInt $ a `mod` n
     _           -> Nothing
@@ -175,7 +180,7 @@ overloadCompare x y = case (tctypeOf x) `supremum` (tctypeOf y) of
     TChar   -> x `strictCompare` y
     TInt    -> (toLInt x)    `strictCompare` (toLInt y)
     TReal   -> (toLReal x)   `strictCompare` (toLReal y)
-    TString -> (toLString x) `strictCompare` (toLString y)
+    TString -> x `strictCompare` y
     _       -> LitNC
 
 
@@ -257,7 +262,6 @@ constexpr env r = case r of
         let conv = case t of                             -- select coercion function based on more general type in lits
                     TInt    -> toLInt
                     TReal   -> toLReal
-                    TString -> toLString
                     _       -> id
 
         return $ LArr False [ conv x | (Just x) <- lits ]
