@@ -5,6 +5,9 @@
 *.pdf
 *.bak
 *.hi
+*.jpg
+*.png
+
 
 # Folders Brian
 bin/*
