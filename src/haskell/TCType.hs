@@ -45,13 +45,11 @@ data TOrdering = TLess | TEqual | TGreater | TNotComparable
     deriving (Eq, Show)
 
 compare' :: TCType -> TCType -> TOrdering
-TBool `compare'` TChar = TLess
 TBool `compare'` TInt = TLess
 TBool `compare'` TReal = TLess
 
 TChar `compare'` TInt    = TLess
 TChar `compare'` TReal  = TLess
-TChar `compare'` TBool = TGreater
 
 TInt `compare'` TReal   = TLess
 TInt `compare'` TBool = TGreater
