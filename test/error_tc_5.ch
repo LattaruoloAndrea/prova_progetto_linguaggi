@@ -20,8 +20,8 @@ proc myFunction(x:int, y:real) : real {
     writeInt(myInt[x]); // error not int
     x += 1; // x cannot be modified 
 
-    x *= 5;
-    x = true;
+    x *= 5; // x cannot be modified 
+    x = true; // x cannot be modified 
   }
   return newResult; 
   }
