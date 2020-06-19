@@ -44,8 +44,12 @@ proc check_type(): void{
 
 	myInt = myBool + myBool; // correct
 	myInt = myBool + myChar; // correct
+	myInt = myChar + myChar; // correct
 
 	myReal = myReal + myInt; // correct
+	myReal = myBool + myBool; // correct
+	myReal = myBool + myChar; // correct
+	myReal = myChar + myChar; // correct
 
 	myString = myReal + myInt; // error compatibility btw types
 	myString = myChar + myChar; // error not defined
