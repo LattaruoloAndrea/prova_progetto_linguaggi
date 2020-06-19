@@ -1,7 +1,11 @@
-proc fibonacci(n : int) : int {
+proc fibonacci(n : int) : char {
   param myConst: int = 3;
   var myInt: [5]int = [1,2,3,4,5]; 
+
   var myBool: bool = false;
+
+  var myChar: char = myBool; // error mismatch type
+
   if n <= 1 then return n;
   return myBool;
 }
