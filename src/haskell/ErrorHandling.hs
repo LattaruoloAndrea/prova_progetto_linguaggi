@@ -4,6 +4,7 @@ import qualified ErrM as EM
 import qualified ErrT as ET
 import AbsChapel
 import TCType
+import TCInstances
 import Locatable
 import PrintChapel
 
@@ -148,13 +149,13 @@ errorRangeEnd loc en t =
 
 errorDeclTypeMismatch :: String -> Ident -> TCType -> TCType -> EM.Err a
 errorDeclTypeMismatch kind id td tr = 
-    badLoc (locOf id) $ "Type mismatch in a " ++ kind ++ " DECLARATION. '" ++ (idName id) ++ "' should have type " ++ (show tr) ++ ", instead has type " ++ (show td)
+    badLoc (locOf id) $ "Type mismatch in a " ++ kind ++ " declaration. '" ++ (idName id) ++ "' should have type " ++ (show tr) ++ ", instead has type " ++ (show td)
 
 errorConstTypeMismatch :: Ident -> TCType -> TCType -> EM.Err a
-errorConstTypeMismatch = errorDeclTypeMismatch "CONST"
+errorConstTypeMismatch = errorDeclTypeMismatch "param"
 
 errorVarTypeMismatch :: Ident -> TCType -> TCType -> EM.Err a
-errorVarTypeMismatch = errorDeclTypeMismatch "VAR"
+errorVarTypeMismatch = errorDeclTypeMismatch "var"
 
 errorNotConst :: Ident -> RExp t -> EM.Err a
 errorNotConst id r =
@@ -234,9 +235,9 @@ errorGuard r t =
 
 
 
-errorAssignType :: Loc -> EM.Err a
-errorAssignType loc =
-    badLoc loc $ "Type mismatch in an assignment"
+errorAssignType :: Loc -> LExp a -> RExp a -> EM.Err a
+errorAssignType loc l r =
+    badLoc loc $ "Type mismatch in an assignment between l-expression '" ++ (printLim l) ++ "' of type " ++ (show $ tctypeOf l) ++ " and r-expression '" ++ (printLim r) ++ "' of type " ++ (show $ tctypeOf r)
 
 errorAssignImmutable :: LExp t -> EM.Err a
 errorAssignImmutable l =
