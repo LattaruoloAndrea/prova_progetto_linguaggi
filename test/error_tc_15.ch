@@ -1,5 +1,5 @@
 param myConst: int = 5;
-param myConst1: bool= myConst && false; // gives error
+param myConst1: bool= myConst && false; // error mysmatch
 var myVar: real= 0.01;
 
 
@@ -15,7 +15,7 @@ proc d(): int{
 
 proc dd(): int{
 	param x: int = 90;
-	x = false; // here sees first the mishmatch type and then the fact that x is immutable
+	x = false; // x is immutable
 	x= 90; // here sees that x is immutable
 	return 0;
 }
@@ -65,7 +65,7 @@ proc myFunc2(): bool{
 	return x;
 	}
 	x = myFunc2(); // accept the function
-	y = myFunc2(); // error mishmatch 
+	y = myFunc2(); // error type mishmatch 
 	x = myFunc2(5); //error function takes one argument
 	return y;
 

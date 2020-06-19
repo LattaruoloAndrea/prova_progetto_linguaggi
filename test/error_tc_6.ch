@@ -6,7 +6,7 @@ proc nyFunction(x:int, y:real) : real {
   
   var newResult: real = 0.0;
   var counter: int = 0;
-  var x:int = 0;
+  var x:int = 0; //error double declaration
 
   while myBool {
     if counter == x then myBool = true;
