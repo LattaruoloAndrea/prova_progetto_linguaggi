@@ -609,7 +609,7 @@ checkAssign env stm@(Assign l op r) =
         r' <- checkRExpError env r
         let tl = tctypeOf l'
             tr = tctypeOf r'
-        unless (tr `subtypeOf` tl) $ errorAssignType $ locOf l
+        unless (tr `subtypeOf` tl) $ errorAssignType l' r'
         case op of
             AssignMod _   -> do
                 unless (tl `subtypeOf` TInt) $ errorAssignMod l tl

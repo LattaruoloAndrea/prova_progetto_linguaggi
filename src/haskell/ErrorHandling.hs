@@ -235,9 +235,9 @@ errorGuard r t =
 
 
 
-errorAssignType :: Loc -> LExp a -> RExp a -> EM.Err a
-errorAssignType loc l r =
-    badLoc loc $ "Type mismatch in an assignment between l-expression '" ++ (printLim l) ++ "' of type " ++ (show $ tctypeOf l) ++ " and r-expression '" ++ (printLim r) ++ "' of type " ++ (show $ tctypeOf r)
+errorAssignType :: LExp TCType -> RExp TCType -> EM.Err a
+errorAssignType l r =
+    badLoc (locOf l) $ "Type mismatch in an assignment between l-expression '" ++ (printLim l) ++ "' of type " ++ (show $ tctypeOf l) ++ " and r-expression '" ++ (printLim r) ++ "' of type " ++ (show $ tctypeOf r)
 
 errorAssignImmutable :: LExp t -> EM.Err a
 errorAssignImmutable l =
