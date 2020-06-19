@@ -83,6 +83,9 @@ s `subtypeOf` t = let st = s `compare'` t in st == TLess || st == TEqual
 -- If types are comparable, then return the max
 -- else TError
 supremum :: TCType -> TCType -> TCType
+TBool `supremum` TChar = TInt
+TChar `supremum` TBool = TInt
+
 supremum x y
     | x `compare'` y == TLess       = y
     | x `compare'` y == TEqual      = x
