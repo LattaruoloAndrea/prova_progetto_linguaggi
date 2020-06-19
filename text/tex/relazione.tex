@@ -4,6 +4,8 @@
 \usepackage{graphicx}
 \graphicspath{ {../img/} }
 
+\usepackage{float}
+
 \newcommand{\nonterm}[1]{\langle #1 \rangle}
 \newcommand{\term}[1]{\texttt{#1}}
 
@@ -81,6 +83,7 @@
         $\nonterm{Type}$        &   $::=$   &   $\nonterm{Compound} \nonterm{Basic}$                    \\
         $\nonterm{Compound}$    &   $::=$   &   $\epsilon$                                              \\
                                 &    $|$    &   $\term{[} \nonterm{RExp} \term{]} \nonterm{Compound}$   \\
+                                &    $|$    &   $\term{\{} \nonterm{RExp} \term{\}} \nonterm{Compound}$ \\
                                 &    $|$    &   $\term{*} \nonterm{Compound}$                           \\
         $\nonterm{Basic}$       &   $::=$   &   $\term{bool}$                                           \\
                                 &    $|$    &   $\term{char}$                                           \\
@@ -94,13 +97,14 @@
 
     \item Un intent (modalità di passaggio dei parametri) ha la seguente struttura
         \begin{center}
-        \begin{tabular}{*{13}c}
+        \begin{tabular}{*{15}c}
         $\nonterm{Intent}$      &   $::=$   &   $\term{in}$                                           
                                 &    $|$    &   $\term{out}$                                          
                                 &    $|$    &   $\term{inout}$                                        
                                 &    $|$    &   $\term{ref}$                                          
                                 &    $|$    &   $\term{const in}$                                     
                                 &    $|$    &   $\term{const ref}$
+                                &    $|$    &   $\epsilon$
 
         \end{tabular}
         \end{center}
@@ -239,10 +243,10 @@
 \begin {itemize}
     \item La compatibilità tra tipi prevede:
     \begin{itemize}
-        \item il tipo char compatibile con i tipi int, real e string
-        \item il tipo int compatibile con il tipo real
-        \item il tipo bool non è compatibile con altri tipi
-        \item se $\tau_1$ è compatibile con $\tau_2$ allora $[n]\tau_1$ è compatibile con il tipo $[n]\tau_2$;
+        \item il tipo \term{bool} compatibile con i tipi \term{char}, \term{int} e \term{real}
+        \item il tipo \term{char} compatibile con i tipi \term{int} e \term{real}
+        \item il tipo \term{int} compatibile con il tipo \term{real}
+        \item se $\tau_1$ è compatibile con $\tau_2$ allora $[n]\tau_1$ è compatibile con $[n]\tau_2$;
             array di dimensioni diverse non son compatibili tra loro.
         \item i puntatori non sono compatibili tra loro.
 
@@ -276,7 +280,7 @@
         \end{center}
         \footnotetext{Ovviamente intesi puntatori dello stesso tipo.}
 
-    Le guardie di costrutti di iterazione indeterminata e condizionali deve avere tipo \term{bool}
+    Le guardie di costrutti di iterazione indeterminata e condizionali devono avere tipo \term{bool}
 
     \item Le modalità di passaggio dei parametri previste sono: \term{in} (valore),
     \term{out} (risultato), \term{inout} (valore-risultato), \term{ref} (riferimento),
@@ -292,19 +296,20 @@
             il formale viene ri-copiato nell'attuale
         \item[inout:] come out ma il formale e l'attuale devono avere lo stesso tipo
         \item[ref:] il formale e l'attuale devono avere lo stesso tipo e l'attuale deve
-            essere una l'espressione mutabile; viene passato un riferimento dell'attuale
-        \item[const in:] come in e il formale viene reso immutabile
-        \item[const ref:] come ref e il formale viene reso immutabile
+            essere una l-espressione mutabile; viene passato un riferimento dell'attuale
+        \item[const in:] come \term{in} e il formale viene reso immutabile
+        \item[const ref:] come \term{ref} e il formale viene reso immutabile
 
     \end{description}
+    L'intento $\epsilon$ viene considerato \term{in}.
 
     \item I namespace di variabili, costanti e funzioni è lo stesso: la ridefinizione di un nome
-    è permessa solo all'interno di un nuovo ambiente.
+    è permessa solo all'interno di un nuovo blocco.
 
-    Il tipo \term{void} non può essere utilizzato nella dichiarazione di una variabile,
+    Il tipo \term{void} \textbf{non} può essere utilizzato nella dichiarazione di una variabile,
     costante o di un parametro formale.
 
-    Le variabili possono non essere inizializzate esplicitamente, in tal caso
+    Le variabili possono \textbf{non} essere inizializzate esplicitamente, in tal caso
     vengono inizializzate implicitamente nei seguenti modi:
     \begin{itemize}
         \item \term{bool} come \term{false}
@@ -318,26 +323,37 @@
         
     \end{itemize}
 
-    La dimensione di un array deve essere una r-espressione valutabile a compile-time.
+    La dimensione di un array deve essere una r-espressione valutabile a compile-time,
+    compatibile con il tipo intero e di valore positivo.
 
     Le costanti (\term{param}) sono considerate immutabili e definite a compile-time.
     Devono essere inizializzate solo da letterali o da r-espressioni valutabili
     a compile-time.
 
     Variabili e costanti sono visibili dal punto di dichiarazione fino alla fine
-    del blocco, le funzioni sono visibili ovunque (nell'ambiente di dichiarazione
-    e nei blocchi al suo interno).
+    del blocco, le funzioni sono visibili ovunque nel blocco di dichiarazione
+    e nei blocchi al suo interno.
 
     Le funzioni (non procedure) devono ammettere un return in ogni path di esecuzione
     possibile.
 
+    \item Non è possibile utilizzare l'operatore di referenziazione \term{&} su una
+    l-espressione immutabile.
+
+    \item Le chiamate a funzione (non chiamate a procedura) non possono essere utilizzate come
+    statement. Le chiamate a procedura (non chiamate a funzione) non possono essere utilizzate in un
+    assegnamento.
+
+    \item Sono presenti i costrutti di iterazione indeterminata \term{while} e
+    \term{do-while} con la usuale semantica.
+
     \item È presente il costrutto di iterazione determinata \texttt{for i in \{s .. e\}~stm}
     con i seguenti vincoli: \texttt{i} viene considerato immutabile nello statement del ciclo,
-    di tipo \term{int} e viene incrementato di 1 ad ogni iterazione; le r-espressioni \texttt{s} ed
-    \texttt{e} devono essere 
-    compatibili con il tipo \term{int}; i limiti del ciclo vengono calcolati solo alla prima guardia
-    e \texttt{i} viene inizializzato con il valore di \texttt{s}; il ciclo termina quando
-    \texttt{i > e}.
+    dichiarata (non nel blocco di iterazione e quindi ri-dichiarabile al suo interno) di tipo 
+    \term{int} e viene incrementato di 1 ad  ogni iterazione; le r-espressioni \texttt{s} 
+    ed \texttt{e} devono essere  compatibili con il tipo \term{int}; i limiti del ciclo 
+    vengono calcolati solo alla prima guardia e \texttt{i} viene inizializzato con il 
+    valore di \texttt{s}; il ciclo termina quando \texttt{i > e}.
 
     \item \texttt{break} e \texttt{continue} possono essere utilizzati solo all'interno
     di un costrutto di iterazione indeterminata non contenuto in un costrutto di iterazione determinata.
@@ -347,32 +363,69 @@
     solo all'interno di una procedura. \texttt{e} deve essere compatibile con
     il tipo di ritorno della funzione.
 
-    \item Vengono mantenuti solo gli statement che possono essere raggiunti da un qualche path di esecuzione.
+    \item In ogni funzione vengono mantenuti solo gli statement che possono essere raggiunti
+    da un qualche path di esecuzione.
 
     \item Nell'ambiente globale deve essere presente una procedura con signature
-        \texttt{proc main():void} che viene considerata l'entrypoint del programma.
+        \texttt{proc main():void}.
 
 \end {itemize}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width = \linewidth]{types}
+\caption {Rappresentazione grafica della compatibilità tra tipi.}
+\end{figure}
 
 \section {Altre caratteristiche}
 
 \begin{itemize}
     \item Le r-espressioni di inizializzazione per le costanti e le dimensioni degli array
-        vengono valutate a compile-time
+        vengono valutate a compile-time.
     
     \item Le guardie dei costrutti di iterazione indeterminata e dei condizionali vengono valutate
-        con short-cut
+        con short-cut.
     
     \item Le r-espressioni di tipo \term{bool} vengono valutate con short-cut: si è deciso così
         perché una volta implementato lo short-cut per le guardie è immediato implementarlo per
-        tutte le espressioni booleane
+        tutte le espressioni booleane.
+    
     \item Negli assegnamenti vengono valutate le l-espressioni prima delle r-espressioni
     
-    \item La valutazione degli argomenti viene effettuata da sinistra verso destra
+    \item La valutazione delle espressioni e degli argomenti viene effettuata da sinistra verso destra:
+        non c'è una ragione precisa per il verso, ma l'idea di avere un ordine ben determinato e non
+        casuale permette al programmtore di prevedere più facilmente i side-effect generati dalla
+        valutazione.
 
     \item Sono presenti delle funzioni monomorfe predefinite per la lettura e la scrittura di 
         char, int, real, string. È inoltre presente una funzione predefinita per la comparazione
-        tra stringhe.
+        tra stringhe dalla signature \\\term{proc~stringCmp(string,~int,~string):~bool} che attribuisce
+        un valore di verità al confronto tra due stringhe attraverso un determinato operatore
+        (specificato dal parametro intero).
+        \begin{center}
+        \begin{tabular}{ | c | c | }
+            \hline
+            $n$     &   \textbf{Operatore}  \\
+            \hline
+            0       &   \term{<}            \\
+            \hline
+            1       &   \term{<=}           \\
+            \hline
+            2       &   \term{==}           \\
+            \hline
+            3       &   \term{!=}           \\
+            \hline
+            4       &   \term{>=}           \\
+            \hline
+            5       &   \term{>}            \\
+            \hline
+            
+        \end{tabular}
+        \end{center}
+
+    \item La semantica di confronto tra array o puntatori compatibili tra loro prevede il confronto
+        del valore numerico dell'indirizzo associato alla base degli array (nel caso di array) o all'indirizzo
+        contenuto (nel caso di puntatori).
 
 \end{itemize}
 
@@ -462,7 +515,7 @@ Abbiamo quindi definito dei moduli per strutturare il codice:
 \end{description}
 
 È stato utilizzato il pacchetto \term{Data.DList} (scaricabile dal sito ufficiale di haskell) per mantenere
-la lista dei messaggi di errore in modo efficiente.
+la lista dei messaggi di errore e la lista delle istruzioni TAC in modo efficiente.
 
 \section{Testing}
 

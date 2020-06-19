@@ -1,0 +1,18 @@
+digraph Types {
+    graph [dpi = 300]
+    rankdir = "BT"
+
+    bool    [label = "bool"]
+    char    [label = "char"]
+    int     [label = "int"]
+    real    [label = "real"]
+    string  [label = "string"]
+    void    [label = "void"]
+    pointer [label = "*&#964;"]
+    arr1    [label = <[n]&#964;<sub>1</sub>>]
+    arr2    [label = <[n]&#964;<sub>2</sub>>]
+
+    bool -> int -> real
+    char -> int
+    arr2 -> arr1 [label = <se &#964;<sub>2</sub> &le; &#964;<sub>1</sub>>; style = dotted]
+}
