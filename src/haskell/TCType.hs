@@ -12,7 +12,7 @@ data TCType
     | TReal
     | TString
     | TPoint TCType                         -- Pointer to
-    | TArr Int TCType                       -- Array Dim Type
+    | TArr Bool Int TCType                  -- Array Checked Dim Type
     | TFun TCType Intent [(TCType, Intent)] -- Function RetType RetIntent [(ArgType, ArgIntent)]
     deriving (Eq)
 
@@ -36,7 +36,7 @@ instance Show TCType where
         TReal       -> "real"
         TString     -> "string"
         TPoint t'   -> ("*"++) $ show t'
-        TArr d t'   -> (("[" ++ (show d) ++ "]")++) $ show t'
+        TArr _ d t' -> (("[" ++ (show d) ++ "]")++) $ show t'
         TFun _ _ _  -> "function"
 
 
@@ -61,7 +61,7 @@ TError `compare'` TError = TEqual
 _ `compare'` TError      = TLess
 TError `compare'` _      = TGreater
 
-TArr d1 t1 `compare'` TArr d2 t2 = if d1 /= d2
+TArr _ d1 t1 `compare'` TArr _ d2 t2 = if d1 /= d2
     then                  TNotComparable
     else t1 `compare'` t2
 

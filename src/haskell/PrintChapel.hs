@@ -145,7 +145,10 @@ instance Print (A.Type t) where
 instance Print (A.Compound t) where
   prt i e = case e of
     A.Simple -> prPrec i 0 (concatD [])
-    A.Array compound rexp -> prPrec i 0 (concatD [prt 0 compound, doc (showString "["), prt 0 rexp, doc (showString "]")])
+    A.Array checked compound rexp -> prPrec i 0 (concatD [prt 0 compound, doc (showString open), prt 0 rexp, doc (showString close)])
+      where
+        open  = if checked then "{-" else "["
+        close = if checked then "-}" else "]"
     A.Pointer compound -> prPrec i 0 (concatD [prt 0 compound, doc (showString "*")])
 
 instance Print A.Basic where
@@ -260,7 +263,8 @@ instance Print A.Literal where
     A.LReal d -> prPrec i 0 (concatD [prt 0 d])
     A.LString str -> prPrec i 0 (concatD [prt 0 str])
     A.LNull -> prPrec i 0 (concatD [doc (showString "null")])
-    A.LArr ls -> prPrec i 0 (concatD [doc (showString "["), prt 0 ls, doc (showString "]")])
+    A.LArr c ls -> prPrec i 0 (concatD [doc (showString "["), prt 0 ls, doc (showString "]")])
+
   prtList _ [] = concatD []
   prtList _ [x] = concatD [prt 0 x]
   prtList _ (x:xs) = concatD [prt 0 x, doc (showString ","), prt 0 xs]

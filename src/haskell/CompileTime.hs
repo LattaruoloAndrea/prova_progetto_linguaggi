@@ -198,7 +198,7 @@ litComp op = \x y -> let rel = x `overloadCompare` y in case rel of
 -- Access element at position i in an array of Literals
 -- (Precondition) i must have tctype <= TInt
 litAccess :: Literal -> Literal -> Maybe Literal
-litAccess arr@(LArr lits) i = do
+litAccess arr@(LArr _ lits) i = do
     let (LInt i') = toLInt i
     guard (i' < (toInteger . length $ lits))
     guard (0 <= i')
@@ -260,7 +260,7 @@ constexpr env r = case r of
                     TString -> toLString
                     _       -> id
 
-        return $ LArr [ conv x | (Just x) <- lits ]
+        return $ LArr False [ conv x | (Just x) <- lits ]
 
     Lit _ lit _ -> Just lit
 

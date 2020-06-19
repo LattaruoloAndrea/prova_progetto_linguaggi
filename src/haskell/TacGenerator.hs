@@ -154,7 +154,7 @@ sizeof t = case t of
     TReal       -> 8
     TString     -> 8
     TPoint _    -> 8
-    TArr d t'   -> d * (sizeof t')
+    TArr _ d t' -> d * (sizeof t')
 
 -- compose a list of transformation to obtain the "concatanation" transformation
 streamCat :: [SGen (Stream -> Stream)] -> SGen (Stream -> Stream)
@@ -200,6 +200,9 @@ newLabel s = do
     (v, l, b, c, i, ss, e, f) <- get
     put (v, l+1, b, c, i, ss, e, f)
     return . Label $ s ++ (show l)
+
+labBounds :: Label
+labBounds = Label "boundsError"
 
 setBreak :: Label -> SGen ()
 setBreak lab = do
@@ -314,7 +317,7 @@ attachGuard :: Label -> (Stream -> Stream) -> (Stream -> Stream)
 attachGuard lab cont = cont . gotoCont lab
 
 addrFromArr :: LAddr -> SGen (Stream -> Stream, LAddr)
-addrFromArr addr = let t = TArr 0 TVoid in case addr of
+addrFromArr addr = let t = TArr False 0 TVoid in case addr of
     Arr b o -> do
         tmp <- newTemp
         return (arithCont (A.Add t) tmp (A b) (A o), tmp)
@@ -326,11 +329,11 @@ copyTo :: (LAddr, TCType) -> LAddr -> SGen (Stream -> Stream)
 (source, t) `copyTo` dest = do
     (extra, dest) <- addrFromArr dest
     contCopy <- case t of
-        TArr n t' -> do
+        TArr _ n t' -> do
             let ls = linearize t
                 t' = head ls
                 sz = toInteger $ sizeof t'
-                linearize (TArr n t) = concatMap linearize $ take n $ repeat t
+                linearize (TArr _ n t) = concatMap linearize $ take n $ repeat t
                 linearize t          = [t]
             (extra, baseS) <- case source of
                 Arr b o -> do
@@ -362,13 +365,16 @@ genProgram (A.Prog decls) = do
     cont <- streamCat contMs
     sdata <- getStatic
     let sdata' = DL.fromList . reverse . map Stat $ sdata
-    return $ (cont . callCont addrM 0 . exitCont) mempty `mappend` commentCont "Static Data\n" sdata'
+    return $ (cont . callCont addrM 0 . exitCont . boundsCont) mempty `mappend` commentCont "Static Data\n" sdata'
 
     where
         idMain = head $ map fId $ filter isMain decls
         fId (A.FDecl id _ _ _ _) = id
         isMain (A.FDecl id _ _ _ _) = A.idName id == "main"
         isMain _ = False
+
+        predBoundError = A $ AName "outOfBounds" (A.Loc (-1) (-1))
+        boundsCont = attachStart labBounds $ callCont predBoundError 0
 
 
 genDecl :: DeclT -> SGen (Stream -> Stream)
@@ -467,10 +473,9 @@ genRExp r = if tctypeOf r == TBool
 genLazyEval :: RExpT -> SGen (Stream -> Stream, LAddr)
 genLazyEval r = do
     addrT <- newTemp
-    contT <- genIfElse $ stm $ tmpName addrT
+    contT <- genIfElse $ stm $ getName addrT
     return (contT, addrT)
     where
-        tmpName (A (ATemp name)) = name
         stm name = A.IfElse guard s1 s2
             where
                 guard = r
@@ -568,7 +573,7 @@ genRLExp (A.RLExp loc l t) = do
         _   -> do
             addrT <- newTemp
             (extra, addrL') <- case (addrL, t) of
-                (Arr b o, TArr _ _) -> do
+                (Arr b o, TArr _ _ _) -> do
                     tmp <- newTemp
                     return (arithCont (A.Add t) tmp (A b) (A o), tmp)
                 _ -> return (id, addrL)
@@ -622,9 +627,9 @@ genLit (A.Lit loc lit t) = case lit of
     A.LString s -> do
         addrS <- addSStr s
         return (id, addrS)
-    A.LArr ls -> do
+    A.LArr _ ls -> do
         addrT <- newTemp
-        let linearize (A.LArr ls) = concatMap linearize ls
+        let linearize (A.LArr _ ls) = concatMap linearize ls
             linearize l                  = [l]
             ls' = linearize lit
             n = length ls'
@@ -663,6 +668,7 @@ genAccess :: LExpT -> SGen (Stream -> Stream, LAddr)
 genAccess (A.Access l r t) = do
     (contL, addrL) <- genLExp l
     (contR, addrR) <- genRExp r
+    contChecked <- getChecked addrR
     addrT <- newTemp
     let sz = sizeof t
         addrO = case addrL of
@@ -673,8 +679,16 @@ genAccess (A.Access l r t) = do
         contT2 = arithCont (A.Add TInt) addrT addrT addrO
         aL = getAddr addrL
         aT = getAddr addrT
-    return (contL . contR . contT1 . contT2, Arr aL aT)
-
+    return (contL . contR . contChecked . contT1 . contT2, Arr aL aT)
+    where
+        getChecked addr = let t' = tctypeOf l in case t' of
+            TArr True d _  -> do
+                let addrLow  = addrFromInteger 0
+                    addrHigh = addrFromInteger $ toInteger d
+                    ifLow    = ifRelCont addr (Lt I) addrLow labBounds
+                    ifHigh   = ifRelCont addr (Geq I) addrHigh labBounds
+                return $ ifLow . ifHigh
+            _               -> return id
 
 genName :: LExpT -> SGen (Stream -> Stream, LAddr)
 genName (A.Name ident@(A.Ident loc name) t) = do
@@ -728,7 +742,7 @@ genParam (r, it) = case it of
         caseIn = do
             (contR, addrR) <- genRExp r
             (extra, addrR') <- case t of
-                TArr _ _ -> do
+                TArr _ _ _ -> do
                     tmp <- newTemp
                     contCopy <- (addrR, t) `copyTo` tmp
                     return (contCopy, tmp)

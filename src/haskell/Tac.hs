@@ -26,6 +26,9 @@ getAddr l = case l of
     Arr a _ -> a
     RefTo a -> a
 
+getName :: LAddr -> String
+getName (A (ATemp name)) = name
+
 
 data Over = B | C | I | R | S | P
     deriving (Read, Eq, Ord)

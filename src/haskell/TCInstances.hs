@@ -23,7 +23,7 @@ instance TCTypeable (Type t) where
         helper c b = case c of
             Simple      -> tctypeOf b
             Pointer c'  -> TPoint $ helper c' b
-            Array c' (Lit _ (LInt d) t) -> TArr (fromInteger d :: Int) $ helper c' b
+            Array ch c' (Lit _ (LInt d) t)  -> TArr ch (fromInteger d :: Int) $ helper c' b
             _           -> TError
 
 
@@ -35,7 +35,7 @@ instance TCTypeable Literal where
         LInt _      -> TInt
         LReal _     -> TReal
         LString _   -> TString
-        LArr lits   ->
+        LArr c lits ->
             if null lits
             then TError
             else let
@@ -43,7 +43,7 @@ instance TCTypeable Literal where
                 t = foldl1 (supremum) litsT
                 in case t of
                     TError  -> TError
-                    _       -> TArr (length lits) t
+                    _       -> TArr c (length lits) t
 
 -- Maybe have TCType
 instance (TCTypeable a) => TCTypeable (Maybe a) where

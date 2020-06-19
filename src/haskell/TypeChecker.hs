@@ -31,7 +31,7 @@ getDefault t = case t of
     TReal       -> defReal
     TString     -> defString
     TPoint _    -> LNull
-    TArr d t'   -> LArr $ map getDefault $ replicate d t'
+    TArr c d t' -> LArr c $ map getDefault $ replicate d t'
 
 predLoc :: Loc
 predLoc = Loc (-1) (-1)
@@ -280,17 +280,17 @@ checkType env (Type c b) = do
     return $ Type c' b
     where
         helper env c = case c of
-            Simple      -> return Simple
-            Pointer c'  -> do
+            Simple          -> return Simple
+            Pointer c'      -> do
                 c'' <- helper env c'
                 return $ Pointer c''
-            Array c' r  -> do
+            Array ch c' r   -> do
                 c'' <- helper env c'
                 r' <- inferRExp env r
                 let tr = tctypeOf r'
                 unless (tr `subtypeOf` TInt) $ errorArrayNonIntegerSize r tr
                 case constexpr env r' of
-                    Just x  -> return $ Array c'' $ Lit (locOf r) (toLInt x) TInt
+                    Just x  -> return $ Array ch c'' $ Lit (locOf r) (toLInt x) TInt
                     Nothing -> errorArrayNonConstantSize r
 
 
@@ -403,7 +403,7 @@ inferArrList env (ArrList loc rs _) = case rs of
         rs' <- mapM (inferRExp env) rs
         let t = foldl1 supremum $ map tctypeOf rs'
         when (t == TError) $ errorArrayElementsCompatibility loc
-        let tt = TArr (length rs) t
+        let tt = TArr False (length rs) t
             cs = map (coerce t) rs'
         return $ ArrList loc cs tt
 
@@ -469,8 +469,8 @@ inferAccess env (Access l r _) = do
         ta = tctypeOf l'
     when (ti `supremum` TInt /= TInt) $ errorArrayIndex r
     case ta of
-        TArr _ t -> return $ Access l' r' t
-        _        -> errorArrayNot l
+        TArr  _ _ t -> return $ Access l' r' t
+        _           -> errorArrayNot l
 
 
 -- Type t of a name is induced by it's entry in the environment

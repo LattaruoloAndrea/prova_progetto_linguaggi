@@ -91,6 +91,7 @@ import Locatable
   %right '^'
   %nonassoc '++' '--'
   %nonassoc PREINCDEC
+  %left CH
   %left '[' ']'
   %left '(' ')'
 
@@ -143,7 +144,8 @@ Type : Compound Basic { AbsChapel.Type $1 $2 }
 
 Compound :: { Compound () }
 Compound : {- empty -} { AbsChapel.Simple }
-         | '[' RExp ']' Compound  { AbsChapel.Array $4 $2 }
+         | '[' RExp ']' Compound { AbsChapel.Array False $4 $2 }
+         | '{' RExp '}' Compound %prec CH { AbsChapel.Array True $4 $2 }
          | '*' Compound { AbsChapel.Pointer $2 }
 
 Basic :: { Basic }

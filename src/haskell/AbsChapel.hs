@@ -41,7 +41,7 @@ data Type t = Type (Compound t) Basic
 
 data Compound t
   = Simple
-  | Array (Compound t) (RExp t)
+  | Array Bool (Compound t) (RExp t)
   | Pointer (Compound t)
   deriving (Eq, Ord, Show, Read)
 
@@ -140,7 +140,7 @@ data Literal
     | LReal Double
     | LString String
     | LNull
-    | LArr [Literal]
+    | LArr Bool [Literal]
   deriving (Eq, Ord, Read)
 
 instance Show Literal where
@@ -151,7 +151,10 @@ instance Show Literal where
     LReal r   -> show r
     LString s -> show s
     LNull     -> "nullptr"
-    LArr ls   -> "[" ++ (intercalate ", " $ map show ls) ++ "]"
+    LArr c ls -> open ++ (intercalate ", " $ map show ls) ++ close
+      where
+        open  = if c then "[[" else "["
+        close = if c then "]]" else "]"
         
 
 
@@ -182,9 +185,9 @@ instance Functor Type where
 
 instance Functor Compound where
   fmap f c = case c of
-    Simple    -> Simple
-    Array a b -> Array (fmap f a) (fmap f b)
-    Pointer a -> Pointer (fmap f a)
+    Simple      -> Simple
+    Array a b c -> Array a (fmap f b) (fmap f c)
+    Pointer a   -> Pointer (fmap f a)
 
 instance Functor Block where
   fmap f (Block l d s) = Block l (map (fmap f) d) (map (fmap f) s)
