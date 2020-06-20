@@ -47,11 +47,12 @@ predList = [
     ("writeInt",    Fun predLoc [Param predLoc "x" In TInt] In TVoid),
     ("writeReal",   Fun predLoc [Param predLoc "x" In TReal] In TVoid),
     ("writeString", Fun predLoc [Param predLoc "x" In TString] In TVoid),
-    ("stringCmp",   Fun predLoc [Param predLoc "x" ConstRef TString, Param predLoc "op" In TInt, Param predLoc "y" ConstRef TString] In TBool)]
+    ("stringCmp",   Fun predLoc [Param predLoc "x" ConstRef TString, Param predLoc "op" In TInt, Param predLoc "y" ConstRef TString] In TBool),
+    ("outOfBounds", Fun predLoc [] In TVoid)]
 
--- Initial environment (with the global context)
+-- Initial environment (with the program global context ++ external context of the predefined functions)
 startEnv :: Env
-startEnv = [Context (M.fromList predList) TVoid False False False]
+startEnv = [Context mempty TVoid False False False, Context (M.fromList predList) TVoid False False False]
 
 -- Typecheck starting point: check of a program with the startEnv
 typeCheck :: Program () -> EM.Err (Program TCType)

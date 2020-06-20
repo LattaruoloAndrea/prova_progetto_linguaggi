@@ -126,7 +126,7 @@ Form : Intent Ident ':' Type { AbsChapel.Form $1 $2 $4 }
 Intent :: { Intent }
 Intent : {- empty -} { AbsChapel.In }
        | 'in' { AbsChapel.In }
-       | 'out' { AbsChapel.Out }
+--       | 'out' { AbsChapel.Out }
        | 'inout' { AbsChapel.InOut }
        | 'ref' { AbsChapel.Ref }
        | 'const' 'in' { AbsChapel.ConstIn }

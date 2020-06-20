@@ -416,13 +416,14 @@ genFDecl f@(A.FDecl ident forms it rt body) = do
             case it of
                 A.In        -> caseIn
                 A.Out       -> caseOut
-                A.InOut     -> caseOut
+                A.InOut     -> caseInOut
                 A.Ref       -> caseRef
                 A.ConstIn   -> caseIn
                 A.ConstRef  -> caseRef
             where
                 caseIn  = return id
-                caseOut = do
+                caseOut = caseInOut
+                caseInOut = do
                     let addr = A $ AName (name ++ "$local$copy") loc
                     contCopy <- (addrFromId ident, tctypeOf ty) `copyTo` addr
                     return contCopy

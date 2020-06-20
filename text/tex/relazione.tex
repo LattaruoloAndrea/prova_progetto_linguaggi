@@ -37,6 +37,7 @@
 
     \end{tabular}
     \end{center}
+    \term{out} viene riservato per utilizzi futuri
 
     \item I simboli riservati sono:
     \begin{center}
@@ -80,34 +81,33 @@
     \item Un tipo ha la seguente struttura
         \begin{center}
         \begin{tabular}{l c l}
-        $\nonterm{Type}$        &   $::=$   &   $\nonterm{Compound} \nonterm{Basic}$                    \\
-        $\nonterm{Compound}$    &   $::=$   &   $\epsilon$                                              \\
-                                &    $|$    &   $\term{[} \nonterm{RExp} \term{]} \nonterm{Compound}$   \\
-                                &    $|$    &   $\term{\{} \nonterm{RExp} \term{\}} \nonterm{Compound}$ \\
-                                &    $|$    &   $\term{*} \nonterm{Compound}$                           \\
-        $\nonterm{Basic}$       &   $::=$   &   $\term{bool}$                                           \\
-                                &    $|$    &   $\term{char}$                                           \\
-                                &    $|$    &   $\term{int}$                                            \\
-                                &    $|$    &   $\term{real}$                                           \\
-                                &    $|$    &   $\term{string}$                                         \\
+        $\nonterm{Type}$        &   $::=$   &   $\nonterm{Compound} \nonterm{Basic}$                        \\
+        $\nonterm{Compound}$    &   $::=$   &   $\epsilon$                                                  \\
+                                &    $|$    &   $\term{[ } \nonterm{RExp} \term{ ]} \nonterm{Compound}$     \\
+                                &    $|$    &   $\term{\{ } \nonterm{RExp} \term{ \}} \nonterm{Compound}$   \\
+                                &    $|$    &   $\term{* } \nonterm{Compound}$                              \\
+        $\nonterm{Basic}$       &   $::=$   &   $\term{bool}$                                               \\
+                                &    $|$    &   $\term{char}$                                               \\
+                                &    $|$    &   $\term{int}$                                                \\
+                                &    $|$    &   $\term{real}$                                               \\
+                                &    $|$    &   $\term{string}$                                             \\
                                 &    $|$    &   $\term{void}$
 
         \end{tabular}
         \end{center}
 
     \item Un intent (modalità di passaggio dei parametri) ha la seguente struttura
-        \begin{center}
-        \begin{tabular}{*{15}c}
-        $\nonterm{Intent}$      &   $::=$   &   $\term{in}$                                           
-                                &    $|$    &   $\term{out}$                                          
-                                &    $|$    &   $\term{inout}$                                        
-                                &    $|$    &   $\term{ref}$                                          
-                                &    $|$    &   $\term{const in}$                                     
-                                &    $|$    &   $\term{const ref}$
+        \begin{flushleft}
+        \begin{tabular}{ l c l }
+        $\nonterm{Intent}$      &   $::=$   &   $\term{in}$                                             \\
+                                &    $|$    &   $\term{inout}$                                          \\
+                                &    $|$    &   $\term{ref}$                                            \\
+                                &    $|$    &   $\term{const in}$                                       \\
+                                &    $|$    &   $\term{const ref}$                                      \\
                                 &    $|$    &   $\epsilon$
 
         \end{tabular}
-        \end{center}
+        \end{flushleft}
 
     \item Un blocco ha forma $\nonterm{Block} ::= \term{\{  } \nonterm{DeclList} \nonterm{StmList} \term{  \}}$
         dove le liste di dichiarazioni e statement possono essere vuote
@@ -283,18 +283,17 @@
     Le guardie di costrutti di iterazione indeterminata e condizionali devono avere tipo \term{bool}
 
     \item Le modalità di passaggio dei parametri previste sono: \term{in} (valore),
-    \term{out} (risultato), \term{inout} (valore-risultato), \term{ref} (riferimento),
+    \term{inout} (valore-risultato), \term{ref} (riferimento),
     \term{const in} (costante-valore), \term{const ref} (costante-riferimento) con i
     seguenti vincoli e semantica:
     \begin{description}
         \item[in:] il parametro attuale deve essere compatibile con il formale;
             viene effettuata una copia prima del passaggio
-        \item[out:] il formale deve essere compatibile con l'attuale, l'attuale
+        \item[inout:] il formale e l'attuale devono avere lo stesso tipo, l'attuale
             deve essere una l-espressione mutabile e il formale deve essere assegnato
             in ogni percorso di esecuzione; viene passato un riferimento all'attuale,
             viene eseguita una copia locale e al termine dell'esecuzione della funzione,
             il formale viene ri-copiato nell'attuale
-        \item[inout:] come out ma il formale e l'attuale devono avere lo stesso tipo
         \item[ref:] il formale e l'attuale devono avere lo stesso tipo e l'attuale deve
             essere una l-espressione mutabile; viene passato un riferimento dell'attuale
         \item[const in:] come \term{in} e il formale viene reso immutabile
@@ -337,7 +336,7 @@
     Le funzioni (non procedure) devono ammettere un return in ogni path di esecuzione
     possibile.
 
-    \item Non è possibile utilizzare l'operatore di referenziazione \term{&} su una
+    \item Non è possibile utilizzare l'operatore di referenziazione \term{\&} su una
     l-espressione immutabile.
 
     \item Le chiamate a funzione (non chiamate a procedura) non possono essere utilizzate come
@@ -398,7 +397,9 @@
         valutazione.
 
     \item Sono presenti delle funzioni monomorfe predefinite per la lettura e la scrittura di 
-        char, int, real, string. È inoltre presente una funzione predefinita per la comparazione
+        char, int, real, string. È presente una funzione predefinita dalla signature
+        \term{proc outOfBounds(): void} per la gestione di errori a runtime sugli indici di array
+        dichiarati checked. È inoltre presente una funzione predefinita per la comparazione
         tra stringhe dalla signature \\\term{proc~stringCmp(string,~int,~string):~bool} che attribuisce
         un valore di verità al confronto tra due stringhe attraverso un determinato operatore
         (specificato dal parametro intero).
@@ -509,8 +510,8 @@ Abbiamo quindi definito dei moduli per strutturare il codice:
         viene generato del codice per ogni sottoalbero. In particolare, si è deciso di implementare tramite continuazioni.
         Lo stato del generatore viene implementato tramite la monade di stato \term{State} e tale stato mantiene dei contatori
         per le variabili temporanee e per i label, dei valori per ricordare i label di break e continue, l'id della funzione
-        che stiamo generando e delle tabelle per ricordare quali siano i parametri passati per risultato/valore-risultato.
-        Gli identificatori vengono stampati con la posizione di dichiarazione.
+        che stiamo generando, delle tabelle per ricordare quali siano i parametri passati per valore-risultato e una lista delle
+        stringhe "statiche". Gli identificatori vengono stampati con la posizione di dichiarazione.
 
 \end{description}
 
@@ -529,15 +530,16 @@ Il codice sorgente generato (prettyprinted) per il file \term{f.ch} viene stampa
 il three-address-code viene stampato in un file \term{f.ch.tac} mentre gli errori di compilazione in un file
 \term{f.ch.err}
 
-Descrizione di alcuni esempi di test corretti (correct\_test\_1.ch, …, correct\_test\_6.ch):
+Descrizione di alcuni esempi di test corretti (correct\_test\_1.ch, …, correct\_test\_8.ch):
 \begin{description}
     \item[1-3:] mostrano definizioni di variabili, costanti, assegnamenti
     \item[4:] mostra la possibilità di definire funzioni e variabili nell'ambiente più esterno
     \item[5-6:] mostrano alcuni costrutti come gli if, while, for
+    \item[7-8:] mostrano il funzionamento degli array checked e il funzionamento delle compatibilità tra tipi
 
 \end{description}
 
-Descrizione di alcuni esempi di test non corretti (error\_tc\_1.ch, …, error\_tc\_16.ch) per mostrare 
+Descrizione di alcuni esempi di test non corretti (error\_tc\_1.ch, …, error\_tc\_20.ch) per mostrare 
 gli errori che il type checker produce:
 \begin{description}
     \item[1-5:] mostrano errori relativi a incompatibilità tra tipi in assegnamenti e nei ritorni di funzione,
@@ -554,6 +556,10 @@ gli errori che il type checker produce:
     
     \item[12-16:] mostrano errori riguardo lo scoping nella definizione di funzioni e nell'utilizzo
         dei parametri, ed errori relativi al numero di parametri errato nella chiamata di funzione
+
+    \item[17-19:] mostrano errori sulle compatibilità tra i tipi, funzionamento del break e continue
+
+    \item[20:] errori sui passaggi di constanti come ref, errori di assegnamenti di parametri const
 
 \end{description}
 

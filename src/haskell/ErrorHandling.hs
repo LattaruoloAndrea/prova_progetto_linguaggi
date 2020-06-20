@@ -201,7 +201,7 @@ errorReturnMissing (Ident loc id) =
 
 errorMissingAssignRes :: Loc -> String -> String -> EM.Err a
 errorMissingAssignRes loc id n =
-    badLoc loc $ "Missing assignment to '" ++ n ++ "' passed by result (either Out or InOut) in the definition of '" ++ id ++ "'"
+    badLoc loc $ "Missing assignment to '" ++ n ++ "' passed by 'inout' in the definition of '" ++ id ++ "'"
 
 
 
