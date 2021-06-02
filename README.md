@@ -1,4 +1,5 @@
-# Progetto Linguaggi e Compilatori, CHAPEL--
+# Chapel++
+Final project of the Languages&Compilers course.
 
 ## Features
 - Chapel like syntax
